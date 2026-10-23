@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container mt-4">
+    <h2>Admin Dashboard</h2>
+
+    <p>Chào mừng bạn đến với hệ thống EduCenterManagement.</p>
+
+    <div class="list-group">
+        <a asp-controller="Teachers"
+           asp-action="Index"
+           class="list-group-item list-group-item-action">
+            Quản lý Teacher
+        </a>
+
+        <a asp-controller="Subjects"
+           asp-action="Index"
+           class="list-group-item list-group-item-action">
+            Quản lý Subject
+        </a>
+
+        <a asp-controller="Classes"
+           asp-action="Index"
+           class="list-group-item list-group-item-action">
+            Quản lý Class
+        </a>
+    </div>
+</div>

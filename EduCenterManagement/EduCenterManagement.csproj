@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>cea0e3ef-8d3f-404d-9a42-7fcda61920e9</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ViewModels\" />
     <Folder Include="Repositories\" />
     <Folder Include="Services\" />
   </ItemGroup>
