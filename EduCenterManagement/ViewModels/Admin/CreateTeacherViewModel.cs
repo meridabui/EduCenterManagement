@@ -1,7 +1,6 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace EduCenterManagement.ViewModels
+namespace EduCenterManagement.ViewModels.Admin
 {
     public class CreateTeacherViewModel
     {

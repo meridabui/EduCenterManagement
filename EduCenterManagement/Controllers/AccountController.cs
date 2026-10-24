@@ -3,7 +3,7 @@ using System.Security.Claims;
 using EduCenterManagement.Data;
 using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
-using EduCenterManagement.ViewModels;
+using EduCenterManagement.ViewModels.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
