@@ -1,0 +1,2 @@
+@model IReadOnlyList<EduCenterManagement.ViewModels.TeacherComment.TeacherClassViewModel>
+@{var userId=Context.Request.Query["userId"].ToString();}<h1>My Classes</h1>@if(!Model.Any()){<p class="text-muted">You have no assigned classes.</p>}else{<table class="table"><thead><tr><th>Subject</th><th>Class</th><th></th></tr></thead><tbody>@foreach(var c in Model){<tr><td>@c.Subject</td><td>@c.Name</td><td><a class="btn btn-sm btn-primary" asp-action="Students" asp-route-classId="@c.Id" asp-route-userId="@userId">Students</a></td></tr>}</tbody></table>}

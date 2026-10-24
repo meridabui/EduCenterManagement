@@ -1,0 +1,3 @@
+@model int
+@{var userId=Context.Request.Query["userId"].ToString();}
+<nav class="mb-3"><a asp-controller="ParentChildren" asp-action="Details" asp-route-studentId="@Model" asp-route-userId="@userId">Details</a> | <a asp-controller="ParentChildren" asp-action="Attendance" asp-route-studentId="@Model" asp-route-userId="@userId">Attendance</a> | <a asp-controller="ParentChildResults" asp-action="QuizResults" asp-route-studentId="@Model" asp-route-userId="@userId">Quiz Results</a> | <a asp-controller="ParentChildComments" asp-action="Comments" asp-route-studentId="@Model" asp-route-userId="@userId">Comments</a></nav>

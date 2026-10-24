@@ -1,0 +1,1 @@
+using EduCenterManagement.ViewModels.Timetable;namespace EduCenterManagement.Services;public interface ITimetableService{Task<TimetableViewModel?> GetWeekAsync(int userId,DateOnly weekStart,CancellationToken ct=default);}

@@ -1,0 +1,2 @@
+namespace EduCenterManagement.ViewModels.Notification;
+public sealed class NotificationItemViewModel { public int Id { get; init; } public string Type { get; init; } = ""; public string Title { get; init; } = ""; public string Message { get; init; } = ""; public string? ReferenceType { get; init; } public int? ReferenceId { get; init; } public int? StudentId { get; init; } public bool IsRead { get; init; } public DateTime CreatedAt { get; init; } }

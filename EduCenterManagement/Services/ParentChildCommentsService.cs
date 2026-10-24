@@ -1,0 +1,3 @@
+using EduCenterManagement.Repositories; using EduCenterManagement.Services.Common; using EduCenterManagement.ViewModels.ParentChildren;
+namespace EduCenterManagement.Services;
+public sealed class ParentChildCommentsService(ICurrentUserContext current,IParentChildCommentsRepository repository):IParentChildCommentsService { public async Task<CommentsPageViewModel?> GetCommentsAsync(int studentId,int? classId,int page,CancellationToken ct=default){var parent=await current.GetParentProfileIdAsync(ct);return parent is null?null:await repository.GetCommentsAsync(parent.Value,studentId,classId,Math.Max(1,page),10,ct);} }

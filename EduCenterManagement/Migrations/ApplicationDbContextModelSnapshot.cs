@@ -418,6 +418,9 @@ namespace EduCenterManagement.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("StudentId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -432,6 +435,8 @@ namespace EduCenterManagement.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("StudentId");
 
                     b.HasIndex("UserId");
 
@@ -921,6 +926,9 @@ namespace EduCenterManagement.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
                     b.Property<int?>("SessionId")
                         .HasColumnType("int");
 
@@ -1149,11 +1157,18 @@ namespace EduCenterManagement.Migrations
 
             modelBuilder.Entity("EduCenterManagement.Models.Notification", b =>
                 {
+                    b.HasOne("EduCenterManagement.Models.StudentProfile", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("EduCenterManagement.Models.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Student");
 
                     b.Navigation("User");
                 });

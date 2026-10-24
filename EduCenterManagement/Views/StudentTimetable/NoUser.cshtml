@@ -1,0 +1,1 @@
+@{ var message = ViewData["ProfileMessage"] as string ?? "No user selected. Open this page with ?userId=<id>."; }<div class="alert alert-info">@message @if(ViewData["ProfileMessage"] is not null){<a href="/Dev">Development users</a>}</div>

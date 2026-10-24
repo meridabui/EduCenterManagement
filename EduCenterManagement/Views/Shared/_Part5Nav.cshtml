@@ -1,0 +1,3 @@
+@inject EduCenterManagement.Services.Common.ICurrentUserContext CurrentUser
+@{var id=CurrentUser.UserId;}
+<li class="nav-item"><a class="nav-link text-dark" asp-controller="StudentTimetable" asp-action="Index" asp-route-userId="@id">My Timetable</a></li><li class="nav-item"><a class="nav-link text-dark" asp-controller="ParentChildren" asp-action="Index" asp-route-userId="@id">My Children</a></li><li class="nav-item"><a class="nav-link text-dark" asp-controller="TeacherComment" asp-action="Index" asp-route-userId="@id">Student Comments</a></li>

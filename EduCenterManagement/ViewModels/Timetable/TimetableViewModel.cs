@@ -1,0 +1,3 @@
+namespace EduCenterManagement.ViewModels.Timetable;
+public sealed class TimetableViewModel { public DateOnly WeekStart {get;init;} public IReadOnlyList<TimetableItemViewModel> Items {get;init;}=Array.Empty<TimetableItemViewModel>(); }
+public sealed class TimetableItemViewModel { public DateOnly Date {get;init;} public TimeOnly StartsAt {get;init;} public TimeOnly EndsAt {get;init;} public string SubjectName {get;init;}=""; public string ClassName {get;init;}=""; public string TeacherName {get;init;}="Not assigned"; public int? SessionNumber {get;init;} public string Status {get;init;}="Scheduled"; }

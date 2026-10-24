@@ -1,0 +1,48 @@
+@model EduCenterManagement.ViewModels.ParentChildren.QuizResultsPageViewModel
+@{
+    ViewData["Title"] = "Quiz Results";
+    var userId = Context.Request.Query["userId"].ToString();
+    var vietnamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+}
+
+<h1>@Model.StudentName - Quiz Results</h1>
+<partial name="_ChildNav" model="Model.StudentId" />
+
+<form method="get" class="row g-2 mb-3">
+    <input type="hidden" name="studentId" value="@Model.StudentId" />
+    <input type="hidden" name="userId" value="@userId" />
+    <div class="col-auto">
+        <select class="form-select" name="classId">
+            <option value="">All classes</option>
+            @foreach (var classItem in Model.Classes)
+            {
+                <option value="@classItem.Id" selected="@(Model.ClassId == classItem.Id)">@classItem.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto"><button class="btn btn-primary">Filter</button></div>
+</form>
+
+@if (!Model.Items.Any())
+{
+    <p class="text-muted">No quiz results yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead><tr><th>Quiz</th><th>Subject / Class</th><th>Session</th><th>Attempt</th><th>Score</th><th>Submitted</th></tr></thead>
+        <tbody>
+        @foreach (var item in Model.Items)
+        {
+            var submittedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(item.SubmittedAt, DateTimeKind.Utc), vietnamTimeZone);
+            <tr><td>@item.QuizTitle</td><td>@item.SubjectName / @item.ClassName</td><td>@item.SessionNumber</td><td>@item.AttemptNumber</td><td>@item.Score@if (item.MaxScore.HasValue) { <text> / @item.MaxScore.Value</text> }</td><td>@submittedAt.ToString("dd MMM yyyy HH:mm")</td></tr>
+        }
+        </tbody>
+    </table>
+    <nav aria-label="Quiz results pages">
+        @for (var index = 1; index <= Model.TotalPages; index++)
+        {
+            <a class="btn btn-sm @(index == Model.Page ? "btn-primary" : "btn-outline-primary")" asp-route-studentId="@Model.StudentId" asp-route-classId="@Model.ClassId" asp-route-page="@index" asp-route-userId="@userId">@index</a>
+        }
+    </nav>
+}

@@ -6,6 +6,7 @@
     <title>@ViewData["Title"] - EduCenterManagement</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/part5.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/EduCenterManagement.styles.css" asp-append-version="true" />
 </head>
 <body>
@@ -25,7 +26,9 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        @await Html.PartialAsync("_Part5Nav")
                     </ul>
+                    @await Component.InvokeAsync("NotificationBell")
                 </div>
             </div>
         </nav>

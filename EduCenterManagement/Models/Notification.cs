@@ -30,6 +30,8 @@ namespace EduCenterManagement.Models
 
         public int? ReferenceId { get; set; }
 
+        public int? StudentId { get; set; }
+
         public bool IsRead { get; set; } = false;
 
         public DateTime? ReadAt { get; set; }
@@ -38,5 +40,8 @@ namespace EduCenterManagement.Models
 
         [ForeignKey(nameof(UserId))]
         public AppUser User { get; set; } = null!;
+
+        [ForeignKey(nameof(StudentId))]
+        public StudentProfile? Student { get; set; }
     }
 }

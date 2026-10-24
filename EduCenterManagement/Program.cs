@@ -37,6 +37,10 @@ builder.Services.AddAuthorization();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddPart5Services();
+builder.Services.AddPart5Results();
+builder.Services.AddPart5Comments();
+builder.Services.AddPart5TeacherComments();
 
 var app = builder.Build();
 await DbInitializer.InitializeAsync(app.Services);//tạo admin khi ứng dụng khởi động
@@ -57,6 +61,9 @@ app.UseRouting();
 app.UseAuthentication();
 // Kiểm tra quyền truy cập sau
 app.UseAuthorization();
+
+if (app.Environment.IsDevelopment())
+    app.MapControllerRoute(name: "dev", pattern: "Dev/{action=Index}/{id?}", defaults: new { controller = "Dev" });
 
 app.MapControllerRoute(
     name: "default",

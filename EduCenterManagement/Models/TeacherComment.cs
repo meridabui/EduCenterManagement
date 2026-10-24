@@ -24,6 +24,9 @@ namespace EduCenterManagement.Models
         [Required]
         public string Content { get; set; } = string.Empty;
 
+        [Range(1, 5)]
+        public int Rating { get; set; }
+
         [MaxLength(20)]
         public string Visibility { get; set; } = "parent_student";
 

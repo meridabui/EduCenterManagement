@@ -1,0 +1,6 @@
+@using EduCenterManagement.ViewModels.Common
+@using EduCenterManagement.ViewModels.Notification
+@model PagedResult<NotificationItemViewModel>
+@{ViewData["Title"]="Notifications";var unread=Context.Request.Query["unreadOnly"]=="true";}
+<div class="d-flex justify-content-between align-items-center"><h1>Notifications</h1><form asp-action="MarkAll" method="post"><button class="btn btn-outline-primary">Mark all as read</button></form></div><p><a asp-route-unreadOnly="false">All</a> | <a asp-route-unreadOnly="true">Unread</a></p>
+@if(!Model.Items.Any()){<p class="text-muted">No notifications.</p>}else{<div class="list-group">@foreach(var n in Model.Items){<div class="list-group-item @(n.IsRead?"":"fw-bold")"><div class="d-flex justify-content-between"><span>@n.Title</span><small>@n.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</small></div><p class="mb-1">@n.Message</p>@if(!n.IsRead){<form asp-action="Read" method="post"><input type="hidden" name="id" value="@n.Id"/><button class="btn btn-sm btn-link p-0">Mark as read</button></form>}</div>}</div>}

@@ -1,0 +1,2 @@
+@model int
+<a class="nav-link position-relative" asp-controller="Notification" asp-action="Index" aria-label="Notifications">&#128276;@if(Model>0){<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@(Model>9?"9+":Model)</span>}</a>
