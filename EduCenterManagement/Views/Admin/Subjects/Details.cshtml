@@ -1,0 +1,70 @@
+﻿@model EduCenterManagement.Models.Subject
+
+@{
+    ViewData["Title"] = "Chi tiết môn học";
+}
+
+<div class="container mt-4" style="max-width: 800px;">
+    <h2 class="mb-4">Chi tiết môn học</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            Thông tin Subject
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-4">ID</dt>
+                <dd class="col-sm-8">@Model.Id</dd>
+
+                <dt class="col-sm-4">Tên môn học</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+
+                <dt class="col-sm-4">Mô tả</dt>
+                <dd class="col-sm-8">
+                    @(string.IsNullOrWhiteSpace(Model.Description)
+                        ? "Chưa có mô tả"
+                        : Model.Description)
+                </dd>
+
+                <dt class="col-sm-4">Trạng thái</dt>
+                <dd class="col-sm-8">
+                    @if (Model.Status ==
+                        EduCenterManagement.Enums.SubjectStatus.Active)
+                    {
+                        <span class="badge bg-success">Hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">
+                            Ngừng hoạt động
+                        </span>
+                    }
+                </dd>
+
+                <dt class="col-sm-4">Ngày tạo</dt>
+                <dd class="col-sm-8">
+                    @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                </dd>
+
+                <dt class="col-sm-4">Cập nhật lần cuối</dt>
+                <dd class="col-sm-8">
+                    @Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                </dd>
+            </dl>
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            <a asp-action="Edit"
+               asp-route-id="@Model.Id"
+               class="btn btn-warning">
+                Sửa môn học
+            </a>
+
+            <a asp-action="Index"
+               class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+    </div>
+</div>

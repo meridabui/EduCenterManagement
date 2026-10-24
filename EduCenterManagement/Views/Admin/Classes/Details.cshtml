@@ -1,0 +1,102 @@
+﻿@model EduCenterManagement.Models.Class
+
+@{
+    ViewData["Title"] = "Chi tiết lớp học";
+}
+
+<div class="container mt-4" style="max-width: 850px;">
+    <h2 class="mb-4">Chi tiết lớp học</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            Thông tin lớp học
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-4">Mã lớp</dt>
+                <dd class="col-sm-8">@Model.Id</dd>
+
+                <dt class="col-sm-4">Tên lớp</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+
+                <dt class="col-sm-4">Môn học</dt>
+                <dd class="col-sm-8">
+                    @(Model.Subject?.Name ?? "Không xác định")
+                </dd>
+
+                <dt class="col-sm-4">Giáo viên phụ trách</dt>
+                <dd class="col-sm-8">
+                    @(Model.Teacher?.FullName ?? "Chưa phân công")
+                </dd>
+
+                <dt class="col-sm-4">Ngày bắt đầu</dt>
+                <dd class="col-sm-8">
+                    @Model.StartDate.ToString("dd/MM/yyyy")
+                </dd>
+
+                <dt class="col-sm-4">Ngày kết thúc</dt>
+                <dd class="col-sm-8">
+                    @Model.EndDate.ToString("dd/MM/yyyy")
+                </dd>
+
+                <dt class="col-sm-4">Sĩ số tối đa</dt>
+                <dd class="col-sm-8">@Model.MaxStudents học viên</dd>
+
+                <dt class="col-sm-4">Học phí</dt>
+                <dd class="col-sm-8">@Model.Fee.ToString("N0") đ</dd>
+
+                <dt class="col-sm-4">Trạng thái</dt>
+                <dd class="col-sm-8">
+                    @switch (Model.Status)
+                    {
+                        case EduCenterManagement.Enums.ClassStatus.Draft:
+                            <span class="badge bg-secondary">Draft - Bản nháp</span>
+                            break;
+
+                        case EduCenterManagement.Enums.ClassStatus.Open:
+                            <span class="badge bg-success">Open - Đang mở đăng ký</span>
+                            break;
+
+                        case EduCenterManagement.Enums.ClassStatus.InProgress:
+                            <span class="badge bg-primary">In Progress - Đang học</span>
+                            break;
+
+                        case EduCenterManagement.Enums.ClassStatus.Completed:
+                            <span class="badge bg-info">Completed - Đã hoàn thành</span>
+                            break;
+
+                        case EduCenterManagement.Enums.ClassStatus.Cancelled:
+                            <span class="badge bg-danger">Cancelled - Đã hủy</span>
+                            break;
+                    }
+                </dd>
+
+                <dt class="col-sm-4">Ngày tạo</dt>
+                <dd class="col-sm-8">
+                    @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                </dd>
+
+                <dt class="col-sm-4">Cập nhật lần cuối</dt>
+                <dd class="col-sm-8">
+                    @Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                </dd>
+            </dl>
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            <a asp-controller="Classes"
+               asp-action="Edit"
+               asp-route-id="@Model.Id"
+               class="btn btn-warning">
+                Sửa lớp học
+            </a>
+
+            <a asp-controller="Classes"
+               asp-action="Index"
+               class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+    </div>
+</div>

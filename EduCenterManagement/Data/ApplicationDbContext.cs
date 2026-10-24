@@ -105,6 +105,11 @@ namespace EduCenterManagement.Data
                 .HasConversion<byte>()
                 .HasColumnType("tinyint");
 
+            modelBuilder.Entity<TimeSlot>()
+                .Property(x => x.Status)
+                .HasConversion<byte>()
+                .HasColumnType("tinyint");
+
 
             //Cấu hình UNIQUE INDEX để ngăn dữ liệu trùng lặp.
 

@@ -1,0 +1,106 @@
+﻿@model IEnumerable<EduCenterManagement.Models.Subject>
+
+@{
+    ViewData["Title"] = "Quản lý môn học";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Quản lý môn học</h2>
+
+        <a asp-action="Create" class="btn btn-primary">
+            + Thêm môn học
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên môn học</th>
+                        <th>Mô tả</th>
+                        <th>Trạng thái</th>
+                        <th style="width: 220px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var subject in Model)
+                        {
+                            <tr>
+                                <td>@subject.Id</td>
+                                <td>@subject.Name</td>
+                                <td>@subject.Description</td>
+                                <td>
+                                    @if (subject.Status ==
+                                        EduCenterManagement.Enums.SubjectStatus.Active)
+                                    {
+                                        <span class="badge bg-success">
+                                            Hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            Ngừng hoạt động
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Details"
+                                       asp-route-id="@subject.Id"
+                                       class="btn btn-sm btn-info">
+                                        Chi tiết
+                                    </a>
+
+                                    <a asp-action="Edit"
+                                       asp-route-id="@subject.Id"
+                                       class="btn btn-sm btn-warning">
+                                        Sửa
+                                    </a>
+
+                                    <a asp-action="Delete"
+                                       asp-route-id="@subject.Id"
+                                       class="btn btn-sm btn-danger">
+                                        Xóa
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                Chưa có môn học nào.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <a asp-controller="Admin"
+       asp-action="Index"
+       class="btn btn-outline-secondary mt-3">
+        Quay lại Dashboard
+    </a>
+</div>

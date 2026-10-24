@@ -1,0 +1,85 @@
+﻿@model EduCenterManagement.Models.Class
+
+@{
+    ViewData["Title"] = "Ngừng sử dụng lớp học";
+}
+
+<div class="container mt-4" style="max-width: 850px;">
+    <h2 class="text-warning mb-4">Ngừng sử dụng lớp học</h2>
+
+    <div class="alert alert-warning">
+        Bạn có chắc chắn muốn ngừng sử dụng lớp học này không?
+        Lớp sẽ chuyển sang trạng thái Cancelled. Các dữ liệu đăng ký,
+        thanh toán, điểm danh và kết quả học tập vẫn được giữ nguyên.
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            Thông tin lớp học
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-4">Mã lớp</dt>
+                <dd class="col-sm-8">@Model.Id</dd>
+
+                <dt class="col-sm-4">Tên lớp</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+
+                <dt class="col-sm-4">Môn học</dt>
+                <dd class="col-sm-8">
+                    @(Model.Subject?.Name ?? "Không xác định")
+                </dd>
+
+                <dt class="col-sm-4">Giáo viên phụ trách</dt>
+                <dd class="col-sm-8">
+                    @(Model.Teacher?.FullName ?? "Chưa phân công")
+                </dd>
+
+                <dt class="col-sm-4">Thời gian</dt>
+                <dd class="col-sm-8">
+                    @Model.StartDate.ToString("dd/MM/yyyy")
+                    – @Model.EndDate.ToString("dd/MM/yyyy")
+                </dd>
+
+                <dt class="col-sm-4">Sĩ số tối đa</dt>
+                <dd class="col-sm-8">@Model.MaxStudents học viên</dd>
+
+                <dt class="col-sm-4">Trạng thái hiện tại</dt>
+                <dd class="col-sm-8">
+                    @Model.Status
+                </dd>
+            </dl>
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            @if (Model.Status !=
+                EduCenterManagement.Enums.ClassStatus.Cancelled)
+            {
+                <form asp-controller="Classes"
+                      asp-action="Delete"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit" class="btn btn-warning">
+                        Xác nhận ngừng sử dụng
+                    </button>
+                </form>
+            }
+            else
+            {
+                <span class="text-secondary">
+                    Lớp này đã ngừng sử dụng.
+                </span>
+            }
+
+            <a asp-controller="Classes"
+               asp-action="Index"
+               class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+    </div>
+</div>

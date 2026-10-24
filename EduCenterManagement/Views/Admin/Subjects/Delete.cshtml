@@ -1,0 +1,50 @@
+﻿@model EduCenterManagement.Models.Subject
+
+@{
+    ViewData["Title"] = "Xóa môn học";
+}
+
+<div class="container mt-4" style="max-width: 700px;">
+    <h2 class="text-danger mb-4">Xác nhận xóa môn học</h2>
+
+    <div class="alert alert-warning">
+        Bạn có chắc chắn muốn xóa môn học này không?
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-4">ID</dt>
+                <dd class="col-sm-8">@Model.Id</dd>
+
+                <dt class="col-sm-4">Tên môn học</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+
+                <dt class="col-sm-4">Mô tả</dt>
+                <dd class="col-sm-8">
+                    @(string.IsNullOrWhiteSpace(Model.Description)
+                        ? "Chưa có mô tả"
+                        : Model.Description)
+                </dd>
+
+                <dt class="col-sm-4">Trạng thái</dt>
+                <dd class="col-sm-8">@Model.Status</dd>
+            </dl>
+
+            <form asp-action="Delete"
+                  asp-route-id="@Model.Id"
+                  method="post">
+                @Html.AntiForgeryToken()
+
+                <button type="submit" class="btn btn-danger">
+                    Ngừng kích hoạt
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    Hủy
+                </a>
+            </form>
+        </div>
+    </div>
+</div>

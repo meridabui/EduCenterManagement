@@ -1,0 +1,80 @@
+﻿@model EduCenterManagement.Models.TimeSlot
+
+@{
+    ViewData["Title"] = "Ngừng kích hoạt khung giờ";
+}
+
+<div class="container mt-4" style="max-width: 700px;">
+    <h2 class="text-warning mb-4">
+        Ngừng kích hoạt khung giờ
+    </h2>
+
+    <div class="alert alert-warning">
+        Bạn có chắc chắn muốn ngừng sử dụng khung giờ này không?
+        Khung giờ sẽ không bị xóa khỏi database và các lịch học cũ
+        vẫn được giữ nguyên.
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            Thông tin khung giờ
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-4">ID</dt>
+                <dd class="col-sm-8">@Model.Id</dd>
+
+                <dt class="col-sm-4">Tên khung giờ</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+
+                <dt class="col-sm-4">Giờ bắt đầu</dt>
+                <dd class="col-sm-8">
+                    @Model.StartTime.ToString("HH:mm")
+                </dd>
+
+                <dt class="col-sm-4">Giờ kết thúc</dt>
+                <dd class="col-sm-8">
+                    @Model.EndTime.ToString("HH:mm")
+                </dd>
+
+                <dt class="col-sm-4">Trạng thái hiện tại</dt>
+                <dd class="col-sm-8">
+                    @if (Model.Status ==
+                        EduCenterManagement.Enums.TimeSlotStatus.Active)
+                    {
+                        <span class="badge bg-success">Đang hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Đã ngừng hoạt động</span>
+                    }
+                </dd>
+            </dl>
+        </div>
+
+        <div class="card-footer d-flex gap-2">
+            @if (Model.Status ==
+                EduCenterManagement.Enums.TimeSlotStatus.Active)
+            {
+                <form asp-controller="TimeSlots"
+                      asp-action="Delete"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit" class="btn btn-warning">
+                        Ngừng kích hoạt
+                    </button>
+                </form>
+            }
+
+            <a asp-controller="TimeSlots"
+               asp-action="Index"
+               class="btn btn-outline-secondary">
+                Quay lại danh sách
+            </a>
+        </div>
+    </div>
+</div>

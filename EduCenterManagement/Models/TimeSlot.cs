@@ -1,7 +1,7 @@
 ﻿
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+using EduCenterManagement.Enums;
 namespace EduCenterManagement.Models
 {
     [Table("time_slots")]
@@ -17,7 +17,8 @@ namespace EduCenterManagement.Models
         public TimeOnly StartTime { get; set; }
 
         public TimeOnly EndTime { get; set; }
-
+        public TimeSlotStatus Status { get; set; }
+            = TimeSlotStatus.Active;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

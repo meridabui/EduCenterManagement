@@ -1,0 +1,74 @@
+﻿@model EduCenterManagement.ViewModels.Admin.TimeSlotViewModel
+
+@{
+    ViewData["Title"] = "Sửa khung giờ";
+}
+
+<div class="container mt-4" style="max-width: 650px;">
+    <h2 class="mb-4">Sửa khung giờ học</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form asp-controller="TimeSlots"
+                  asp-action="Edit"
+                  asp-route-id="@Model.Id"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="Id" />
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="StartTime" class="form-label"></label>
+                    <input asp-for="StartTime"
+                           type="time"
+                           class="form-control"
+                           step="60" />
+                    <span asp-validation-for="StartTime"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="EndTime" class="form-label"></label>
+                    <input asp-for="EndTime"
+                           type="time"
+                           class="form-control"
+                           step="60" />
+                    <span asp-validation-for="EndTime"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="alert alert-info">
+                    Giờ kết thúc phải sau giờ bắt đầu.
+                    Khung giờ không được chồng lấn với khung giờ khác.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        Lưu thay đổi
+                    </button>
+
+                    <a asp-controller="TimeSlots"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,119 @@
+﻿
+@model IEnumerable<EduCenterManagement.Models.ClassSchedule>
+
+@{
+    ViewData["Title"] = "Quản lý lịch học";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Quản lý lịch học</h2>
+
+        <a asp-controller="ClassSchedules"
+           asp-action="Create"
+           class="btn btn-primary">
+            + Thêm lịch học
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Lớp học</th>
+                            <th>Môn học</th>
+                            <th>Teacher</th>
+                            <th>Thứ</th>
+                            <th>Khung giờ</th>
+                            <th>Thời gian</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var schedule in Model)
+                            {
+                                <tr>
+                                    <td>@schedule.Id</td>
+                                    <td>@schedule.Class.Name</td>
+                                    <td>@schedule.Class.Subject.Name</td>
+
+                                    <td>
+                                        @(schedule.Class.Teacher?.FullName
+                                            ?? "Chưa phân công")
+                                    </td>
+
+                                    <td>
+                                        @(schedule.DayOfWeek switch
+                                        {
+                                            2 => "Thứ Hai",
+                                            3 => "Thứ Ba",
+                                            4 => "Thứ Tư",
+                                            5 => "Thứ Năm",
+                                            6 => "Thứ Sáu",
+                                            7 => "Thứ Bảy",
+                                            8 => "Chủ nhật",
+                                            _ => "Không xác định"
+                                        })
+                                    </td>
+
+                                    <td>@schedule.TimeSlot.Name</td>
+
+                                    <td>
+                                        @schedule.TimeSlot.StartTime.ToString("HH:mm")
+                                        -
+                                        @schedule.TimeSlot.EndTime.ToString("HH:mm")
+                                    </td>
+
+                                    <td>
+                                        <a asp-controller="ClassSchedules"
+                                           asp-action="Edit"
+                                           asp-route-id="@schedule.Id"
+                                           class="btn btn-sm btn-warning">
+                                            Sửa
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    Chưa có lịch học nào.
+                                    Hãy nhấn <strong>Thêm lịch học</strong>
+                                    để thiết lập lịch cho lớp.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <a asp-controller="Admin"
+       asp-action="Index"
+       class="btn btn-outline-secondary mt-3">
+        Quay lại Dashboard
+    </a>
+</div>

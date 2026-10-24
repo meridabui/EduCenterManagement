@@ -1,0 +1,121 @@
+﻿@model EduCenterManagement.ViewModels.Admin.ClassViewModel
+
+@{
+    ViewData["Title"] = "Thêm lớp học";
+}
+
+<div class="container mt-4" style="max-width: 800px;">
+    <h2 class="mb-4">Thêm lớp học</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form asp-controller="Classes"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name"
+                           class="form-control"
+                           placeholder="Ví dụ: English A1" />
+                    <span asp-validation-for="Name"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="SubjectId" class="form-label"></label>
+                    <select asp-for="SubjectId"
+                            asp-items="ViewBag.Subjects"
+                            class="form-select">
+                        <option value="">-- Chọn môn học --</option>
+                    </select>
+                    <span asp-validation-for="SubjectId"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="TeacherId" class="form-label"></label>
+                    <select asp-for="TeacherId"
+                            asp-items="ViewBag.Teachers"
+                            class="form-select">
+                        <option value="">-- Chưa phân công giáo viên --</option>
+                    </select>
+                    <span asp-validation-for="TeacherId"
+                          class="text-danger"></span>
+                    <small class="text-muted">
+                        Bạn có thể phân công giáo viên sau khi tạo lớp.
+                    </small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="StartDate" class="form-label"></label>
+                        <input asp-for="StartDate"
+                               type="date"
+                               class="form-control" />
+                        <span asp-validation-for="StartDate"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EndDate" class="form-label"></label>
+                        <input asp-for="EndDate"
+                               type="date"
+                               class="form-control" />
+                        <span asp-validation-for="EndDate"
+                              class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="MaxStudents" class="form-label"></label>
+                    <input asp-for="MaxStudents"
+                           type="number"
+                           min="1"
+                           max="1000"
+                           class="form-control" />
+                    <span asp-validation-for="MaxStudents"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Fee" class="form-label"></label>
+                    <input asp-for="Fee"
+                           type="number"
+                           min="0"
+                           step="1000"
+                           class="form-control" />
+                    <span asp-validation-for="Fee"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="alert alert-info">
+                    Lớp mới được tạo ở trạng thái Draft.
+                    Sau khi hoàn thiện lịch học và phân công giáo viên,
+                    bạn có thể mở lớp cho Student đăng ký.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        Tạo lớp học
+                    </button>
+
+                    <a asp-controller="Classes"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary">
+                        Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

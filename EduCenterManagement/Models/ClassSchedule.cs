@@ -16,8 +16,8 @@ namespace EduCenterManagement.Models
         [Required]
         public int TimeSlotId { get; set; }
 
-        // 1 = Monday, ..., 7 = Sunday
-        [Range(1, 7)]
+        // 2 = Monday, ..., 8 = Sunday
+        [Range(2, 8)]
         public int DayOfWeek { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
