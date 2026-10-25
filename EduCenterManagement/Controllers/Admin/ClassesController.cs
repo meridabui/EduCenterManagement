@@ -21,6 +21,7 @@ namespace EduCenterManagement.Controllers.Admin
         }
 
         // GET: /Classes
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             var classes = await _context.Classes
@@ -72,7 +73,9 @@ namespace EduCenterManagement.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ClassViewModel model)
         {
-            await LoadFormDataAsync();
+            await LoadFormDataAsync(
+                model.SubjectId,
+                model.TeacherId);
 
             if (!ModelState.IsValid)
             {
@@ -83,6 +86,7 @@ namespace EduCenterManagement.Controllers.Admin
 
             var name = model.Name.Trim();
 
+            // Kiểm tra tên lớp trùng.
             bool nameExists = await _context.Classes
                 .AnyAsync(c => c.Name == name);
 
@@ -97,6 +101,7 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
+            // Subject mới phải đang hoạt động.
             bool subjectExists = await _context.Subjects
                 .AnyAsync(s =>
                     s.Id == model.SubjectId &&
@@ -113,19 +118,17 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
+            // Nếu có chọn Teacher, kiểm tra tài khoản.
             if (model.TeacherId.HasValue)
             {
-                bool teacherExists = await _context.TeacherProfiles
-                    .AnyAsync(t =>
-                        t.Id == model.TeacherId.Value &&
-                        t.User.Status == UserStatus.Active &&
-                        t.User.Role == UserRole.Teacher);
+                bool teacherExists = await IsActiveTeacherAsync(
+                    model.TeacherId.Value);
 
                 if (!teacherExists)
                 {
                     ModelState.AddModelError(
                         nameof(model.TeacherId),
-                        "Giáo viên không tồn tại hoặc không hoạt động.");
+                        "Giáo viên không tồn tại hoặc tài khoản không hoạt động.");
 
                     return View(
                         "~/Views/Admin/Classes/Create.cshtml",
@@ -144,7 +147,10 @@ namespace EduCenterManagement.Controllers.Admin
                 EndDate = model.EndDate,
                 MaxStudents = model.MaxStudents,
                 Fee = model.Fee,
+
+                // Lớp mới luôn bắt đầu ở trạng thái Draft.
                 Status = ClassStatus.Draft,
+
                 CreatedAt = now,
                 UpdatedAt = now
             };
@@ -217,6 +223,12 @@ namespace EduCenterManagement.Controllers.Admin
             if (id != model.Id)
                 return NotFound();
 
+            var classItem = await _context.Classes
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (classItem == null)
+                return NotFound();
+
             await LoadFormDataAsync(
                 model.SubjectId,
                 model.TeacherId);
@@ -228,14 +240,20 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
-            var classItem = await _context.Classes
-                .FirstOrDefaultAsync(c => c.Id == id);
+            // Không cho sửa lớp đã Cancelled.
+            if (classItem.Status == ClassStatus.Cancelled)
+            {
+                TempData["ErrorMessage"] =
+                    "Lớp đã hủy không thể chỉnh sửa.";
 
-            if (classItem == null)
-                return NotFound();
+                return RedirectToAction(nameof(Index));
+            }
 
+            var name = model.Name.Trim();
+
+            // Kiểm tra tên lớp trùng.
             bool nameExists = await _context.Classes
-                .AnyAsync(c => c.Name == model.Name.Trim() && c.Id != id);
+                .AnyAsync(c => c.Name == name && c.Id != id);
 
             if (nameExists)
             {
@@ -248,12 +266,13 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
+            // Kiểm tra Subject.
             bool subjectExists = await _context.Subjects
                 .AnyAsync(s =>
                     s.Id == model.SubjectId &&
                     s.Status == SubjectStatus.Active);
 
-            // Cho phép giữ Subject hiện tại nếu nó đã Inactive.
+            // Cho phép giữ nguyên Subject cũ nếu đã Inactive.
             if (!subjectExists && classItem.SubjectId != model.SubjectId)
             {
                 ModelState.AddModelError(
@@ -265,19 +284,17 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
+            // Kiểm tra Teacher nếu có chọn.
             if (model.TeacherId.HasValue)
             {
-                bool teacherExists = await _context.TeacherProfiles
-                    .AnyAsync(t =>
-                        t.Id == model.TeacherId.Value &&
-                        t.User.Status == UserStatus.Active &&
-                        t.User.Role == UserRole.Teacher);
+                bool teacherExists = await IsActiveTeacherAsync(
+                    model.TeacherId.Value);
 
                 if (!teacherExists)
                 {
                     ModelState.AddModelError(
                         nameof(model.TeacherId),
-                        "Giáo viên không tồn tại hoặc không hoạt động.");
+                        "Giáo viên không tồn tại hoặc tài khoản không hoạt động.");
 
                     return View(
                         "~/Views/Admin/Classes/Edit.cshtml",
@@ -285,7 +302,71 @@ namespace EduCenterManagement.Controllers.Admin
                 }
             }
 
-            classItem.Name = model.Name.Trim();
+            bool teacherChanged =
+                model.TeacherId != classItem.TeacherId;
+
+            bool requiresTeacherAndSchedule =
+                model.Status == ClassStatus.Open ||
+                model.Status == ClassStatus.InProgress;
+
+            // Không cho mở lớp hoặc bắt đầu học nếu chưa có Teacher.
+            if (requiresTeacherAndSchedule &&
+                !model.TeacherId.HasValue)
+            {
+                ModelState.AddModelError(
+                    nameof(model.TeacherId),
+                    "Phải phân công Teacher trước khi mở lớp hoặc bắt đầu học.");
+
+                return View(
+                    "~/Views/Admin/Classes/Edit.cshtml",
+                    model);
+            }
+
+            // Chỉ Open/InProgress mới bắt buộc có lịch hợp lệ.
+            if (requiresTeacherAndSchedule)
+            {
+                bool hasValidSchedule = await _context.ClassSchedules
+                    .AnyAsync(s =>
+                        s.ClassId == id &&
+                        s.TimeSlot.Status == TimeSlotStatus.Active);
+
+                if (!hasValidSchedule)
+                {
+                    ModelState.AddModelError(
+                        string.Empty,
+                        "Phải thiết lập ít nhất một lịch học sử dụng " +
+                        "TimeSlot đang hoạt động trước khi mở lớp.");
+
+                    return View(
+                        "~/Views/Admin/Classes/Edit.cshtml",
+                        model);
+                }
+            }
+
+            // Kiểm tra xung đột khi đổi Teacher hoặc mở lớp.
+            if (model.TeacherId.HasValue &&
+                (teacherChanged || requiresTeacherAndSchedule))
+            {
+                bool conflict = await HasTeacherScheduleConflictAsync(
+                    id,
+                    model.TeacherId.Value,
+                    model.StartDate,
+                    model.EndDate);
+
+                if (conflict)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.TeacherId),
+                        "Giáo viên đã có lịch dạy trùng với lớp này " +
+                        "trong thời gian khóa học.");
+
+                    return View(
+                        "~/Views/Admin/Classes/Edit.cshtml",
+                        model);
+                }
+            }
+
+            classItem.Name = name;
             classItem.SubjectId = model.SubjectId;
             classItem.TeacherId = model.TeacherId;
             classItem.StartDate = model.StartDate;
@@ -310,7 +391,8 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
-            TempData["SuccessMessage"] = "Cập nhật lớp học thành công.";
+            TempData["SuccessMessage"] =
+                "Cập nhật lớp học và phân công Teacher thành công.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -359,7 +441,17 @@ namespace EduCenterManagement.Controllers.Admin
             classItem.Status = ClassStatus.Cancelled;
             classItem.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể hủy lớp. Vui lòng thử lại.";
+
+                return RedirectToAction(nameof(Index));
+            }
 
             TempData["SuccessMessage"] =
                 "Đã hủy lớp học. Dữ liệu và lịch sử vẫn được giữ nguyên.";
@@ -367,6 +459,65 @@ namespace EduCenterManagement.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
+        // Kiểm tra Teacher có tồn tại, đang hoạt động và đúng Role.
+        private async Task<bool> IsActiveTeacherAsync(int teacherId)
+        {
+            return await _context.TeacherProfiles
+                .AnyAsync(t =>
+                    t.Id == teacherId &&
+                    t.User.Status == UserStatus.Active &&
+                    t.User.Role == UserRole.Teacher);
+        }
+
+        // Kiểm tra lịch Teacher, gồm thứ, giờ thực tế và khoảng ngày khóa học.
+        private async Task<bool> HasTeacherScheduleConflictAsync(
+            int currentClassId,
+            int teacherId,
+            DateOnly proposedStartDate,
+            DateOnly proposedEndDate)
+        {
+            var targetSchedules = await _context.ClassSchedules
+                .AsNoTracking()
+                .Where(s => s.ClassId == currentClassId)
+                .Select(s => new
+                {
+                    s.DayOfWeek,
+                    s.TimeSlot.StartTime,
+                    s.TimeSlot.EndTime
+                })
+                .ToListAsync();
+
+            // Chưa có lịch thì chưa thể xác định xung đột.
+            if (targetSchedules.Count == 0)
+                return false;
+
+            foreach (var target in targetSchedules)
+            {
+                bool conflict = await _context.ClassSchedules
+                    .AsNoTracking()
+                    .AnyAsync(other =>
+                        other.ClassId != currentClassId &&
+                        other.DayOfWeek == target.DayOfWeek &&
+                        other.Class.TeacherId == teacherId &&
+                        other.Class.Status != ClassStatus.Cancelled &&
+                        other.Class.Status != ClassStatus.Completed &&
+
+                        // Hai khóa học có khoảng ngày giao nhau.
+                        other.Class.StartDate <= proposedEndDate &&
+                        other.Class.EndDate >= proposedStartDate &&
+
+                        // Hai khung giờ thực tế bị chồng lấn.
+                        other.TimeSlot.StartTime < target.EndTime &&
+                        other.TimeSlot.EndTime > target.StartTime);
+
+                if (conflict)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Nạp dữ liệu cho dropdown Subject và Teacher.
         private async Task LoadFormDataAsync(
             int? selectedSubjectId = null,
             int? selectedTeacherId = null)
@@ -377,8 +528,7 @@ namespace EduCenterManagement.Controllers.Admin
                 .OrderBy(s => s.Name)
                 .ToListAsync();
 
-            // Khi sửa lớp, vẫn cho hiển thị Subject hiện tại
-            // nếu Subject đã Inactive.
+            // Giữ Subject hiện tại nếu đã Inactive để xem/sửa lớp cũ.
             if (selectedSubjectId.HasValue &&
                 !subjects.Any(s => s.Id == selectedSubjectId.Value))
             {
@@ -405,8 +555,8 @@ namespace EduCenterManagement.Controllers.Admin
                 .OrderBy(t => t.FullName)
                 .ToListAsync();
 
-            // Khi sửa lớp, vẫn hiển thị Teacher đang được phân công,
-            // kể cả khi tài khoản Teacher đã ngừng hoạt động.
+            // Giữ Teacher hiện tại để hiển thị lớp cũ,
+            // kể cả khi tài khoản Teacher đã Inactive.
             if (selectedTeacherId.HasValue &&
                 !teachers.Any(t => t.Id == selectedTeacherId.Value))
             {

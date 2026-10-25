@@ -967,7 +967,7 @@ namespace EduCenterManagement.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("SubjectId")
+                    b.Property<int>("SubjectId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -977,6 +977,8 @@ namespace EduCenterManagement.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -1354,11 +1356,19 @@ namespace EduCenterManagement.Migrations
 
             modelBuilder.Entity("EduCenterManagement.Models.TeacherProfile", b =>
                 {
+                    b.HasOne("EduCenterManagement.Models.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("EduCenterManagement.Models.AppUser", "User")
                         .WithOne()
                         .HasForeignKey("EduCenterManagement.Models.TeacherProfile", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Subject");
 
                     b.Navigation("User");
                 });
