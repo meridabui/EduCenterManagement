@@ -13,6 +13,9 @@ namespace EduCenterManagement.Models
         [Required]
         public int UserId { get; set; }
 
+        public int? SubjectId { get; set; }
+
+
         [Required]
         [MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
