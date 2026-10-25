@@ -53,10 +53,7 @@ namespace EduCenterManagement.ViewModels.Admin
         }
 
         public List<ClassScheduleInputViewModel> Schedules { get; set; }
-            = new()
-            {
-        new ClassScheduleInputViewModel()
-            };
+            = new();
 
     }
 }
