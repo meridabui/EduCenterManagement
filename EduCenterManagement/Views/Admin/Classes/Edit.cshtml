@@ -118,6 +118,78 @@
     </div>
 </div>
 
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const subjectSelect = document.getElementById("SubjectId");
+            const teacherSelect = document.getElementById("TeacherId");
+
+            if (!subjectSelect || !teacherSelect) return;
+
+            const teachersUrl =
+                '@Url.Action("GetTeachersBySubject", "Classes")';
+
+            async function loadTeachers(preserveSelection = false) {
+                const subjectId = subjectSelect.value;
+                const previousTeacherId = preserveSelection
+                    ? teacherSelect.value
+                    : "";
+
+                teacherSelect.innerHTML =
+                    '<option value="">-- Chọn giáo viên --</option>';
+
+                teacherSelect.disabled = true;
+
+                if (!subjectId) {
+                    teacherSelect.disabled = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `${teachersUrl}?subjectId=${encodeURIComponent(subjectId)}`,
+                        {
+                            headers: { "Accept": "application/json" }
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error("Không tải được danh sách Teacher.");
+                    }
+
+                    const teachers = await response.json();
+
+                    teachers.forEach(function (teacher) {
+                        const option = document.createElement("option");
+                        option.value = teacher.id;
+                        option.textContent = teacher.fullName;
+
+                        if (String(teacher.id) === previousTeacherId) {
+                            option.selected = true;
+                        }
+
+                        teacherSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error(error);
+
+                    const option = document.createElement("option");
+                    option.value = "";
+                    option.textContent = "-- Không tải được danh sách giáo viên --";
+                    teacherSelect.appendChild(option);
+                } finally {
+                    teacherSelect.disabled = false;
+                }
+            }
+
+            subjectSelect.addEventListener("change", function () {
+                loadTeachers(false);
+            });
+
+            loadTeachers(true);
+        });
+    </script>
 }
