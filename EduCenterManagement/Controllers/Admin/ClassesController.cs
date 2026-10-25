@@ -57,15 +57,22 @@ namespace EduCenterManagement.Controllers.Admin
                 classItem);
         }
 
+
         // GET: /Classes/Create
         [HttpGet]
         public async Task<IActionResult> Create()
         {
             await LoadFormDataAsync();
 
-            return View(
-                "~/Views/Admin/Classes/Create.cshtml",
-                new ClassViewModel());
+            var model = new ClassViewModel();
+
+            // Mặc định hiển thị một dòng lịch để Admin bắt đầu nhập.
+            model.Schedules = new List<ClassScheduleInputViewModel>
+            {
+                new ClassScheduleInputViewModel()
+            };
+
+            return View("~/Views/Admin/Classes/Create.cshtml", model);
         }
 
         // POST: /Classes/Create
@@ -77,11 +84,17 @@ namespace EduCenterManagement.Controllers.Admin
                 model.SubjectId,
                 model.TeacherId);
 
+            // Bắt buộc tạo lớp kèm ít nhất một lịch.
+            if (model.Schedules == null || model.Schedules.Count == 0)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Schedules),
+                    "Vui lòng thêm ít nhất một lịch học.");
+            }
+
             if (!ModelState.IsValid)
             {
-                return View(
-                    "~/Views/Admin/Classes/Create.cshtml",
-                    model);
+                return View("~/Views/Admin/Classes/Create.cshtml", model);
             }
 
             var name = model.Name.Trim();
@@ -96,12 +109,10 @@ namespace EduCenterManagement.Controllers.Admin
                     nameof(model.Name),
                     "Tên lớp đã tồn tại.");
 
-                return View(
-                    "~/Views/Admin/Classes/Create.cshtml",
-                    model);
+                return View("~/Views/Admin/Classes/Create.cshtml", model);
             }
 
-            // Subject mới phải đang hoạt động.
+            // Subject phải đang hoạt động.
             bool subjectExists = await _context.Subjects
                 .AnyAsync(s =>
                     s.Id == model.SubjectId &&
@@ -113,26 +124,90 @@ namespace EduCenterManagement.Controllers.Admin
                     nameof(model.SubjectId),
                     "Môn học không tồn tại hoặc đã ngừng hoạt động.");
 
-                return View(
-                    "~/Views/Admin/Classes/Create.cshtml",
-                    model);
+                return View("~/Views/Admin/Classes/Create.cshtml", model);
             }
 
-            // Nếu có chọn Teacher, kiểm tra tài khoản.
+            // Nếu chọn Teacher, phải đúng Subject và tài khoản hợp lệ.
             if (model.TeacherId.HasValue)
             {
                 bool teacherExists = await IsActiveTeacherForSubjectAsync(
-                    model.TeacherId.Value,model.SubjectId);
+                    model.TeacherId.Value,
+                    model.SubjectId);
 
                 if (!teacherExists)
                 {
                     ModelState.AddModelError(
                         nameof(model.TeacherId),
-                        "Giáo viên không tồn tại hoặc tài khoản không hoạt động.");
+                        "Giáo viên không hoạt động hoặc không thuộc môn học của lớp.");
 
-                    return View(
-                        "~/Views/Admin/Classes/Create.cshtml",
-                        model);
+                    return View("~/Views/Admin/Classes/Create.cshtml", model);
+                }
+            }
+
+            // Không cho chọn trùng cùng một thứ và cùng một khung giờ.
+            var duplicateSchedule = model.Schedules
+                .GroupBy(s => new { s.DayOfWeek, s.TimeSlotId })
+                .Any(g => g.Count() > 1);
+
+            if (duplicateSchedule)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Schedules),
+                    "Lịch học bị trùng thứ và khung giờ. Vui lòng kiểm tra lại.");
+
+                return View("~/Views/Admin/Classes/Create.cshtml", model);
+            }
+
+            // Lấy tất cả TimeSlot được chọn và xác nhận chúng đang Active.
+            var selectedTimeSlotIds = model.Schedules
+                .Select(s => s.TimeSlotId)
+                .Distinct()
+                .ToList();
+
+            var activeTimeSlots = await _context.TimeSlots
+                .AsNoTracking()
+                .Where(t =>
+                    selectedTimeSlotIds.Contains(t.Id) &&
+                    t.Status == TimeSlotStatus.Active)
+                .ToListAsync();
+
+            if (activeTimeSlots.Count != selectedTimeSlotIds.Count)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Schedules),
+                    "Có khung giờ không tồn tại hoặc đã ngừng hoạt động.");
+
+                return View("~/Views/Admin/Classes/Create.cshtml", model);
+            }
+
+            // Nếu đã chọn Teacher, kiểm tra lịch của Teacher trước khi tạo lớp.
+            if (model.TeacherId.HasValue)
+            {
+                foreach (var inputSchedule in model.Schedules)
+                {
+                    var slot = activeTimeSlots
+                        .First(t => t.Id == inputSchedule.TimeSlotId);
+
+                    bool conflict = await _context.ClassSchedules
+                        .AsNoTracking()
+                        .AnyAsync(other =>
+                            other.DayOfWeek == inputSchedule.DayOfWeek &&
+                            other.Class.TeacherId == model.TeacherId.Value &&
+                            other.Class.Status != ClassStatus.Cancelled &&
+                            other.Class.Status != ClassStatus.Completed &&
+                            other.Class.StartDate <= model.EndDate &&
+                            other.Class.EndDate >= model.StartDate &&
+                            other.TimeSlot.StartTime < slot.EndTime &&
+                            other.TimeSlot.EndTime > slot.StartTime);
+
+                    if (conflict)
+                    {
+                        ModelState.AddModelError(
+                            nameof(model.Schedules),
+                            "Teacher bị trùng lịch với lớp khác vào một trong các buổi đã chọn.");
+
+                        return View("~/Views/Admin/Classes/Create.cshtml", model);
+                    }
                 }
             }
 
@@ -148,34 +223,55 @@ namespace EduCenterManagement.Controllers.Admin
                 MaxStudents = model.MaxStudents,
                 Fee = model.Fee,
 
-                // Lớp mới luôn bắt đầu ở trạng thái Draft.
+                // Tạo xong vẫn là Draft.
+                // Admin mở đăng ký sau khi hoàn tất phân công và kiểm tra.
                 Status = ClassStatus.Draft,
 
                 CreatedAt = now,
                 UpdatedAt = now
             };
 
-            _context.Classes.Add(classItem);
+            // Lưu Class và các ClassSchedule trong cùng transaction.
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
 
             try
             {
+                _context.Classes.Add(classItem);
                 await _context.SaveChangesAsync();
+
+                var schedules = model.Schedules.Select(s =>
+                    new ClassSchedule
+                    {
+                        ClassId = classItem.Id,
+                        DayOfWeek = s.DayOfWeek,
+                        TimeSlotId = s.TimeSlotId,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }).ToList();
+
+                _context.ClassSchedules.AddRange(schedules);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] =
+                    $"Tạo lớp {classItem.Name} và {schedules.Count} lịch học thành công.";
+
+                return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException)
             {
+                await transaction.RollbackAsync();
+
                 ModelState.AddModelError(
                     string.Empty,
-                    "Không thể tạo lớp. Vui lòng kiểm tra dữ liệu.");
+                    "Không thể lưu lớp và lịch học. Vui lòng kiểm tra dữ liệu.");
 
-                return View(
-                    "~/Views/Admin/Classes/Create.cshtml",
-                    model);
+                return View("~/Views/Admin/Classes/Create.cshtml", model);
             }
-
-            TempData["SuccessMessage"] = "Tạo lớp học thành công.";
-
-            return RedirectToAction(nameof(Index));
         }
+
 
         // GET: /Classes/Edit/1
         [HttpGet]
@@ -608,6 +704,36 @@ namespace EduCenterManagement.Controllers.Admin
                 nameof(TeacherProfile.Id),
                 nameof(TeacherProfile.FullName),
                 selectedTeacherId);
+
+            var timeSlots = await _context.TimeSlots
+                .AsNoTracking()
+                .Where(t => t.Status == TimeSlotStatus.Active)
+                .OrderBy(t => t.StartTime)
+                .Select(t => new SelectListItem
+                {
+                    Value = t.Id.ToString(),
+                    Text = t.Name + " (" +
+                           t.StartTime.ToString() + " - " +
+                           t.EndTime.ToString() + ")"
+                })
+                .ToListAsync();
+
+            ViewBag.TimeSlots = timeSlots;
+
+            ViewBag.DaysOfWeek = new SelectList(
+                new[]
+                {
+        new { Value = 2, Text = "Thứ Hai" },
+        new { Value = 3, Text = "Thứ Ba" },
+        new { Value = 4, Text = "Thứ Tư" },
+        new { Value = 5, Text = "Thứ Năm" },
+        new { Value = 6, Text = "Thứ Sáu" },
+        new { Value = 7, Text = "Thứ Bảy" },
+        new { Value = 8, Text = "Chủ nhật" }
+                },
+                "Value",
+                "Text");
+
         }
     }
 }

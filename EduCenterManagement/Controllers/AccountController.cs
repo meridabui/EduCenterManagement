@@ -41,10 +41,41 @@ namespace EduCenterManagement.Controllers
             LoginViewModel model,
             string? returnUrl = null)
         {
-            ViewBag.ReturnUrl = returnUrl;
+            bool isAjax = string.Equals(
+                Request.Headers["X-Requested-With"].ToString(),
+                "XMLHttpRequest",
+                StringComparison.OrdinalIgnoreCase);
+
+            IActionResult LoginError(string message)
+            {
+                if (isAjax)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message
+                    });
+                }
+
+                ModelState.AddModelError(string.Empty, message);
+                ViewBag.ReturnUrl = returnUrl;
+                return View(model);
+            }
 
             if (!ModelState.IsValid)
+            {
+                if (isAjax)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Vui lòng kiểm tra email và mật khẩu."
+                    });
+                }
+
+                ViewBag.ReturnUrl = returnUrl;
                 return View(model);
+            }
 
             var email = model.Email.Trim();
 
@@ -53,25 +84,20 @@ namespace EduCenterManagement.Controllers
 
             if (user == null || user.Status != UserStatus.Active)
             {
-                ModelState.AddModelError(
-                    string.Empty,
+                return LoginError(
                     "Email hoặc mật khẩu không chính xác.");
-
-                return View(model);
             }
 
-            var verificationResult = _passwordHasher.VerifyHashedPassword(
-                user,
-                user.PasswordHash,
-                model.Password);
+            var verificationResult =
+                _passwordHasher.VerifyHashedPassword(
+                    user,
+                    user.PasswordHash,
+                    model.Password);
 
             if (verificationResult == PasswordVerificationResult.Failed)
             {
-                ModelState.AddModelError(
-                    string.Empty,
+                return LoginError(
                     "Email hoặc mật khẩu không chính xác.");
-
-                return View(model);
             }
 
             if (verificationResult ==
@@ -109,34 +135,38 @@ namespace EduCenterManagement.Controllers
                     AllowRefresh = true
                 });
 
+            var portalUrl = GetPortalUrl(user.Role);
+
             if (!string.IsNullOrWhiteSpace(returnUrl) &&
                 Url.IsLocalUrl(returnUrl))
             {
-                return LocalRedirect(returnUrl);
+                portalUrl = returnUrl;
             }
 
-
-            switch (user.Role) //xử lý returnUrl hợp lệ hiện có, để các yêu cầu chuyển hướng nội bộ vẫn hoạt động.
+            var roleName = user.Role switch
             {
-                case UserRole.Admin:
-                    return RedirectToAction("Index", "Admin");
+                UserRole.Admin => "Admin",
+                UserRole.Teacher => "Giáo viên",
+                UserRole.Parent => "Phụ huynh",
+                UserRole.Student => "Học sinh",
+                _ => "Người dùng"
+            };
 
-                case UserRole.Teacher:
-                    return RedirectToAction("Index", "Teacher");
-
-                case UserRole.Parent:
-                    return RedirectToAction("Index", "ParentDashboard");
-
-                case UserRole.Student:
-                    return RedirectToAction("Index", "StudentDashboard");
-
-                default:
-                    await HttpContext.SignOutAsync(
-                        CookieAuthenticationDefaults.AuthenticationScheme);
-
-                    return RedirectToAction(nameof(Login));
+            if (isAjax)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = "Đăng nhập thành công.",
+                    name = user.Email,
+                    role = user.Role.ToString(),
+                    roleName,
+                    portalUrl
+                });
             }
 
+            return LocalRedirect(
+                Url.IsLocalUrl(portalUrl) ? portalUrl : "/");
         }
 
         [Authorize]
@@ -155,6 +185,18 @@ namespace EduCenterManagement.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        private static string GetPortalUrl(UserRole role)
+        {
+            return role switch
+            {
+                UserRole.Admin => "/Admin",
+                UserRole.Teacher => "/Teacher",
+                UserRole.Parent => "/ParentDashboard",
+                UserRole.Student => "/StudentDashboard",
+                _ => "/"
+            };
         }
     }
 }

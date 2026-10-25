@@ -1,8 +1,1287 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿
+@model List<EduCenterManagement.ViewModels.Home.OpenClassViewModel>
+
+@{
+    ViewData["Title"] = "EduCenter | Học tập thông minh";
+
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var role = User.FindFirst(
+        System.Security.Claims.ClaimTypes.Role)?.Value;
+
+    var displayName = User.FindFirst(
+        System.Security.Claims.ClaimTypes.Name)?.Value
+        ?? User.Identity?.Name
+        ?? "Người dùng";
+
+    var roleName = role switch
+    {
+        "Admin" => "Admin",
+        "Teacher" => "Giáo viên",
+        "Parent" => "Phụ huynh",
+        "Student" => "Học sinh",
+        _ => "Người dùng"
+    };
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    :root {
+        --ed-indigo: #4338ca;
+        --ed-indigo-dark: #312e81;
+        --ed-emerald: #059669;
+        --ed-slate: #334155;
+        --ed-muted: #64748b;
+        --ed-bg: #f8fafc;
+    }
+
+    body {
+        background: var(--ed-bg);
+        color: #0f172a;
+    }
+
+    .ed-navbar {
+        background: rgba(255,255,255,.94);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .ed-brand {
+        color: var(--ed-indigo);
+        font-weight: 800;
+        letter-spacing: -.6px;
+        font-size: 1.35rem;
+    }
+
+    .ed-brand-mark {
+        display: inline-grid;
+        place-items: center;
+        background: var(--ed-indigo);
+        color: white;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        margin-right: 9px;
+    }
+
+    .ed-btn-primary {
+        background: var(--ed-indigo);
+        border-color: var(--ed-indigo);
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+        padding: .7rem 1.15rem;
+    }
+
+    .ed-btn-primary:hover {
+        background: var(--ed-indigo-dark);
+        border-color: var(--ed-indigo-dark);
+        color: white;
+    }
+
+    .ed-btn-outline {
+        border: 1px solid #c7d2fe;
+        color: var(--ed-indigo);
+        border-radius: 10px;
+        font-weight: 600;
+        padding: .65rem 1rem;
+    }
+
+    .ed-hero {
+        position: relative;
+        overflow: hidden;
+        padding: 86px 0 76px;
+        background:
+            radial-gradient(circle at 85% 15%, rgba(99,102,241,.16), transparent 30%),
+            radial-gradient(circle at 15% 90%, rgba(16,185,129,.12), transparent 30%),
+            linear-gradient(135deg, #eef2ff 0%, #f8fafc 55%, #ecfdf5 100%);
+    }
+
+    .ed-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #e0e7ff;
+        color: #3730a3;
+        border-radius: 999px;
+        padding: 8px 13px;
+        font-size: .85rem;
+        font-weight: 700;
+    }
+
+    .ed-hero h1 {
+        font-size: clamp(2.4rem, 5vw, 4.2rem);
+        line-height: 1.12;
+        letter-spacing: -2px;
+        font-weight: 850;
+        margin: 22px 0;
+    }
+
+    .ed-text-gradient {
+        color: var(--ed-indigo);
+    }
+
+    .ed-hero-copy {
+        max-width: 570px;
+        color: var(--ed-muted);
+        font-size: 1.12rem;
+        line-height: 1.8;
+    }
+
+    .ed-hero-panel {
+        background: white;
+        border: 1px solid #e0e7ff;
+        border-radius: 24px;
+        padding: 25px;
+        box-shadow: 0 24px 65px rgba(49,46,129,.12);
+    }
+
+    .ed-stat {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 17px;
+        height: 100%;
+    }
+
+    .ed-stat-number {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: var(--ed-indigo);
+    }
+
+    .ed-section {
+        padding: 72px 0;
+    }
+
+    .ed-section-title {
+        font-weight: 800;
+        letter-spacing: -.8px;
+    }
+
+    .ed-section-copy {
+        color: var(--ed-muted);
+        max-width: 650px;
+        margin: 0 auto;
+        line-height: 1.7;
+    }
+
+    .ed-feature-card, .ed-class-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        height: 100%;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .ed-feature-card {
+        padding: 25px;
+    }
+
+    .ed-feature-card:hover, .ed-class-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 35px rgba(15,23,42,.08);
+    }
+
+    .ed-feature-icon {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: #eef2ff;
+        color: var(--ed-indigo);
+        font-size: 1.35rem;
+        margin-bottom: 18px;
+    }
+
+    .ed-class-card {
+        overflow: hidden;
+    }
+
+    .ed-class-top {
+        padding: 23px 23px 17px;
+        background: linear-gradient(135deg, #eef2ff, #f8fafc);
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .ed-class-body {
+        padding: 22px;
+    }
+
+    .ed-course-code {
+        font-size: .78rem;
+        font-weight: 800;
+        color: #4338ca;
+        letter-spacing: .7px;
+    }
+
+    .ed-meta {
+        color: var(--ed-muted);
+        font-size: .92rem;
+        line-height: 1.9;
+    }
+
+    .ed-available {
+        color: #047857;
+        background: #d1fae5;
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .ed-full {
+        color: #b91c1c;
+        background: #fee2e2;
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .ed-cta {
+        background: linear-gradient(135deg, #312e81, #4338ca 65%, #047857);
+        color: white;
+        border-radius: 24px;
+        padding: 42px;
+    }
+
+    .ed-footer {
+        background: #0f172a;
+        color: #cbd5e1;
+        padding: 32px 0;
+    }
+
+    .ed-footer a {
+        color: #e0e7ff;
+        text-decoration: none;
+    }
+
+    .ed-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: inline-grid;
+        place-items: center;
+        background: #e0e7ff;
+        color: #3730a3;
+        font-weight: 800;
+    }
+
+    .ed-auth-modal .modal-content {
+        border: 0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 25px 80px rgba(15,23,42,.2);
+    }
+
+    .ed-modal-heading {
+        background: linear-gradient(135deg, #eef2ff, #ecfdf5);
+        padding: 25px 25px 18px;
+    }
+
+    .ed-modal-body {
+        padding: 25px;
+    }
+
+    .ed-form-control {
+        border-radius: 10px;
+        padding: .75rem .9rem;
+    }
+
+    .ed-form-control:focus {
+        border-color: #818cf8;
+        box-shadow: 0 0 0 .2rem rgba(99,102,241,.13);
+    }
+
+    .ed-link {
+        color: var(--ed-indigo);
+        cursor: pointer;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .ed-parent-code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #047857;
+        background: #ecfdf5;
+        border: 1px dashed #6ee7b7;
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+        word-break: break-all;
+    }
+
+    .ed-soft-label {
+        color: #475569;
+        font-size: .9rem;
+        font-weight: 600;
+        margin-bottom: 7px;
+    }
+
+    .ed-hidden {
+        display: none !important;
+    }
+
+    @@media (max-width: 767.98px) {
+        .ed-hero {
+            padding: 55px 0;
+        }
+
+        .ed-hero h1 {
+            letter-spacing: -1px;
+        }
+
+        .ed-cta {
+            padding: 28px 22px;
+        }
+
+        .ed-section {
+            padding: 52px 0;
+        }
+    }
+</style>
+
+<header class="ed-navbar sticky-top">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand ed-brand d-flex align-items-center"
+               asp-controller="Home" asp-action="Index">
+                <span class="ed-brand-mark">E</span>
+                EduCenter
+            </a>
+
+            <button class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#edNavbar"
+                    aria-controls="edNavbar"
+                    aria-expanded="false"
+                    aria-label="Mở menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="edNavbar">
+                <ul class="navbar-nav mx-auto gap-lg-2">
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="#features">Tính năng</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="#classes">Lớp học</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="#roles">Dành cho bạn</a>
+                    </li>
+                </ul>
+
+                <div id="guestActions" class="d-flex flex-wrap gap-2 align-items-center @(isAuthenticated ? "ed-hidden" : "")">
+                    <button type="button"
+                            class="btn ed-btn-outline"
+                            data-bs-toggle="modal"
+                            data-bs-target="#loginModal">
+                        Đăng nhập
+                    </button>
+                    <button type="button"
+                            class="btn ed-btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#registerModal">
+                        Đăng ký tài khoản
+                    </button>
+                </div>
+
+                <div id="userActions" class="d-flex flex-wrap gap-2 align-items-center @(isAuthenticated ? "" : "ed-hidden")">
+                    <span class="ed-avatar" id="headerAvatar">
+                        @(string.IsNullOrWhiteSpace(displayName) ? "U" : displayName[..1].ToUpper())
+                    </span>
+                    <div class="me-1">
+                        <div class="fw-bold small" id="headerName">@displayName</div>
+                        <span class="badge text-bg-primary" id="headerRole">@roleName</span>
+                    </div>
+                    <a id="portalLink"
+                       class="btn ed-btn-primary btn-sm"
+                       href="@GetPortalUrl(role)">
+                        Vào cổng nghiệp vụ
+                    </a>
+                    <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+@functions {
+    public string GetPortalUrl(string? role)
+    {
+        return role switch
+        {
+            "Admin" => "/Admin",
+            "Teacher" => "/Teacher",
+            "Parent" => "/Parent",
+            "Student" => "/Student",
+            _ => "/"
+        };
+    }
+}
+
+<main>
+    <section class="ed-hero">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-7">
+                    <span class="ed-eyebrow">
+                        <span>✦</span> Nền tảng quản lý đào tạo thông minh
+                    </span>
+
+                    <h1>
+                        Kết nối lớp học.<br />
+                        <span class="ed-text-gradient">Đồng hành tiến bộ.</span>
+                    </h1>
+
+                    <p class="ed-hero-copy mb-4">
+                        Một không gian học tập kết nối nhà trường, giáo viên,
+                        phụ huynh và học sinh. Theo dõi lịch học, quản lý lớp
+                        và đồng hành cùng từng bước tiến bộ.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="#classes" class="btn ed-btn-primary btn-lg">
+                            Khám phá lớp học <span class="ms-1">→</span>
+                        </a>
+                        <button type="button"
+                                class="btn ed-btn-outline btn-lg"
+                                data-bs-toggle="modal"
+                                data-bs-target="#registerModal">
+                            Tạo tài khoản miễn phí
+                        </button>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-4 mt-4 text-secondary small">
+                        <span>✓ Quản lý tập trung</span>
+                        <span>✓ Theo dõi tiến độ</span>
+                        <span>✓ Kết nối gia đình</span>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="ed-hero-panel">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <div class="text-secondary small">EduCenter overview</div>
+                                <h2 class="h5 fw-bold mb-0 mt-1">Học tập có tổ chức</h2>
+                            </div>
+                            <span class="ed-feature-icon mb-0">✦</span>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <div class="ed-stat">
+                                    <div class="text-secondary small">Lịch học</div>
+                                    <div class="ed-stat-number">24/7</div>
+                                    <div class="small text-secondary">Dễ dàng tra cứu</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="ed-stat">
+                                    <div class="text-secondary small">Kết nối</div>
+                                    <div class="ed-stat-number">4 vai trò</div>
+                                    <div class="small text-secondary">Cùng một hệ thống</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-4 p-3" style="background:#ecfdf5">
+                            <div class="d-flex gap-3 align-items-center">
+                                <div class="ed-feature-icon mb-0"
+                                     style="background:#d1fae5;color:#047857">✓</div>
+                                <div>
+                                    <div class="fw-bold">Tiến bộ từng ngày</div>
+                                    <div class="small text-secondary">
+                                        Lịch học, điểm danh và kết quả học tập tại một nơi.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="small text-secondary mt-3">
+                            * Các chỉ số minh họa ở đây không phải số liệu thống kê thực tế.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="ed-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="ed-eyebrow">Hệ sinh thái học tập</span>
+                <h2 class="ed-section-title display-6 mt-3">
+                    Mọi thứ cần thiết, trong một nơi
+                </h2>
+                <p class="ed-section-copy">
+                    Hỗ trợ quản lý đào tạo từ lớp học, lịch giảng dạy
+                    đến hoạt động học tập và sự phối hợp giữa gia đình với giáo viên.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">▦</div>
+                        <h3 class="h5 fw-bold">Quản lý lớp học</h3>
+                        <p class="text-secondary mb-0">
+                            Quản lý môn học, khung giờ, sĩ số và lịch học tập trung.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">◷</div>
+                        <h3 class="h5 fw-bold">Theo dõi tiến độ</h3>
+                        <p class="text-secondary mb-0">
+                            Hỗ trợ điểm danh và theo dõi kết quả học tập theo thời gian.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">♧</div>
+                        <h3 class="h5 fw-bold">Kết nối gia đình</h3>
+                        <p class="text-secondary mb-0">
+                            Hỗ trợ liên kết Parent–Student và theo dõi việc học của con.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">✓</div>
+                        <h3 class="h5 fw-bold">Phân quyền rõ ràng</h3>
+                        <p class="text-secondary mb-0">
+                            Mỗi vai trò truy cập các chức năng phù hợp với nhiệm vụ.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="classes" class="ed-section pt-0">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+                <div>
+                    <span class="ed-eyebrow">Khám phá khóa học</span>
+                    <h2 class="ed-section-title display-6 mt-3 mb-2">
+                        Lớp học đang mở
+                    </h2>
+                    <p class="text-secondary mb-0">
+                        Tìm lớp phù hợp và xem thông tin lịch học.
+                    </p>
+                </div>
+
+                <div style="min-width:220px">
+                    <label for="classSearch" class="visually-hidden">Tìm lớp học</label>
+                    <input id="classSearch"
+                           class="form-control ed-form-control"
+                           placeholder="Tìm mã lớp hoặc môn học..." />
+                </div>
+            </div>
+
+            
+            <div class="row g-4" id="classGrid">
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <div class="col-md-6 col-xl-4 ed-class-item"
+                             data-search="@($"{item.ClassCode} {item.ClassName} {item.SubjectName}".ToLowerInvariant())">
+
+                            <article class="ed-class-card">
+                                <div class="ed-class-top">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <span class="ed-course-code">
+                                            @item.ClassCode
+                                        </span>
+                                        <span class="badge text-bg-success">
+                                            Đang mở
+                                        </span>
+                                    </div>
+
+                                    <h3 class="h4 fw-bold mt-3 mb-1">
+                                        @item.SubjectName
+                                    </h3>
+
+                                    <div class="text-secondary small">
+                                        @item.ClassName
+                                    </div>
+                                </div>
+
+                                <div class="ed-class-body">
+                                    <div class="ed-meta">
+                                        <div>
+                                            ♙ Giáo viên:
+                                            @(item.TeacherName ?? "Chưa phân công")
+                                        </div>
+
+                                        <div class="mt-2">
+                                            ▦ Lịch học:
+                                            @if (item.Schedules.Any())
+                                            {
+                                                @foreach (var schedule in item.Schedules)
+                                                {
+                                                    var dayName = schedule.DayOfWeek switch
+                                                    {
+                                                        2 => "Thứ Hai",
+                                                        3 => "Thứ Ba",
+                                                        4 => "Thứ Tư",
+                                                        5 => "Thứ Năm",
+                                                        6 => "Thứ Sáu",
+                                                        7 => "Thứ Bảy",
+                                                        8 => "Chủ nhật",
+                                                        _ => "Không xác định"
+                                                    };
+
+                                                    <div>
+                                                        @dayName — @schedule.TimeSlotName
+                                                        (@schedule.StartTime.ToString("HH:mm")–@schedule.EndTime.ToString("HH:mm"))
+                                                    </div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span>Chưa thiết lập lịch học</span>
+                                            }
+                                        </div>
+
+                                        <div class="mt-2">
+                                            ▣ Khai giảng:
+                                            @item.StartDate.ToString("dd/MM/yyyy")
+                                        </div>
+
+                                        <div>
+                                            ▣ Kết thúc:
+                                            @item.EndDate.ToString("dd/MM/yyyy")
+                                        </div>
+
+                                        <div>
+                                            ♧ Sĩ số tối đa: @item.MaxStudents học viên
+                                        </div>
+                                    </div>
+
+                                    <button type="button"
+                                            class="btn ed-btn-primary w-100 mt-3 register-class-btn"
+                                            data-class-id="@item.Id"
+                                            data-class-code="@item.ClassCode">
+                                        Đăng ký cho con
+                                    </button>
+                                </div>
+                            </article>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <div class="bg-white border rounded-4 p-5 text-center">
+                            <div class="display-6 mb-3">📚</div>
+                            <h3 class="h5 fw-bold">Chưa có lớp học đang mở</h3>
+                            <p class="text-secondary mb-0">
+                                Các lớp học sẽ xuất hiện tại đây khi được Admin mở đăng ký.
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div id="noClassResults"
+                 class="alert alert-light border mt-4 ed-hidden">
+                Không tìm thấy lớp phù hợp.
+            </div>
+
+
+            <div id="noClassResults" class="alert alert-light border mt-4 ed-hidden">
+                Không tìm thấy lớp phù hợp.
+            </div>
+
+            <p class="small text-secondary mt-3 mb-0">
+                * Các lớp trong bản giao diện này là dữ liệu mẫu, chưa lấy từ database.
+            </p>
+        </div>
+    </section>
+
+    <section id="roles" class="ed-section pt-0">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="ed-section-title display-6">Một nền tảng, bốn vai trò</h2>
+                <p class="ed-section-copy">
+                    Mỗi người dùng có không gian làm việc phù hợp với vai trò của mình.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">⚙</div>
+                        <h3 class="h5 fw-bold">Admin</h3>
+                        <p class="text-secondary mb-0">
+                            Quản lý tài khoản, môn học, lớp, giáo viên và lịch học.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">✎</div>
+                        <h3 class="h5 fw-bold">Giáo viên</h3>
+                        <p class="text-secondary mb-0">
+                            Theo dõi lớp phụ trách, điểm danh và hoạt động học tập.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">♡</div>
+                        <h3 class="h5 fw-bold">Phụ huynh</h3>
+                        <p class="text-secondary mb-0">
+                            Kết nối tài khoản với con và theo dõi lịch học.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="ed-feature-card">
+                        <div class="ed-feature-icon">✦</div>
+                        <h3 class="h5 fw-bold">Học sinh</h3>
+                        <p class="text-secondary mb-0">
+                            Xem lịch học, tài liệu, bài kiểm tra và kết quả.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pb-5">
+        <div class="container">
+            <div class="ed-cta">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold">Bắt đầu hành trình học tập hôm nay</h2>
+                        <p class="mb-0 opacity-75">
+                            Tạo tài khoản để kết nối với hệ thống EduCenter.
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end">
+                        <button type="button"
+                                class="btn btn-light btn-lg fw-bold"
+                                data-bs-toggle="modal"
+                                data-bs-target="#registerModal">
+                            Đăng ký ngay →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+
+
+<!-- LOGIN MODAL -->
+<div class="modal fade ed-auth-modal" id="loginModal" tabindex="-1" aria-labelledby="loginTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="ed-modal-heading">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="ed-brand mb-2">EduCenter</div>
+                        <h2 id="loginTitle" class="h4 fw-bold mb-1">Chào mừng trở lại</h2>
+                        <p class="text-secondary small mb-0">Đăng nhập vào tài khoản của bạn.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+            </div>
+
+            <div class="ed-modal-body">
+                <form id="loginForm" asp-controller="Account" asp-action="Login" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div id="loginError" class="alert alert-danger ed-hidden" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label for="loginEmail" class="ed-soft-label">Email</label>
+                        <input id="loginEmail" name="Email" type="email"
+                               class="form-control ed-form-control"
+                               autocomplete="username" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="loginPassword" class="ed-soft-label">Mật khẩu</label>
+                        <input id="loginPassword" name="Password" type="password"
+                               class="form-control ed-form-control"
+                               autocomplete="current-password" required />
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox"
+                               id="loginRemember" name="RememberMe" value="true" />
+                        <label class="form-check-label small" for="loginRemember">
+                            Ghi nhớ đăng nhập
+                        </label>
+                    </div>
+
+                    <button id="loginSubmit" type="submit" class="btn ed-btn-primary w-100">
+                        Đăng nhập
+                    </button>
+                </form>
+
+                <div class="text-center small mt-4">
+                    Chưa có tài khoản?
+                    <a href="#" class="ed-link" data-open-register>Đăng ký ngay</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- REGISTER MODAL -->
+<div class="modal fade ed-auth-modal" id="registerModal" tabindex="-1" aria-labelledby="registerTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="ed-modal-heading">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="ed-brand mb-2">EduCenter</div>
+                        <h2 id="registerTitle" class="h4 fw-bold mb-1">Tạo tài khoản</h2>
+                        <p class="text-secondary small mb-0">
+                            Chọn vai trò để bắt đầu.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+            </div>
+
+            <div class="ed-modal-body">
+                <ul class="nav nav-pills nav-fill gap-2 mb-4" id="registerTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" type="button" data-register-role="Parent">
+                            Phụ huynh
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" type="button" data-register-role="Student">
+                            Học sinh
+                        </button>
+                    </li>
+                </ul>
+
+                <div id="registerDemoNotice" class="alert alert-info small">
+                    Đây là bản giao diện đăng ký mẫu. Chưa gửi email hoặc lưu tài khoản vào database.
+                </div>
+
+                <form id="registerForm">
+                    <input type="hidden" id="registerRole" value="Parent" />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="registerFullName" class="ed-soft-label">Họ và tên</label>
+                            <input id="registerFullName" class="form-control ed-form-control"
+                                   maxlength="100" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="registerEmail" class="ed-soft-label">Email</label>
+                            <input id="registerEmail" type="email"
+                                   class="form-control ed-form-control" required />
+                        </div>
+
+                        <div class="col-md-6" id="registerPhoneGroup">
+                            <label for="registerPhone" class="ed-soft-label">Số điện thoại</label>
+                            <input id="registerPhone" type="tel"
+                                   class="form-control ed-form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="registerPassword" class="ed-soft-label">Mật khẩu</label>
+                            <input id="registerPassword" type="password"
+                                   minlength="8" autocomplete="new-password"
+                                   class="form-control ed-form-control" required />
+                        </div>
+
+                        <div class="col-12 ed-hidden" id="parentCodeGroup">
+                            <label for="parentLinkCode" class="ed-soft-label">
+                                Parent Linking Code (không bắt buộc)
+                            </label>
+                            <input id="parentLinkCode"
+                                   class="form-control ed-form-control"
+                                   placeholder="Ví dụ: PAR-2026-ABC123" />
+                            <div class="form-text">
+                                Bản thực tế sẽ dùng mã này để gửi yêu cầu liên kết tới phụ huynh.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="registerError" class="alert alert-danger ed-hidden mt-3"></div>
+
+                    <button type="submit" class="btn ed-btn-primary w-100 mt-4">
+                        Tạo tài khoản
+                    </button>
+                </form>
+
+                <div class="text-center small mt-4">
+                    Đã có tài khoản?
+                    <a href="#" class="ed-link" data-open-login>Đăng nhập</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REGISTRATION RESULT MODAL -->
+<div class="modal fade ed-auth-modal" id="registerResultModal" tabindex="-1" aria-labelledby="registerResultTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="ed-modal-body text-center p-4 p-md-5">
+                <div class="ed-feature-icon mx-auto"
+                     style="background:#d1fae5;color:#047857;font-size:1.8rem">✓</div>
+
+                <h2 id="registerResultTitle" class="h4 fw-bold">Hoàn tất bản đăng ký mẫu</h2>
+                <p id="registerResultMessage" class="text-secondary">
+                    Đây là kết quả mô phỏng trên giao diện.
+                </p>
+
+                <div id="parentCodeResult" class="ed-hidden">
+                    <p class="small text-secondary mb-2">
+                        Mã liên kết mẫu dành cho phụ huynh
+                    </p>
+                    <div class="ed-parent-code mb-3" id="generatedParentCode"></div>
+                    <button type="button" class="btn ed-btn-outline" id="copyParentCode">
+                        Sao chép mã
+                    </button>
+                    <p class="small text-secondary mt-3 mb-0">
+                        Mã này chỉ được tạo ở trình duyệt, chưa được lưu vào hệ thống.
+                    </p>
+                </div>
+
+                <button type="button" class="btn ed-btn-primary w-100 mt-4"
+                        data-bs-dismiss="modal">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const loginModalElement = document.getElementById("loginModal");
+            const registerModalElement = document.getElementById("registerModal");
+            const resultModalElement = document.getElementById("registerResultModal");
+
+            const loginModal = bootstrap.Modal.getOrCreateInstance(loginModalElement);
+            const registerModal = bootstrap.Modal.getOrCreateInstance(registerModalElement);
+            const resultModal = bootstrap.Modal.getOrCreateInstance(resultModalElement);
+
+            const loginForm = document.getElementById("loginForm");
+            const loginError = document.getElementById("loginError");
+            const loginSubmit = document.getElementById("loginSubmit");
+
+            const registerForm = document.getElementById("registerForm");
+            const registerError = document.getElementById("registerError");
+            const registerRole = document.getElementById("registerRole");
+            const phoneGroup = document.getElementById("registerPhoneGroup");
+            const parentCodeGroup = document.getElementById("parentCodeGroup");
+
+            let generatedCode = "";
+
+            // Chuyển đổi giữa các modal.
+            document.querySelectorAll("[data-open-register]").forEach(function (link) {
+                link.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    loginModal.hide();
+                    setTimeout(() => registerModal.show(), 180);
+                });
+            });
+
+            document.querySelectorAll("[data-open-login]").forEach(function (link) {
+                link.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    registerModal.hide();
+                    setTimeout(() => loginModal.show(), 180);
+                });
+            });
+
+            // Tab đăng ký Parent / Student.
+            document.querySelectorAll("[data-register-role]").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    document.querySelectorAll("[data-register-role]").forEach(function (tab) {
+                        tab.classList.remove("active");
+                    });
+
+                    button.classList.add("active");
+                    registerRole.value = button.dataset.registerRole;
+
+                    const isStudent = registerRole.value === "Student";
+                    phoneGroup.classList.toggle("ed-hidden", isStudent);
+                    parentCodeGroup.classList.toggle("ed-hidden", !isStudent);
+
+                    document.getElementById("registerPhone").required = !isStudent;
+                    registerError.classList.add("ed-hidden");
+                });
+            });
+
+            // Đăng nhập qua endpoint hiện có, dùng Cookie Authentication thật.
+            
+loginForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    loginError.classList.add("ed-hidden");
+    loginSubmit.disabled = true;
+    loginSubmit.textContent = "Đang đăng nhập...";
+
+    try {
+        const response = await fetch(loginForm.action, {
+            method: "POST",
+            body: new URLSearchParams(new FormData(loginForm)),
+            credentials: "same-origin",
+            headers: {
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            loginError.textContent =
+                result.message || "Đăng nhập không thành công.";
+
+            loginError.classList.remove("ed-hidden");
+            return;
+        }
+
+        // Cập nhật Header từ dữ liệu server vừa trả về.
+        document.getElementById("guestActions")
+            .classList.add("ed-hidden");
+
+        document.getElementById("userActions")
+            .classList.remove("ed-hidden");
+
+        document.getElementById("headerName").textContent = result.name;
+        document.getElementById("headerRole").textContent = result.roleName;
+        document.getElementById("headerAvatar").textContent =
+            result.name.trim().charAt(0).toUpperCase();
+
+        document.getElementById("portalLink").href = result.portalUrl;
+
+        loginModal.hide();
+        loginForm.reset();
+
+    } catch (error) {
+        console.error("Login request failed:", error);
+
+        loginError.textContent =
+            "Không gửi được yêu cầu đến máy chủ. " +
+            "Vui lòng kiểm tra ứng dụng và thử lại.";
+
+        loginError.classList.remove("ed-hidden");
+    } finally {
+        loginSubmit.disabled = false;
+        loginSubmit.textContent = "Đăng nhập";
+    }
+});
+
+
+            // Tìm kiếm lớp mẫu.
+            const classSearch = document.getElementById("classSearch");
+            const classItems = Array.from(document.querySelectorAll(".ed-class-item"));
+            const noClassResults = document.getElementById("noClassResults");
+
+            classSearch.addEventListener("input", function () {
+                const query = classSearch.value.trim().toLowerCase();
+                let visibleCount = 0;
+
+                classItems.forEach(function (item) {
+                    const matches = item.dataset.search.includes(query);
+                    item.classList.toggle("ed-hidden", !matches);
+                    if (matches) visibleCount++;
+                });
+
+                noClassResults.classList.toggle("ed-hidden", visibleCount !== 0);
+            });
+
+            // Kiểm tra quyền khi nhấn đăng ký lớp.
+        document.querySelectorAll(".register-class-btn").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const classId = button.dataset.classId;
+                const classCode = button.dataset.classCode;
+
+                const isAuthenticated =
+                    @User.Identity!.IsAuthenticated.ToString().ToLowerInvariant();
+
+                const role = @Html.Raw(
+                                    System.Text.Json.JsonSerializer.Serialize(
+                                            User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? ""
+                                    )
+                            );
+
+                if (!isAuthenticated) {
+                    alert("Vui lòng đăng nhập bằng tài khoản Phụ huynh.");
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById("loginModal")
+                    ).show();
+                    return;
+                }
+
+                if (role !== "Parent") {
+                    alert("Chỉ tài khoản Phụ huynh mới được đăng ký lớp cho học sinh.");
+                    return;
+                }
+
+                alert(
+                    "Bạn đã chọn lớp " + classCode +
+                    " (ID: " + classId + "). " +
+                    "Bước tiếp theo là kết nối chức năng Enrollment."
+                );
+            });
+        });
+
+
+            // Đăng ký Parent / Student: mô phỏng giao diện, chưa ghi vào database.
+            registerForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+                registerError.classList.add("ed-hidden");
+
+                const fullName = document.getElementById("registerFullName").value.trim();
+                const email = document.getElementById("registerEmail").value.trim();
+                const password = document.getElementById("registerPassword").value;
+                const phone = document.getElementById("registerPhone").value.trim();
+                const role = registerRole.value;
+                const linkCode = document.getElementById("parentLinkCode").value.trim();
+
+                if (!fullName || !email || password.length < 8) {
+                    registerError.textContent =
+                        "Vui lòng nhập họ tên, email và mật khẩu tối thiểu 8 ký tự.";
+                    registerError.classList.remove("ed-hidden");
+                    return;
+                }
+
+                if (role === "Parent" && !phone) {
+                    registerError.textContent =
+                        "Vui lòng nhập số điện thoại.";
+                    registerError.classList.remove("ed-hidden");
+                    return;
+                }
+
+                registerModal.hide();
+
+                document.getElementById("parentCodeResult").classList.add("ed-hidden");
+
+                if (role === "Parent") {
+                    const randomPart = Math.random().toString(36)
+                        .substring(2, 8).toUpperCase();
+
+                    generatedCode = "PAR-" + new Date().getFullYear() +
+                        "-" + randomPart;
+
+                    document.getElementById("registerResultTitle").textContent =
+                        "Đăng ký phụ huynh mẫu thành công";
+
+                    document.getElementById("registerResultMessage").textContent =
+                        "Giao diện đã tạo mã liên kết minh họa. Tài khoản và email chưa được lưu hoặc xác thực thật.";
+
+                    document.getElementById("generatedParentCode").textContent =
+                        generatedCode;
+
+                    document.getElementById("parentCodeResult").classList.remove("ed-hidden");
+                } else {
+                    document.getElementById("registerResultTitle").textContent =
+                        "Đăng ký học sinh mẫu thành công";
+
+                    document.getElementById("registerResultMessage").textContent =
+                        linkCode
+                            ? "Đã nhận mã liên kết mẫu " + linkCode +
+                              ". Chưa có yêu cầu kết nối nào được lưu vào database."
+                            : "Bạn chưa nhập mã liên kết. Chưa có tài khoản hoặc yêu cầu liên kết nào được lưu vào database.";
+                }
+
+                resultModal.show();
+            });
+
+            document.getElementById("copyParentCode").addEventListener("click", async function () {
+                try {
+                    await navigator.clipboard.writeText(generatedCode);
+                    this.textContent = "Đã sao chép";
+                } catch {
+                    alert("Không thể sao chép tự động. Mã của bạn là: " + generatedCode);
+                }
+            });
+
+            // Đăng xuất qua endpoint thật.
+            const logoutForm = document.getElementById("logoutForm");
+            if (logoutForm) {
+                logoutForm.addEventListener("submit", async function (event) {
+                    event.preventDefault();
+
+                    try {
+                        const response = await fetch(logoutForm.action, {
+                            method: "POST",
+                            body: new URLSearchParams(new FormData(logoutForm)),
+                            credentials: "same-origin",
+                            redirect: "follow"
+                        });
+
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            logoutForm.submit();
+                        }
+                    } catch {
+                        logoutForm.submit();
+                    }
+                });
+            }
+        });
+        
+async function refreshHeader() {
+    const response = await fetch("/Home/AuthStatus", {
+        credentials: "same-origin",
+        headers: { "Accept": "application/json" }
+    });
+
+    if (!response.ok) {
+        throw new Error("Không thể lấy trạng thái đăng nhập.");
+    }
+
+    const user = await response.json();
+
+    const guestActions = document.getElementById("guestActions");
+    const userActions = document.getElementById("userActions");
+
+    if (!user.isAuthenticated) {
+        guestActions.classList.remove("ed-hidden");
+        userActions.classList.add("ed-hidden");
+        return;
+    }
+
+    guestActions.classList.add("ed-hidden");
+    userActions.classList.remove("ed-hidden");
+
+    document.getElementById("headerName").textContent = user.name;
+    document.getElementById("headerRole").textContent = user.roleName;
+    document.getElementById("headerAvatar").textContent =
+        user.name.trim().charAt(0).toUpperCase();
+
+    document.getElementById("portalLink").href = user.portalUrl;
+}
+
+    </script>
+}
