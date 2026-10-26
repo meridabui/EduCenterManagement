@@ -1,0 +1,102 @@
+﻿@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Registration.EnrollmentConfirmationViewModel
+
+@{
+    ViewData["Title"] = "Xác nhận đăng ký";
+}
+
+<div class="container mt-4" style="max-width: 640px;">
+    @if (Model.IsHoldActive)
+    {
+        <div class="alert alert-success">
+            <h4 class="alert-heading">Đăng ký thành công</h4>
+            Chỗ của học sinh đã được giữ. Vui lòng hoàn tất thanh toán trước khi hết thời gian giữ chỗ.
+        </div>
+    }
+    else if (Model.Status == EnrollmentStatus.Paid)
+    {
+        <div class="alert alert-success">
+            <h4 class="alert-heading">Đã thanh toán</h4>
+            Đăng ký đã được xác nhận.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <h4 class="alert-heading">Đăng ký không còn hiệu lực</h4>
+            Thời gian giữ chỗ đã hết hoặc đăng ký đã bị hủy. Bạn có thể đăng ký lại nếu lớp còn chỗ.
+        </div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Mã đăng ký</dt>
+                <dd class="col-sm-8">#@Model.EnrollmentId</dd>
+
+                <dt class="col-sm-4">Học sinh</dt>
+                <dd class="col-sm-8">@Model.StudentName</dd>
+
+                <dt class="col-sm-4">Lớp</dt>
+                <dd class="col-sm-8">@Model.ClassName (@Model.SubjectName)</dd>
+
+                <dt class="col-sm-4">Học phí</dt>
+                <dd class="col-sm-8">@Model.Fee.ToString("N0") đ</dd>
+
+                <dt class="col-sm-4">Trạng thái</dt>
+                <dd class="col-sm-8">
+                    @switch (Model.Status)
+                    {
+                        case EnrollmentStatus.Pending:
+                            <span class="badge bg-warning text-dark">Chờ thanh toán</span>
+                            break;
+                        case EnrollmentStatus.Paid:
+                            <span class="badge bg-success">Đã thanh toán</span>
+                            break;
+                        case EnrollmentStatus.Failed:
+                            <span class="badge bg-danger">Thanh toán thất bại</span>
+                            break;
+                        default:
+                            <span class="badge bg-secondary">Đã hủy</span>
+                            break;
+                    }
+                </dd>
+
+                @if (Model.IsHoldActive && Model.ReservedUntil.HasValue)
+                {
+                    <dt class="col-sm-4">Giữ chỗ đến</dt>
+                    <dd class="col-sm-8">
+                        @Model.ReservedUntil.Value.ToLocalTime().ToString("HH:mm dd/MM/yyyy")
+                        <span class="text-danger fw-semibold ms-2" id="countdown"
+                              data-until="@Model.ReservedUntil.Value.ToString("o")"></span>
+                    </dd>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <a asp-action="Index" class="btn btn-outline-primary">Đăng ký lớp khác</a>
+    <a asp-controller="ParentDashboard" asp-action="Index" class="btn btn-outline-secondary">Về trang phụ huynh</a>
+</div>
+
+@section Scripts {
+    <script>
+        const countdown = document.getElementById("countdown");
+        if (countdown) {
+            const until = new Date(countdown.dataset.until).getTime();
+            const tick = () => {
+                const left = Math.floor((until - Date.now()) / 1000);
+                if (left <= 0) {
+                    countdown.textContent = "(đã hết hạn)";
+                    clearInterval(timer);
+                    return;
+                }
+                const m = String(Math.floor(left / 60)).padStart(2, "0");
+                const s = String(left % 60).padStart(2, "0");
+                countdown.textContent = "(còn " + m + ":" + s + ")";
+            };
+            const timer = setInterval(tick, 1000);
+            tick();
+        }
+    </script>
+}
