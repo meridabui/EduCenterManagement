@@ -423,8 +423,8 @@
         {
             "Admin" => "/Admin",
             "Teacher" => "/Teacher",
-            "Parent" => "/Parent",
-            "Student" => "/Student",
+            "Parent" => "/ParentDashboard",
+            "Student" => "/StudentDashboard",
             _ => "/"
         };
     }
@@ -706,15 +706,6 @@
                  class="alert alert-light border mt-4 ed-hidden">
                 Không tìm thấy lớp phù hợp.
             </div>
-
-
-            <div id="noClassResults" class="alert alert-light border mt-4 ed-hidden">
-                Không tìm thấy lớp phù hợp.
-            </div>
-
-            <p class="small text-secondary mt-3 mb-0">
-                * Các lớp trong bản giao diện này là dữ liệu mẫu, chưa lấy từ database.
-            </p>
         </div>
     </section>
 
@@ -1111,7 +1102,7 @@ loginForm.addEventListener("submit", async function (event) {
                     return;
                 }
 
-                  window.location.href = "@Url.Action("Index", "Enrollment")";
+                 window.location.href = "@Url.Action("Index", "Enrollment")";
                 });
             });
 
