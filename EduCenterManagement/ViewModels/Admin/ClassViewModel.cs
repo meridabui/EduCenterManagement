@@ -51,5 +51,9 @@ namespace EduCenterManagement.ViewModels.Admin
                     new[] { nameof(EndDate) });
             }
         }
+
+        public List<ClassScheduleInputViewModel> Schedules { get; set; }
+            = new();
+
     }
 }

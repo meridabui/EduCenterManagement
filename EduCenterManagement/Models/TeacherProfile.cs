@@ -14,6 +14,12 @@ namespace EduCenterManagement.Models
         public int UserId { get; set; }
 
         [Required]
+        public int SubjectId { get; set; }
+
+        [ForeignKey(nameof(SubjectId))]
+        public Subject Subject { get; set; } = null!;
+
+        [Required]
         [MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
 

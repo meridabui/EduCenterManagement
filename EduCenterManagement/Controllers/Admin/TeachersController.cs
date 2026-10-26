@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Mvc.Rendering;
 namespace EduCenterManagement.Controllers.Admin
 {
     [Authorize(Roles = "Admin")]
@@ -37,28 +37,34 @@ namespace EduCenterManagement.Controllers.Admin
         }
 
         // GET: /Teachers/Create
+
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            await LoadSubjectsAsync();
+
             return View(
                 "~/Views/Admin/Teachers/Create.cshtml",
                 new CreateTeacherViewModel());
         }
 
+
         // POST: /Teachers/Create
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            CreateTeacherViewModel model)
+        public async Task<IActionResult> Create(CreateTeacherViewModel model)
         {
+            await LoadSubjectsAsync(model.SubjectId);
+
             if (!ModelState.IsValid)
             {
                 return View(
-                    "~/Views/Admin/Teachers/Create.cshtml", model);
+                    "~/Views/Admin/Teachers/Create.cshtml",
+                    model);
             }
 
             var email = model.Email.Trim().ToLowerInvariant();
-            var fullName = model.FullName.Trim();
 
             bool emailExists = await _context.Users
                 .AnyAsync(u => u.Email == email);
@@ -70,7 +76,24 @@ namespace EduCenterManagement.Controllers.Admin
                     "Email này đã được sử dụng.");
 
                 return View(
-                    "~/Views/Admin/Teachers/Create.cshtml", model);
+                    "~/Views/Admin/Teachers/Create.cshtml",
+                    model);
+            }
+
+            bool subjectExists = await _context.Subjects
+                .AnyAsync(s =>
+                    s.Id == model.SubjectId &&
+                    s.Status == SubjectStatus.Active);
+
+            if (!subjectExists)
+            {
+                ModelState.AddModelError(
+                    nameof(model.SubjectId),
+                    "Môn học không tồn tại hoặc đã ngừng hoạt động.");
+
+                return View(
+                    "~/Views/Admin/Teachers/Create.cshtml",
+                    model);
             }
 
             await using var transaction =
@@ -85,11 +108,7 @@ namespace EduCenterManagement.Controllers.Admin
                     Email = email,
                     Role = UserRole.Teacher,
                     Status = UserStatus.Active,
-
-                    // Chỉ nên đánh dấu xác thực nếu quy trình
-                    // tạo tài khoản của nhóm cho phép điều đó.
-                    EmailVerifiedAt = null,
-
+                    EmailVerifiedAt = now,
                     CreatedAt = now,
                     UpdatedAt = now
                 };
@@ -103,7 +122,8 @@ namespace EduCenterManagement.Controllers.Admin
                 var teacher = new TeacherProfile
                 {
                     UserId = user.Id,
-                    FullName = fullName,
+                    SubjectId = model.SubjectId,
+                    FullName = model.FullName.Trim(),
                     CreatedAt = now,
                     UpdatedAt = now
                 };
@@ -114,7 +134,7 @@ namespace EduCenterManagement.Controllers.Admin
                 await transaction.CommitAsync();
 
                 TempData["SuccessMessage"] =
-                    "Tạo tài khoản Teacher thành công.";
+                    "Tạo tài khoản Teacher và gán môn chuyên trách thành công.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -124,12 +144,30 @@ namespace EduCenterManagement.Controllers.Admin
 
                 ModelState.AddModelError(
                     string.Empty,
-                    "Không thể tạo tài khoản Teacher. " +
-                    "Email có thể đã tồn tại hoặc dữ liệu không hợp lệ.");
+                    "Không thể tạo tài khoản Teacher. Vui lòng kiểm tra dữ liệu.");
 
                 return View(
-                    "~/Views/Admin/Teachers/Create.cshtml", model);
+                    "~/Views/Admin/Teachers/Create.cshtml",
+                    model);
             }
         }
+
+
+        private async Task LoadSubjectsAsync(int? selectedSubjectId = null)
+        {
+            var subjects = await _context.Subjects
+                .AsNoTracking()
+                .Where(s => s.Status == SubjectStatus.Active)
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            ViewBag.Subjects = new SelectList(
+                subjects,
+                nameof(Subject.Id),
+                nameof(Subject.Name),
+                selectedSubjectId);
+        }
+
+
     }
 }

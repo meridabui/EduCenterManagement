@@ -127,27 +127,43 @@ namespace EduCenterManagement.Controllers.Admin
             }
 
             // Nếu lớp đã có Teacher, kiểm tra lịch của Teacher đó.
+
             if (classItem.TeacherId.HasValue)
             {
-                bool teacherConflict = await _context.ClassSchedules
-                    .Include(s => s.Class)
-                    .AnyAsync(s =>
-                        s.DayOfWeek == model.DayOfWeek &&
-                        s.TimeSlotId == model.TimeSlotId &&
-                        s.Class.TeacherId == classItem.TeacherId &&
-                        s.ClassId != model.ClassId);
+                bool teacherValid = await IsActiveTeacherForSubjectAsync(
+                    classItem.TeacherId.Value,
+                    classItem.SubjectId);
+
+                if (!teacherValid)
+                {
+                    ModelState.AddModelError(
+                        string.Empty,
+                        "Teacher của lớp không hoạt động hoặc không thuộc đúng Subject.");
+
+                    return View(
+                        "~/Views/Admin/ClassSchedules/Create.cshtml",
+                        model);
+                }
+
+                bool teacherConflict = await HasTeacherConflictAsync(
+                    classItem.Id,
+                    model.DayOfWeek,
+                    timeSlot.StartTime,
+                    timeSlot.EndTime);
 
                 if (teacherConflict)
                 {
                     ModelState.AddModelError(
                         string.Empty,
-                        "Teacher đã được phân công lớp khác cùng thứ và khung giờ.");
+                        "Teacher đã có lịch dạy trùng giờ ở lớp khác " +
+                        "trong thời gian khóa học.");
 
                     return View(
                         "~/Views/Admin/ClassSchedules/Create.cshtml",
                         model);
                 }
             }
+
 
             var now = DateTime.UtcNow;
 
@@ -287,28 +303,44 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
+
             if (classItem.TeacherId.HasValue)
             {
-                bool teacherConflict = await _context.ClassSchedules
-                    .Include(s => s.Class)
-                    .AnyAsync(s =>
-                        s.Id != id &&
-                        s.DayOfWeek == model.DayOfWeek &&
-                        s.TimeSlotId == model.TimeSlotId &&
-                        s.Class.TeacherId == classItem.TeacherId &&
-                        s.ClassId != model.ClassId);
+                bool teacherValid = await IsActiveTeacherForSubjectAsync(
+                    classItem.TeacherId.Value,
+                    classItem.SubjectId);
+
+                if (!teacherValid)
+                {
+                    ModelState.AddModelError(
+                        string.Empty,
+                        "Teacher của lớp không hoạt động hoặc không thuộc đúng Subject.");
+
+                    return View(
+                        "~/Views/Admin/ClassSchedules/Edit.cshtml",
+                        model);
+                }
+
+                bool teacherConflict = await HasTeacherConflictAsync(
+                    classItem.Id,
+                    model.DayOfWeek,
+                    timeSlot.StartTime,
+                    timeSlot.EndTime,
+                    id);
 
                 if (teacherConflict)
                 {
                     ModelState.AddModelError(
                         string.Empty,
-                        "Teacher đã có lớp khác cùng thứ và khung giờ.");
+                        "Teacher đã có lịch dạy trùng giờ ở lớp khác " +
+                        "trong thời gian khóa học.");
 
                     return View(
                         "~/Views/Admin/ClassSchedules/Edit.cshtml",
                         model);
                 }
             }
+
 
             schedule.ClassId = model.ClassId;
             schedule.TimeSlotId = model.TimeSlotId;
@@ -334,6 +366,56 @@ namespace EduCenterManagement.Controllers.Admin
 
             return RedirectToAction(nameof(Index));
         }
+
+
+        private async Task<bool> IsActiveTeacherForSubjectAsync(
+            int teacherId,
+            int subjectId)
+        {
+            return await _context.TeacherProfiles
+                .AnyAsync(t =>
+                    t.Id == teacherId &&
+                    t.SubjectId == subjectId &&
+                    t.User.Status == UserStatus.Active &&
+                    t.User.Role == UserRole.Teacher);
+        }
+
+        private async Task<bool> HasTeacherConflictAsync(
+            int classId,
+            int dayOfWeek,
+            TimeOnly startTime,
+            TimeOnly endTime,
+            int? excludedScheduleId = null)
+        {
+            var targetClass = await _context.Classes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == classId);
+
+            if (targetClass == null || !targetClass.TeacherId.HasValue)
+                return false;
+
+            var teacherId = targetClass.TeacherId.Value;
+
+            return await _context.ClassSchedules
+                .AsNoTracking()
+                .AnyAsync(other =>
+                    other.ClassId != classId &&
+                    (!excludedScheduleId.HasValue ||
+                     other.Id != excludedScheduleId.Value) &&
+                    other.DayOfWeek == dayOfWeek &&
+                    other.Class.TeacherId == teacherId &&
+                    other.Class.Status != ClassStatus.Cancelled &&
+                    other.Class.Status != ClassStatus.Completed &&
+
+                    // Hai khóa học có thời gian giao nhau.
+                    other.Class.StartDate <= targetClass.EndDate &&
+                    other.Class.EndDate >= targetClass.StartDate &&
+
+                    // Khung giờ thực tế bị chồng lấn.
+                    other.TimeSlot.StartTime < endTime &&
+                    other.TimeSlot.EndTime > startTime);
+        }
+
 
         private async Task LoadFormDataAsync(
             int? selectedClassId = null,

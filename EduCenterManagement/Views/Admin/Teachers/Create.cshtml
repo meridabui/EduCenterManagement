@@ -25,6 +25,23 @@
                     <span asp-validation-for="FullName"
                           class="text-danger"></span>
                 </div>
+                
+                <div class="mb-3">
+                    <label asp-for="SubjectId" class="form-label"></label>
+
+                    <select asp-for="SubjectId"
+                            asp-items="ViewBag.Subjects"
+                            class="form-select">
+                        <option value="">-- Chọn môn chuyên trách --</option>
+                    </select>
+
+                    <span asp-validation-for="SubjectId"
+                          class="text-danger"></span>
+
+                    <small class="form-text text-muted">
+                        Mỗi giáo viên chỉ được gán một môn chuyên trách.
+                    </small>
+                </div>
 
                 <div class="mb-3">
                     <label asp-for="Email" class="form-label"></label>

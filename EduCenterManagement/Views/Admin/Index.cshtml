@@ -1,29 +1,287 @@
-﻿@{
+﻿@model EduCenterManagement.ViewModels.Admin.AdminDashboardViewModel
+
+@{
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<div class="container mt-4">
-    <h2>Admin Dashboard</h2>
+<div class="container-fluid px-3 px-md-4 py-4">
 
-    <p>Chào mừng bạn đến với hệ thống EduCenterManagement.</p>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h2 fw-bold mb-1">Admin Dashboard</h1>
+            <p class="text-muted mb-0">
+                Tổng quan và quản lý hệ thống EduCenterManagement.
+            </p>
+        </div>
 
-    <div class="list-group">
-        <a asp-controller="Teachers"
-           asp-action="Index"
-           class="list-group-item list-group-item-action">
-            Quản lý Teacher
-        </a>
-
-        <a asp-controller="Subjects"
-           asp-action="Index"
-           class="list-group-item list-group-item-action">
-            Quản lý Subject
-        </a>
-
-        <a asp-controller="Classes"
-           asp-action="Index"
-           class="list-group-item list-group-item-action">
-            Quản lý Class
-        </a>
+        <span class="badge bg-primary fs-6 px-3 py-2">
+            Administrator
+        </span>
     </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Đóng"></button>
+        </div>
+    }
+
+    <h2 class="h5 fw-bold mb-3">Tổng quan hệ thống</h2>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        Tổng giáo viên
+                    </div>
+                    <div class="display-6 fw-bold">
+                        @Model.TotalTeachers
+                    </div>
+                    <div class="small text-success mt-2">
+                        @Model.ActiveTeachers đang hoạt động
+                    </div>
+                    <a asp-controller="Teachers"
+                       asp-action="Index"
+                       class="stretched-link"
+                       aria-label="Quản lý giáo viên"></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        Môn học đang hoạt động
+                    </div>
+                    <div class="display-6 fw-bold">
+                        @Model.ActiveSubjects
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Tổng cộng @Model.TotalSubjects môn học
+                    </div>
+                    <a asp-controller="Subjects"
+                       asp-action="Index"
+                       class="stretched-link"
+                       aria-label="Quản lý môn học"></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        Lớp chưa bị hủy
+                    </div>
+                    <div class="display-6 fw-bold">
+                        @Model.TotalClasses
+                    </div>
+                    <div class="small text-success mt-2">
+                        @Model.OpenClasses đang mở đăng ký
+                    </div>
+                    <a asp-controller="Classes"
+                       asp-action="Index"
+                       class="stretched-link"
+                       aria-label="Quản lý lớp học"></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        Lớp chưa có giáo viên
+                    </div>
+                    <div class="display-6 fw-bold text-warning">
+                        @Model.ClassesWithoutTeacher
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Không tính lớp đã hủy hoặc hoàn thành
+                    </div>
+                    <a asp-controller="Classes"
+                       asp-action="Index"
+                       class="stretched-link"
+                       aria-label="Xem các lớp học"></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h2 class="h5 fw-bold mb-3">Lịch học và khung giờ</h2>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        Khung giờ đang hoạt động
+                    </div>
+                    <div class="display-6 fw-bold">
+                        @Model.ActiveTimeSlots
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Tổng cộng @Model.TotalTimeSlots khung giờ
+                    </div>
+                    <a asp-controller="TimeSlots"
+                       asp-action="Index"
+                       class="stretched-link"
+                       aria-label="Quản lý khung giờ"></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        Lịch học định kỳ
+                    </div>
+                    <div class="display-6 fw-bold">
+                        @Model.TotalClassSchedules
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Số bản ghi lịch học đã thiết lập
+                    </div>
+                    <a asp-controller="ClassSchedules"
+                       asp-action="Index"
+                       class="stretched-link"
+                       aria-label="Quản lý lịch học"></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        Lớp đã hủy
+                    </div>
+                    <div class="display-6 fw-bold text-secondary">
+                        @Model.CancelledClasses
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Dữ liệu vẫn được giữ trong database
+                    </div>
+                    <a asp-controller="Classes"
+                       asp-action="Index"
+                       class="stretched-link"
+                       aria-label="Xem danh sách lớp"></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h2 class="h5 fw-bold mb-3">Quản lý chức năng</h2>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-md-6 col-xl-4">
+            <a asp-controller="Teachers"
+               asp-action="Index"
+               class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 fw-bold text-dark">
+                            Quản lý Teacher
+                        </h3>
+                        <p class="text-muted small mb-0">
+                            Xem danh sách và tạo tài khoản giáo viên.
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-4">
+            <a asp-controller="Subjects"
+               asp-action="Index"
+               class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 fw-bold text-dark">
+                            Quản lý Subject
+                        </h3>
+                        <p class="text-muted small mb-0">
+                            Quản lý môn học và trạng thái hoạt động.
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-4">
+            <a asp-controller="Classes"
+               asp-action="Index"
+               class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 fw-bold text-dark">
+                            Quản lý Class
+                        </h3>
+                        <p class="text-muted small mb-0">
+                            Quản lý lớp, học phí, sĩ số và phân công Teacher.
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-4">
+            <a asp-controller="TimeSlots"
+               asp-action="Index"
+               class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 fw-bold text-dark">
+                            Quản lý TimeSlot
+                        </h3>
+                        <p class="text-muted small mb-0">
+                            Quản lý khung giờ học và trạng thái Active/Inactive.
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-4">
+            <a asp-controller="ClassSchedules"
+               asp-action="Index"
+               class="text-decoration-none">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="h6 fw-bold text-dark">
+                            Quản lý ClassSchedule
+                        </h3>
+                        <p class="text-muted small mb-0">
+                            Thiết lập thứ học và khung giờ cho từng lớp.
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+
 </div>

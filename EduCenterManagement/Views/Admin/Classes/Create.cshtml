@@ -1,11 +1,19 @@
-﻿@model EduCenterManagement.ViewModels.Admin.ClassViewModel
+﻿
+@model EduCenterManagement.ViewModels.Admin.ClassViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Thêm lớp học";
+
+    var days = ViewBag.DaysOfWeek as IEnumerable<SelectListItem>
+        ?? Enumerable.Empty<SelectListItem>();
+
+    var timeSlots = ViewBag.TimeSlots as IEnumerable<SelectListItem>
+        ?? Enumerable.Empty<SelectListItem>();
 }
 
-<div class="container mt-4" style="max-width: 800px;">
-    <h2 class="mb-4">Thêm lớp học</h2>
+<div class="container mt-4 mb-5" style="max-width: 900px;">
+    <h2 class="mb-4">Mở lớp học mới</h2>
 
     <div class="card shadow-sm">
         <div class="card-body p-4">
@@ -18,11 +26,13 @@
                 <div asp-validation-summary="ModelOnly"
                      class="text-danger mb-3"></div>
 
+                <h5 class="mb-3">1. Thông tin lớp học</h5>
+
                 <div class="mb-3">
                     <label asp-for="Name" class="form-label"></label>
                     <input asp-for="Name"
                            class="form-control"
-                           placeholder="Ví dụ: English A1" />
+                           placeholder="Ví dụ: Toán A1" />
                     <span asp-validation-for="Name"
                           class="text-danger"></span>
                 </div>
@@ -48,7 +58,8 @@
                     <span asp-validation-for="TeacherId"
                           class="text-danger"></span>
                     <small class="text-muted">
-                        Bạn có thể phân công giáo viên sau khi tạo lớp.
+                        Giáo viên phải thuộc môn học đã chọn.
+                        Bạn có thể phân công sau.
                     </small>
                 </div>
 
@@ -83,21 +94,140 @@
                           class="text-danger"></span>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-4">
                     <label asp-for="Fee" class="form-label"></label>
                     <input asp-for="Fee"
                            type="number"
                            min="0"
-                           step="1000"
+                           step="any"
                            class="form-control" />
                     <span asp-validation-for="Fee"
                           class="text-danger"></span>
                 </div>
 
-                <div class="alert alert-info">
-                    Lớp mới được tạo ở trạng thái Draft.
-                    Sau khi hoàn thiện lịch học và phân công giáo viên,
-                    bạn có thể mở lớp cho Student đăng ký.
+                <hr />
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h5 class="mb-1">2. Lịch học định kỳ</h5>
+                        <p class="text-muted small mb-0">
+                            Chọn thứ và khung giờ cho từng buổi học.
+                        </p>
+                    </div>
+
+                    <button type="button"
+                            id="addScheduleBtn"
+                            class="btn btn-outline-primary">
+                        + Thêm buổi học
+                    </button>
+                </div>
+
+                <div id="scheduleValidation"
+                     class="text-danger mb-2"></div>
+
+                <div id="scheduleContainer">
+                    @if (Model.Schedules != null)
+                    {
+                        for (int i = 0; i < Model.Schedules.Count; i++)
+                        {
+                            <div class="schedule-row border rounded-3 p-3 mb-3">
+                                <div class="row align-items-end">
+                                    <div class="col-md-5 mb-2">
+                                        <label class="form-label"
+                                               for="Schedules_@(i)__DayOfWeek">
+                                            Thứ trong tuần
+                                        </label>
+
+                                        <select asp-for="Schedules[i].DayOfWeek"
+                                                asp-items="ViewBag.DaysOfWeek"
+                                                class="form-select day-select">
+                                        </select>
+
+                                        <span asp-validation-for="Schedules[i].DayOfWeek"
+                                              class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-5 mb-2">
+                                        <label class="form-label"
+                                               for="Schedules_@(i)__TimeSlotId">
+                                            Khung giờ
+                                        </label>
+
+                                        <select asp-for="Schedules[i].TimeSlotId"
+                                                asp-items="ViewBag.TimeSlots"
+                                                class="form-select slot-select">
+                                            <option value="">-- Chọn khung giờ --</option>
+                                        </select>
+
+                                        <span asp-validation-for="Schedules[i].TimeSlotId"
+                                              class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-2 mb-2">
+                                        <button type="button"
+                                                class="btn btn-outline-danger remove-schedule w-100">
+                                            Xóa
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <template id="scheduleTemplate">
+                    <div class="schedule-row border rounded-3 p-3 mb-3">
+                        <div class="row align-items-end">
+                            <div class="col-md-5 mb-2">
+                                <label class="form-label"
+                                       for="Schedules___index___DayOfWeek">
+                                    Thứ trong tuần
+                                </label>
+
+                                <select name="Schedules[__index__].DayOfWeek"
+                                        id="Schedules___index___DayOfWeek"
+                                        class="form-select day-select"
+                                        required>
+                                    @foreach (var day in days)
+                                    {
+                                        <option value="@day.Value">@day.Text</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-5 mb-2">
+                                <label class="form-label"
+                                       for="Schedules___index___TimeSlotId">
+                                    Khung giờ
+                                </label>
+
+                                <select name="Schedules[__index__].TimeSlotId"
+                                        id="Schedules___index___TimeSlotId"
+                                        class="form-select slot-select"
+                                        required>
+                                    <option value="">-- Chọn khung giờ --</option>
+                                    @foreach (var slot in timeSlots)
+                                    {
+                                        <option value="@slot.Value">@slot.Text</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-2 mb-2">
+                                <button type="button"
+                                        class="btn btn-outline-danger remove-schedule w-100">
+                                    Xóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="alert alert-info mt-3">
+                    Lớp sẽ được tạo ở trạng thái <strong>Draft</strong>.
+                    Lớp và các lịch học được lưu cùng nhau.
+                    Bạn có thể phân công Teacher sau, rồi mở đăng ký
+                    khi lớp đã đáp ứng đủ điều kiện.
                 </div>
 
                 <div class="d-flex gap-2">
@@ -118,4 +248,139 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const subjectSelect = document.getElementById("SubjectId");
+            const teacherSelect = document.getElementById("TeacherId");
+
+            const container = document.getElementById("scheduleContainer");
+            const template = document.getElementById("scheduleTemplate");
+            const addButton = document.getElementById("addScheduleBtn");
+            const validationMessage =
+                document.getElementById("scheduleValidation");
+
+            const teachersUrl =
+                '@Url.Action("GetTeachersBySubject", "Classes")';
+
+            let nextIndex = container.querySelectorAll(".schedule-row").length;
+
+            async function loadTeachers() {
+                const subjectId = subjectSelect.value;
+
+                teacherSelect.innerHTML =
+                    '<option value="">-- Chưa phân công giáo viên --</option>';
+
+                if (!subjectId) {
+                    teacherSelect.disabled = true;
+                    return;
+                }
+
+                teacherSelect.disabled = true;
+
+                try {
+                    const response = await fetch(
+                        `${teachersUrl}?subjectId=${encodeURIComponent(subjectId)}`,
+                        {
+                            headers: { "Accept": "application/json" }
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error("Không tải được danh sách Teacher.");
+                    }
+
+                    const teachers = await response.json();
+
+                    teachers.forEach(function (teacher) {
+                        const option = document.createElement("option");
+                        option.value = teacher.id;
+                        option.textContent = teacher.fullName;
+                        teacherSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error(error);
+                    validationMessage.textContent =
+                        "Không tải được danh sách Teacher. Vui lòng thử lại.";
+                } finally {
+                    teacherSelect.disabled = false;
+                }
+            }
+
+            subjectSelect.addEventListener("change", loadTeachers);
+            loadTeachers();
+
+            function addScheduleRow() {
+                const html = template.innerHTML.replace(
+                    /__index__/g,
+                    nextIndex
+                );
+
+                container.insertAdjacentHTML("beforeend", html);
+                nextIndex++;
+                validationMessage.textContent = "";
+            }
+
+            addButton.addEventListener("click", addScheduleRow);
+
+            container.addEventListener("click", function (event) {
+                const button = event.target.closest(".remove-schedule");
+
+                if (!button) return;
+
+                const rows = container.querySelectorAll(".schedule-row");
+
+                if (rows.length <= 1) {
+                    validationMessage.textContent =
+                        "Lớp phải có ít nhất một buổi học.";
+                    return;
+                }
+
+                button.closest(".schedule-row").remove();
+                validationMessage.textContent = "";
+            });
+
+            // Chặn trùng cùng thứ và cùng khung giờ trên giao diện.
+            // Server vẫn kiểm tra lại trước khi lưu.
+            document.querySelector("form[asp-action='Create']");
+
+            document.querySelector("form[method='post']")
+                .addEventListener("submit", function (event) {
+                    const rows = Array.from(
+                        container.querySelectorAll(".schedule-row")
+                    );
+
+                    const seen = new Set();
+                    let duplicate = false;
+
+                    rows.forEach(function (row) {
+                        const day = row.querySelector(".day-select").value;
+                        const slot = row.querySelector(".slot-select").value;
+
+                        if (!day || !slot) return;
+
+                        const key = `${day}-${slot}`;
+
+                        if (seen.has(key)) {
+                            duplicate = true;
+                        }
+
+                        seen.add(key);
+                    });
+
+                    if (rows.length === 0) {
+                        duplicate = true;
+                        validationMessage.textContent =
+                            "Vui lòng thêm ít nhất một buổi học.";
+                    } else if (duplicate) {
+                        validationMessage.textContent =
+                            "Có lịch bị trùng thứ và khung giờ. Vui lòng kiểm tra lại.";
+                    }
+
+                    if (duplicate) {
+                        event.preventDefault();
+                    }
+                });
+        });
+    </script>
 }
