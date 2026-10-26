@@ -1,4 +1,4 @@
-﻿@model IEnumerable<EduCenterManagement.Models.TimeSlot>
+@model IEnumerable<EduCenterManagement.Models.TimeSlot>
 
 @{
     ViewData["Title"] = "Quản lý khung giờ";
@@ -8,11 +8,24 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Quản lý khung giờ học</h2>
 
-        <a asp-controller="TimeSlots"
-           asp-action="Create"
-           class="btn btn-primary">
-            + Thêm khung giờ
-        </a>
+        <div class="d-flex gap-2">
+            <form asp-controller="TimeSlots"
+                  asp-action="GenerateDefaultSlots"
+                  method="post"
+                  class="d-inline"
+                  onsubmit="return confirm('Bạn có chắc chắn muốn tự động tạo 6 khung giờ mặc định (Slot 1 đến Slot 6)?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary">
+                     Khởi tạo khung giờ mặc định
+                </button>
+            </form>
+
+            <a asp-controller="TimeSlots"
+               asp-action="Create"
+               class="btn btn-primary">
+                + Thêm khung giờ
+            </a>
+        </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -127,10 +140,23 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    Chưa có khung giờ nào.
-                                    Hãy nhấn <strong>Thêm khung giờ</strong>
-                                    để tạo mới.
+                                <td colspan="6" class="text-center py-5">
+                                    <p class="text-muted mb-3 fs-6">Chưa có khung giờ học nào trong hệ thống.</p>
+                                    <form asp-controller="TimeSlots"
+                                          asp-action="GenerateDefaultSlots"
+                                          method="post"
+                                          class="d-inline me-2"
+                                          onsubmit="return confirm('Bạn có chắc chắn muốn tự động tạo 6 khung giờ mặc định (Slot 1 đến Slot 6)?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success">
+                                             Khởi tạo 6 khung giờ mặc định (Slot 1 - 6)
+                                        </button>
+                                    </form>
+                                    <a asp-controller="TimeSlots"
+                                       asp-action="Create"
+                                       class="btn btn-outline-primary">
+                                        + Thêm thủ công
+                                    </a>
                                 </td>
                             </tr>
                         }
