@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "Xác thực email";
+    var success = ViewData["Success"] is bool ok && ok;
+    var message = ViewData["Message"] as string ?? string.Empty;
+}
+
+<div class="container mt-5 text-center" style="max-width: 520px;">
+    <h1 class="h3 @(success ? "text-success" : "text-danger")">
+        @(success ? "Xác thực email thành công" : "Xác thực email không thành công")
+    </h1>
+
+    <p class="mt-3">@message</p>
+
+    <a asp-controller="Home"
+       asp-action="Index"
+       class="btn btn-primary">
+        Về trang chủ
+    </a>
+</div>
