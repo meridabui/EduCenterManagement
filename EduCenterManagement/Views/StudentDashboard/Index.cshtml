@@ -1,0 +1,116 @@
+﻿@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Dashboard.StudentDashboardViewModel
+
+@{
+    ViewData["Title"] = "Trang học sinh";
+}
+
+<div class="container mt-4" style="max-width: 900px;">
+    <h2 class="mb-1">Xin chào, @Model.FullName</h2>
+    <p class="text-muted">Liên kết với phụ huynh để được đăng ký lớp học.</p>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success">@successMessage</div>
+}
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Gửi yêu cầu liên kết</h5>
+            <p class="text-muted small">
+                Nhập Parent Linking Code mà phụ huynh cung cấp (ví dụ: PAR-2026-ABC123).
+            </p>
+
+            <form asp-action="SendLinkRequest" method="post" class="row g-2">
+                <div class="col-sm-8">
+                    <input type="text" name="linkingCode" class="form-control"
+                           placeholder="PAR-2026-XXXXXX" maxlength="50" required />
+                </div>
+                <div class="col-sm-4">
+                    <button type="submit" class="btn btn-primary w-100">Gửi yêu cầu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Yêu cầu liên kết của bạn</h5>
+
+            @if (!Model.Links.Any())
+            {
+                <p class="text-muted mb-0">Bạn chưa gửi yêu cầu nào.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Phụ huynh</th>
+                                <th>Email</th>
+                                <th>Trạng thái</th>
+                                <th>Thời gian gửi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Links)
+                            {
+                                <tr>
+                                    <td>@item.FullName</td>
+                                    <td>@item.Email</td>
+                                    <td>
+                                        @switch (item.Status)
+                                        {
+                                            case ParentStudentLinkStatus.Pending:
+                                                <span class="badge bg-warning text-dark">Đang chờ</span>
+                                                break;
+                                            case ParentStudentLinkStatus.Accepted:
+                                                <span class="badge bg-success">Đã liên kết</span>
+                                                break;
+                                            case ParentStudentLinkStatus.Rejected:
+                                                <span class="badge bg-danger">Bị từ chối</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">Đã thu hồi</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>@item.RequestedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Thông báo gần đây</h5>
+
+            @if (!Model.Notifications.Any())
+            {
+                <p class="text-muted mb-0">Chưa có thông báo.</p>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var n in Model.Notifications)
+                    {
+                        <li class="list-group-item px-0">
+                            <div class="fw-semibold">@n.Title</div>
+                            <div>@n.Message</div>
+                            <div class="text-muted small">@n.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
