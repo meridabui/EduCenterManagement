@@ -1,0 +1,329 @@
+@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Teacher.ClassSessionsViewModel
+
+@{
+    ViewData["Title"] = $"Buổi học - Lớp {Model.ClassName}";
+}
+
+<div class="container-fluid">
+    <!-- Nút quay lại & Tiêu đề lớp -->
+    <div class="mb-4">
+        <a asp-controller="Teacher"
+           asp-action="AssignedClasses"
+           class="btn btn-outline-secondary btn-sm mb-3">
+            ⬅ Quay lại danh sách lớp
+        </a>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h2 class="mb-1">Lộ trình & Buổi học - Lớp @Model.ClassName</h2>
+                <p class="text-muted mb-0">
+                    Môn học: <strong class="text-primary">@Model.SubjectName</strong> |
+                    Khóa học: <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong> đến <strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong>
+                </p>
+            </div>
+            <div>
+                <a asp-controller="Teacher"
+                   asp-action="StudentList"
+                   asp-route-classId="@Model.ClassId"
+                   class="btn btn-outline-primary btn-sm">
+                    👥 Xem danh sách học sinh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- Card Thống kê Tiến độ Khóa học -->
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-4">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6 mb-2 mb-md-0">
+                    <h5 class="fw-bold mb-1">Tiến độ hoàn thành lớp học</h5>
+                    <p class="text-muted small mb-0">
+                        Đã dạy xong <strong>@Model.CompletedSessions</strong> / <strong>@Model.TotalSessions</strong> buổi học (@Model.ProgressPercentage%)
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <div class="progress" style="height: 12px;">
+                        <div class="progress-bar bg-success"
+                             role="progressbar"
+                             style="width: @Model.ProgressPercentage%;"
+                             aria-valuenow="@Model.ProgressPercentage"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 text-center border-top pt-3">
+                <div class="col-6 col-sm-3">
+                    <div class="p-2 rounded bg-light">
+                        <div class="small text-muted">Tổng số buổi</div>
+                        <div class="fs-4 fw-bold text-dark">@Model.TotalSessions</div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div class="p-2 rounded bg-success-subtle text-success">
+                        <div class="small">Đã hoàn thành</div>
+                        <div class="fs-4 fw-bold">@Model.CompletedSessions</div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div class="p-2 rounded bg-primary-subtle text-primary">
+                        <div class="small">Sắp diễn ra</div>
+                        <div class="fs-4 fw-bold">@Model.ScheduledSessions</div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <div class="p-2 rounded bg-danger-subtle text-danger">
+                        <div class="small">Báo nghỉ / Hủy</div>
+                        <div class="fs-4 fw-bold">@Model.CancelledSessions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hộp thông báo Ghim buổi học HÔM NAY (nếu có) -->
+    @if (Model.TodaySession != null)
+    {
+        <div class="alert alert-primary border-primary d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 p-3 shadow-sm" role="alert">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                </div>
+                <div>
+                    <h5 class="alert-heading mb-1 fw-bold">Hôm nay lớp có buổi học: Buổi @Model.TodaySession.SessionNumber</h5>
+                    <p class="mb-0 text-dark small">
+                        Khung giờ: <strong>@Model.TodaySession.StartsAt.ToString("HH:mm") - @Model.TodaySession.EndsAt.ToString("HH:mm")</strong> |
+                        Trạng thái:
+                        @switch (Model.TodaySession.Status)
+                        {
+                            case ClassSessionStatus.Completed:
+                                <span class="badge bg-success">Đã hoàn thành</span>
+                                break;
+                            case ClassSessionStatus.Cancelled:
+                                <span class="badge bg-danger">Đã báo nghỉ</span>
+                                break;
+                            default:
+                                <span class="badge bg-primary">Đã lên lịch</span>
+                                break;
+                        }
+                    </p>
+                </div>
+            </div>
+
+            @if (Model.TodaySession.Status == ClassSessionStatus.Scheduled)
+            {
+                <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="sessionId" value="@Model.TodaySession.SessionId" />
+                    <input type="hidden" name="status" value="@ClassSessionStatus.Completed" />
+                    <input type="hidden" name="classId" value="@Model.ClassId" />
+                    <input type="hidden" name="filter" value="@Model.CurrentFilter" />
+                    <button type="submit" class="btn btn-success btn-sm px-3" onclick="return confirm('Bạn có chắc chắn muốn xác nhận hoàn thành buổi học hôm nay?');">
+                        <i class="bi bi-check2-circle me-1"></i> Kết thúc buổi học hôm nay
+                    </button>
+                </form>
+            }
+        </div>
+    }
+
+    <!-- Bộ lọc các buổi học -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" asp-route-filter="all"
+           class="btn btn-sm @(Model.CurrentFilter == "all" ? "btn-dark" : "btn-outline-secondary")">
+            Tất cả (@Model.TotalSessions)
+        </a>
+        <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" asp-route-filter="today"
+           class="btn btn-sm @(Model.CurrentFilter == "today" ? "btn-primary" : "btn-outline-primary")">
+            📅 Hôm nay @(Model.TodaySession != null ? "(1)" : "(0)")
+        </a>
+        <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" asp-route-filter="scheduled"
+           class="btn btn-sm @(Model.CurrentFilter == "scheduled" ? "btn-primary" : "btn-outline-primary")">
+            Chưa học (@Model.ScheduledSessions)
+        </a>
+        <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" asp-route-filter="completed"
+           class="btn btn-sm @(Model.CurrentFilter == "completed" ? "btn-success" : "btn-outline-success")">
+            Đã hoàn thành (@Model.CompletedSessions)
+        </a>
+        <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" asp-route-filter="cancelled"
+           class="btn btn-sm @(Model.CurrentFilter == "cancelled" ? "btn-danger" : "btn-outline-danger")">
+            Báo nghỉ / Hủy (@Model.CancelledSessions)
+        </a>
+    </div>
+
+    <!-- Bảng danh sách các Buổi học (Timeline Table) -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 12%;">Số buổi</th>
+                            <th style="width: 22%;">Ngày học</th>
+                            <th style="width: 18%;">Khung giờ</th>
+                            <th style="width: 16%;">Trạng thái</th>
+                            <th style="width: 18%;">Thao tác trạng thái</th>
+                            <th class="pe-3 text-center" style="width: 14%;">Nghiệp vụ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Sessions.Any())
+                        {
+                            foreach (var s in Model.Sessions)
+                            {
+                                <tr class="@(s.IsToday ? "table-primary bg-opacity-10" : "")">
+                                    <td class="ps-3">
+                                        <span class="badge bg-dark bg-opacity-75 fs-6 font-monospace">
+                                            Buổi @s.SessionNumber
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">
+                                            @s.DayOfWeekName
+                                            @if (s.IsToday)
+                                            {
+                                                <span class="badge bg-primary ms-1 small">Hôm nay</span>
+                                            }
+                                        </div>
+                                        <div class="small text-muted">
+                                            📅 @s.SessionDate.ToString("dd/MM/yyyy")
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">
+                                            ⏰ @s.StartsAt.ToString("HH:mm") - @s.EndsAt.ToString("HH:mm")
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @switch (s.Status)
+                                        {
+                                            case ClassSessionStatus.Completed:
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                    <i class="bi bi-check-circle me-1"></i> Đã hoàn thành
+                                                </span>
+                                                break;
+                                            case ClassSessionStatus.Cancelled:
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                                    <i class="bi bi-x-circle me-1"></i> Báo nghỉ / Hủy
+                                                </span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                                    <i class="bi bi-clock me-1"></i> Đã lên lịch
+                                                </span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (s.Status == ClassSessionStatus.Scheduled)
+                                        {
+                                            <div class="d-flex gap-1">
+                                                <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                                    <input type="hidden" name="status" value="@ClassSessionStatus.Completed" />
+                                                    <input type="hidden" name="classId" value="@Model.ClassId" />
+                                                    <input type="hidden" name="filter" value="@Model.CurrentFilter" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Xác nhận dạy xong buổi này">
+                                                        <i class="bi bi-check-lg"></i> Xong
+                                                    </button>
+                                                </form>
+
+                                                <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn báo nghỉ / hủy buổi học này?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                                    <input type="hidden" name="status" value="@ClassSessionStatus.Cancelled" />
+                                                    <input type="hidden" name="classId" value="@Model.ClassId" />
+                                                    <input type="hidden" name="filter" value="@Model.CurrentFilter" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Báo nghỉ buổi học này">
+                                                        <i class="bi bi-x-lg"></i> Hủy
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        }
+                                        else if (s.Status == ClassSessionStatus.Completed)
+                                        {
+                                            <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                                <input type="hidden" name="status" value="@ClassSessionStatus.Scheduled" />
+                                                <input type="hidden" name="classId" value="@Model.ClassId" />
+                                                <input type="hidden" name="filter" value="@Model.CurrentFilter" />
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Đưa lại về trạng thái Đã lên lịch">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+                                                </button>
+                                            </form>
+                                        }
+                                        else if (s.Status == ClassSessionStatus.Cancelled)
+                                        {
+                                            <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                                <input type="hidden" name="status" value="@ClassSessionStatus.Scheduled" />
+                                                <input type="hidden" name="classId" value="@Model.ClassId" />
+                                                <input type="hidden" name="filter" value="@Model.CurrentFilter" />
+                                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Khôi phục lại buổi học">
+                                                    <i class="bi bi-arrow-clockwise"></i> Khôi phục
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                    <td class="pe-3 text-center">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                Thao tác
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <a class="dropdown-item text-muted disabled" href="#">
+                                                        <i class="bi bi-check2-square me-2 text-primary"></i>Điểm danh <small>(Sắp tới)</small>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item text-muted disabled" href="#">
+                                                        <i class="bi bi-file-earmark-slides me-2 text-success"></i>Tài liệu / Slide <small>(Sắp tới)</small>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item text-muted disabled" href="#">
+                                                        <i class="bi bi-question-circle me-2 text-warning"></i>Quiz bài tập <small>(Sắp tới)</small>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
+                                        <p class="fs-6 mb-1">Không có buổi học nào phù hợp với bộ lọc hiện tại.</p>
+                                        <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" asp-route-filter="all" class="btn btn-sm btn-outline-primary mt-2">
+                                            Xem tất cả các buổi học
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

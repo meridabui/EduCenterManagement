@@ -1,0 +1,85 @@
+@model EduCenterManagement.ViewModels.Teacher.StudentListViewModel
+
+@{
+    ViewData["Title"] = $"Danh sách học sinh - {Model.ClassName}";
+}
+
+<div class="container-fluid">
+    <div class="mb-4">
+        <a asp-controller="Teacher"
+           asp-action="AssignedClasses"
+           class="btn btn-outline-secondary btn-sm mb-3">
+            ⬅ Quay lại danh sách lớp
+        </a>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1">Danh sách học sinh - Lớp @Model.ClassName</h2>
+                <p class="text-muted mb-0">
+                    Môn học: <strong class="text-primary">@Model.SubjectName</strong> |
+                    Khóa học: <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong> đến <strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong>
+                </p>
+            </div>
+            <div>
+                <span class="badge bg-primary fs-6">
+                    Sĩ số: @Model.Students.Count học sinh
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 25%;">Mã học sinh</th>
+                            <th style="width: 45%;">Họ và tên</th>
+                            <th class="pe-4" style="width: 30%;">Ngày sinh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Students.Any())
+                        {
+                            foreach (var student in Model.Students)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="badge bg-light text-dark border font-monospace">
+                                            @student.StudentCode
+                                        </span>
+                                    </td>
+                                    <td class="fw-semibold">
+                                        @student.FullName
+                                    </td>
+                                    <td class="pe-4 text-secondary">
+                                        @if (student.DateOfBirth.HasValue)
+                                        {
+                                            <span>📅 @student.DateOfBirth.Value.ToString("dd/MM/yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">Chưa cập nhật</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <p class="fs-5 mb-1">Chưa có học sinh nào đăng ký vào lớp học này.</p>
+                                        <small>Danh sách sẽ tự động cập nhật khi học sinh đăng ký thành công.</small>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

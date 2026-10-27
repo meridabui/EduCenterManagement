@@ -1,0 +1,220 @@
+@model EduCenterManagement.ViewModels.Teacher.TeacherTimetableViewModel
+
+@{
+    ViewData["Title"] = "Thời khóa biểu giảng dạy";
+    string[] dayNames = new string[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật" };
+    var today = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<style>
+    .timetable-table {
+        table-layout: fixed;
+        width: 100%;
+        background-color: #fff;
+    }
+    .timetable-table th, .timetable-table td {
+        vertical-align: top;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+    }
+    .slot-column {
+        width: 130px;
+        background-color: #f8f9fa;
+        text-align: center;
+        vertical-align: middle !important;
+    }
+    .day-column {
+        min-width: 160px;
+    }
+    .today-header {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+    .today-cell {
+        background-color: #f0f7ff;
+    }
+    .session-card {
+        border-radius: 8px;
+        border-left: 4px solid #0d6efd;
+        background: #ffffff;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        padding: 10px;
+        margin-bottom: 8px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .session-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    }
+    .empty-slot {
+        color: #adb5bd;
+        font-size: 0.85rem;
+        text-align: center;
+        padding-top: 30px;
+        font-style: italic;
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header Thông tin -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h2 class="mb-1">Thời khóa biểu giảng dạy</h2>
+            <p class="text-muted mb-0">Giáo viên: <strong>@Model.TeacherName</strong></p>
+        </div>
+        <div>
+            <a asp-controller="Teacher" asp-action="AssignedClasses" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-journal-bookmark me-1"></i> Xem danh sách lớp phụ trách
+            </a>
+        </div>
+    </div>
+
+    <!-- Thanh điều hướng tuần (Tuần trước, Tuần này, Tuần sau) -->
+    <div class="card shadow-sm border-0 mb-3 bg-white">
+        <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <a asp-controller="Teacher"
+                   asp-action="Timetable"
+                   asp-route-weekOffset="@(Model.CurrentWeekOffset - 1)"
+                   class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-chevron-left"></i> Tuần trước
+                </a>
+
+                <span class="fw-bold text-dark mx-2 fs-6">
+                    Tuần: @Model.WeekStartDate.ToString("dd/MM/yyyy") - @Model.WeekEndDate.ToString("dd/MM/yyyy")
+                </span>
+
+                <a asp-controller="Teacher"
+                   asp-action="Timetable"
+                   asp-route-weekOffset="@(Model.CurrentWeekOffset + 1)"
+                   class="btn btn-sm btn-outline-dark">
+                    Tuần sau <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+
+            <div>
+                <a asp-controller="Teacher"
+                   asp-action="Timetable"
+                   asp-route-weekOffset="0"
+                   class="btn btn-sm @(Model.CurrentWeekOffset == 0 ? "btn-primary" : "btn-outline-primary")">
+                    <i class="bi bi-calendar-event me-1"></i> Tuần này (Hôm nay)
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ma Trận Thời Khóa Biểu (Slot x Ngày trong tuần) -->
+    <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="timetable-table table-bordered mb-0">
+                <thead>
+                    <tr class="text-center align-middle">
+                        <th class="slot-column bg-light py-2">
+                            <span class="fw-bold text-dark">Ca học</span>
+                        </th>
+                        @for (int i = 0; i < 7; i++)
+                        {
+                            var date = Model.DaysOfWeek[i];
+                            var isToday = date == today;
+                            <th class="day-column py-2 @(isToday ? "today-header" : "bg-light")">
+                                <div class="fw-bold">@dayNames[i]</div>
+                                <div class="small @(isToday ? "text-light" : "text-muted")">(@date.ToString("dd/MM"))</div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.TimeSlots.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <p class="mb-2">Hệ thống chưa có khung giờ học (TimeSlot).</p>
+                                <small>Vui lòng liên hệ Admin để tạo các ca học chuẩn.</small>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var slot in Model.TimeSlots)
+                        {
+                            <tr>
+                                <!-- Cột Ca học -->
+                                <td class="slot-column">
+                                    <div class="fw-bold text-primary">@slot.Name</div>
+                                    <div class="text-muted small">@slot.StartTime.ToString("HH:mm") - @slot.EndTime.ToString("HH:mm")</div>
+                                </td>
+
+                                <!-- 7 Cột từ Thứ 2 đến Chủ Nhật -->
+                                @for (int i = 0; i < 7; i++)
+                                {
+                                    var date = Model.DaysOfWeek[i];
+                                    var isToday = date == today;
+                                    var cellSessions = Model.Sessions.Where(s =>
+                                        s.SessionDate == date &&
+                                        (s.MatchedTimeSlotId == slot.SlotId ||
+                                         (s.StartsAt >= slot.StartTime && s.StartsAt < slot.EndTime))
+                                    ).ToList();
+
+                                    <td class="@(isToday ? "today-cell" : "")" style="min-height: 125px;">
+                                        @if (!cellSessions.Any())
+                                        {
+                                            <div class="empty-slot">(Trống)</div>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var s in cellSessions)
+                                            {
+                                                <div class="session-card">
+                                                    <!-- Tên Lớp (URL Link click sang StudentList) -->
+                                                    <div class="mb-1">
+                                                        <a asp-controller="Teacher"
+                                                           asp-action="StudentList"
+                                                           asp-route-classId="@s.ClassId"
+                                                           class="fw-bold text-primary text-decoration-none fs-6"
+                                                           title="Nhấn để xem danh sách học sinh lớp này">
+                                                            📖 @s.ClassName
+                                                        </a>
+                                                    </div>
+
+                                                    <!-- Môn học -->
+                                                    <div class="small text-secondary mb-1">
+                                                        <span class="badge bg-light text-dark border">@s.SubjectName</span>
+                                                    </div>
+
+                                                    <!-- Sĩ số học sinh -->
+                                                    <div class="small text-muted mb-2">
+                                                        <i class="bi bi-people-fill me-1 text-info"></i> Sĩ số: <strong>@s.CurrentStudents / @s.MaxStudents</strong>
+                                                    </div>
+
+                                                    <!-- Nút thao tác nhanh -->
+                                                    <div class="d-flex gap-1 border-top pt-2 mt-1">
+                                                        <a asp-controller="Teacher"
+                                                           asp-action="Sessions"
+                                                           asp-route-classId="@s.ClassId"
+                                                           class="btn btn-sm btn-outline-success flex-fill py-1"
+                                                           style="font-size: 0.75rem;"
+                                                           title="Xem lộ trình các buổi học của lớp">
+                                                            📅 Buổi học
+                                                        </a>
+                                                        <a asp-controller="Teacher"
+                                                           asp-action="StudentList"
+                                                           asp-route-classId="@s.ClassId"
+                                                           class="btn btn-sm btn-outline-primary flex-fill py-1"
+                                                           style="font-size: 0.75rem;"
+                                                           title="Xem danh sách học sinh">
+                                                            👥 Học sinh
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
