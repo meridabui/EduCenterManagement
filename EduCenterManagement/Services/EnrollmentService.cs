@@ -107,8 +107,8 @@ namespace EduCenterManagement.Services
             // Enrollment còn hiệu lực = Paid, hoặc Pending còn trong thời gian giữ chỗ (BR17).
             var activeForStudent = _context.Enrollments.Where(e =>
                 e.StudentId == studentId &&
-                (e.Status == EnrollmentStatus.Paid ||
-                 (e.Status == EnrollmentStatus.Pending && e.ReservedUntil > now)));
+                (e.Status == EnrollmentStatus.Confirm ||
+                 (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now)));
 
             // BR14 (5): không đăng ký trùng.
             if (await activeForStudent.AnyAsync(e => e.ClassId == classId))
@@ -120,8 +120,8 @@ namespace EduCenterManagement.Services
             // BR14 (2), BR17: còn chỗ trống.
             var heldSeats = await _context.Enrollments.CountAsync(e =>
                 e.ClassId == classId &&
-                (e.Status == EnrollmentStatus.Paid ||
-                 (e.Status == EnrollmentStatus.Pending && e.ReservedUntil > now)));
+                (e.Status == EnrollmentStatus.Confirm ||
+                 (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now)));
 
             if (heldSeats >= classItem.MaxStudents)
             {
@@ -151,8 +151,8 @@ namespace EduCenterManagement.Services
                     _context.Enrollments.Any(e =>
                         e.StudentId == studentId &&
                         e.ClassId == s.ClassId &&
-                        (e.Status == EnrollmentStatus.Paid ||
-                         (e.Status == EnrollmentStatus.Pending && e.ReservedUntil > now))))
+                        (e.Status == EnrollmentStatus.Confirm ||
+                         (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now))))
                 .ToListAsync();
 
             foreach (var target in targetSchedules)
@@ -187,7 +187,7 @@ namespace EduCenterManagement.Services
                 StudentId = studentId,
                 ClassId = classId,
                 RegisteredByParentId = parentId,
-                Status = EnrollmentStatus.Pending,
+                Status = EnrollmentStatus.PendingPayment,
                 ReservedUntil = now.AddMinutes(HoldMinutes),
                 CreatedAt = now,
                 UpdatedAt = now
@@ -222,7 +222,7 @@ namespace EduCenterManagement.Services
             // Enrollment vừa được chuyển sang Paid ở luồng thanh toán.
             return await _context.Enrollments
                 .Where(e =>
-                    e.Status == EnrollmentStatus.Pending &&
+                    e.Status == EnrollmentStatus.PendingPayment &&
                     e.ReservedUntil != null &&
                     e.ReservedUntil <= now)
                 .ExecuteUpdateAsync(

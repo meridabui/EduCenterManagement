@@ -61,7 +61,7 @@ namespace EduCenterManagement.Controllers.Teacher
             var enrollmentCounts = await _context.Enrollments
                 .AsNoTracking()
                 .Where(e => classIds.Contains(e.ClassId) &&
-                           (e.Status == EnrollmentStatus.Confirmed || e.Status == EnrollmentStatus.PendingPayment))
+                           (e.Status == EnrollmentStatus.Confirm || e.Status == EnrollmentStatus.PendingPayment))
                 .GroupBy(e => e.ClassId)
                 .Select(g => new { ClassId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.ClassId, x => x.Count);
@@ -120,7 +120,7 @@ namespace EduCenterManagement.Controllers.Teacher
             var students = await _context.Enrollments
                 .AsNoTracking()
                 .Where(e => e.ClassId == classId &&
-                           (e.Status == EnrollmentStatus.Confirmed || e.Status == EnrollmentStatus.PendingPayment))
+                           (e.Status == EnrollmentStatus.Confirm || e.Status == EnrollmentStatus.PendingPayment))
                 .Include(e => e.Student)
                 .OrderBy(e => e.Student.FullName)
                 .Select(e => new StudentItemViewModel
@@ -198,7 +198,7 @@ namespace EduCenterManagement.Controllers.Teacher
             var enrollmentCounts = await _context.Enrollments
                 .AsNoTracking()
                 .Where(e => classIds.Contains(e.ClassId) &&
-                           (e.Status == EnrollmentStatus.Confirmed || e.Status == EnrollmentStatus.PendingPayment))
+                           (e.Status == EnrollmentStatus.Confirm || e.Status == EnrollmentStatus.PendingPayment))
                 .GroupBy(e => e.ClassId)
                 .Select(g => new { ClassId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.ClassId, x => x.Count);

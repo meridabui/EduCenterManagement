@@ -485,8 +485,8 @@ namespace EduCenterManagement.Controllers.Admin
 
         // =========================================================
         // CHI TIẾT SĨ SỐ
-        // EnrollmentStatus.Paid = đã thanh toán.
-        // EnrollmentStatus.Pending = đang giữ chỗ, chưa hết hạn.
+        // EnrollmentStatus.Confirm = đã thanh toán.
+        // EnrollmentStatus.PendingPayment = đang giữ chỗ, chưa hết hạn.
         // =========================================================
 
         [HttpGet]
@@ -506,9 +506,9 @@ namespace EduCenterManagement.Controllers.Admin
                 .Where(e =>
                     e.ClassId == id &&
                     (
-                        e.Status == EnrollmentStatus.Paid ||
+                        e.Status == EnrollmentStatus.Confirm ||
                         (
-                            e.Status == EnrollmentStatus.Pending &&
+                            e.Status == EnrollmentStatus.PendingPayment &&
                             (e.ReservedUntil == null ||
                              e.ReservedUntil > now)
                         )
@@ -520,7 +520,7 @@ namespace EduCenterManagement.Controllers.Admin
                     studentName = e.Student.FullName,
                     parentId = e.RegisteredByParentId,
                     reservedUntil = e.ReservedUntil,
-                    status = e.Status == EnrollmentStatus.Paid
+                    status = e.Status == EnrollmentStatus.Confirm
                         ? "Confirmed"
                         : "Reserved"
                 })

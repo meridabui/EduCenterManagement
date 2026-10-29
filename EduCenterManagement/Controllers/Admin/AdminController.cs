@@ -40,9 +40,9 @@ namespace EduCenterManagement.Controllers.Admin
                 .Where(e =>
                     classIds.Contains(e.ClassId) &&
                     (
-                        e.Status == EnrollmentStatus.Paid ||
+                        e.Status == EnrollmentStatus.Confirm ||
                         (
-                            e.Status == EnrollmentStatus.Pending &&
+                            e.Status == EnrollmentStatus.PendingPayment &&
                             (e.ReservedUntil == null ||
                              e.ReservedUntil > now)
                         )
@@ -92,8 +92,8 @@ namespace EduCenterManagement.Controllers.Admin
 
                     TeacherName = c.Teacher?.FullName,
 
-                    Confirmed = CountOf(c.Id, EnrollmentStatus.Paid),
-                    Reserved = CountOf(c.Id, EnrollmentStatus.Pending),
+                    Confirmed = CountOf(c.Id, EnrollmentStatus.Confirm),
+                    Reserved = CountOf(c.Id, EnrollmentStatus.PendingPayment),
                     MaxStudents = c.MaxStudents
                 };
             }).ToList();

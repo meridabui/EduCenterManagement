@@ -25,7 +25,7 @@ namespace EduCenterManagement.Repositories.Student
         {
             return await _context.Enrollments
                 .AsNoTracking()
-                .Where(e => e.StudentId == studentId && e.Status == EnrollmentStatus.Paid)
+                .Where(e => e.StudentId == studentId && e.Status == EnrollmentStatus.Confirm)
                 .Select(e => e.ClassId)
                 .ToListAsync();
         }
@@ -119,7 +119,7 @@ namespace EduCenterManagement.Repositories.Student
             return await _context.Enrollments
                 .AnyAsync(e => e.StudentId == studentId &&
                                e.ClassId == classId &&
-                               e.Status == EnrollmentStatus.Paid);
+                               e.Status == EnrollmentStatus.Confirm);
         }
 
         public async Task<Class?> GetClassWithDetailsAsync(int classId)
