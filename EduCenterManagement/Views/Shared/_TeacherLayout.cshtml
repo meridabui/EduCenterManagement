@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
@@ -144,7 +144,7 @@
                             <span>Lịch dạy</span>
                         </a>
                     </li>
-                    <li class="nav-item">
+                    @* <li class="nav-item">
                         <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Sessions" ? "active" : "")"
                            asp-controller="Teacher"
                            asp-action="AssignedClasses"
@@ -152,7 +152,7 @@
                             <i class="bi bi-clock-history"></i>
                             <span>Buổi học</span>
                         </a>
-                    </li>
+                    </li> *@
                     <li class="nav-item">
                         <a class="nav-link disabled" href="#">
                             <i class="bi bi-check2-square"></i>
@@ -168,10 +168,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link disabled" href="#">
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TeacherQuiz" ? "active" : "")"
+                           asp-controller="TeacherQuiz"
+                           asp-action="QuizList">
                             <i class="bi bi-question-circle"></i>
                             <span>Quản lý Quiz</span>
-                            <span class="badge bg-light text-secondary ms-auto small">Sắp tới</span>
                         </a>
                     </li>
                     <li class="nav-item">

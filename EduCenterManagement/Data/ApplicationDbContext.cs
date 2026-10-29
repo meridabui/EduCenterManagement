@@ -328,9 +328,16 @@ namespace EduCenterManagement.Data
 
             // QUIZZES
             modelBuilder.Entity<Quiz>()
+                .HasOne(x => x.Class)
+                .WithMany()
+                .HasForeignKey(x => x.ClassId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Quiz>()
                 .HasOne(x => x.Session)
                 .WithMany()
                 .HasForeignKey(x => x.SessionId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Quiz>()

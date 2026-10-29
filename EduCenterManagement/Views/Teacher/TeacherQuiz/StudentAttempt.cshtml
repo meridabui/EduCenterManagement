@@ -1,0 +1,129 @@
+@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Teacher.Quiz.StudentAttemptDetailViewModel
+
+@{
+    ViewData["Title"] = $"Bài làm của {Model.StudentFullName} - {Model.QuizTitle}";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Back & Header -->
+            <div class="mb-4">
+                <a asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@Model.QuizId" asp-route-tab="results"
+                   class="btn btn-outline-secondary btn-sm mb-3">
+                    ⬅ Quay lại bảng điểm Quiz
+                </a>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h2 class="mb-1">Chi tiết bài làm học sinh</h2>
+                        <p class="text-muted mb-0">
+                            Bài Quiz: <strong>@Model.QuizTitle</strong> | Lần làm: <strong>Lần @Model.AttemptNumber</strong>
+                        </p>
+                    </div>
+
+                    <!-- Điểm số nổi bật -->
+                    <div class="text-end">
+                        <div class="fs-2 fw-bold @((Model.Score ?? 0) >= (Model.TotalPoints / 2) ? "text-success" : "text-danger")">
+                            @(Model.Score?.ToString("0.##") ?? "0") / @Model.TotalPoints.ToString("0.##")
+                        </div>
+                        <span class="badge bg-light text-secondary border">Tổng điểm đạt được</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card tóm tắt học sinh -->
+            <div class="card shadow-sm border-0 mb-4 bg-white">
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="small text-muted">Học sinh</div>
+                            <div class="fw-bold fs-6">@Model.StudentFullName</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Mã học sinh</div>
+                            <div class="fw-bold font-monospace">@Model.StudentCode</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Bắt đầu lúc</div>
+                            <div class="fw-semibold">@Model.StartedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Nộp bài lúc</div>
+                            <div class="fw-semibold">
+                                @(Model.SubmittedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa hoàn thành")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danh sách từng câu hỏi & bài làm -->
+            <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-primary"></i>Chi tiết từng câu hỏi</h5>
+
+            <div class="d-flex flex-column gap-3 mb-5">
+                @for (int i = 0; i < Model.Answers.Count; i++)
+                {
+                    var a = Model.Answers[i];
+                    bool isRight = a.IsCorrect == true;
+                    <div class="card border @(isRight ? "border-success-subtle" : "border-danger-subtle") shadow-xs">
+                        <div class="card-header @(isRight ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") d-flex justify-content-between align-items-center py-2">
+                            <div class="fw-bold">
+                                <span class="badge @(isRight ? "bg-success" : "bg-danger") me-2">Câu @(i + 1)</span>
+                                <span>@(isRight ? "Làm đúng (+ " + a.EarnedPoints.ToString("0.##") + " đ)" : "Làm sai (0 / " + a.Points.ToString("0.##") + " đ)")</span>
+                            </div>
+                            <span class="small fw-semibold">
+                                Điểm câu hỏi: @a.Points.ToString("0.##")
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <p class="fs-6 fw-semibold mb-3">@a.QuestionText</p>
+
+                            <div class="row g-2">
+                                @foreach (var opt in a.Options)
+                                {
+                                    <div class="col-md-6">
+                                        <div class="p-2 rounded border
+                                            @(opt.IsSelectedByStudent && opt.IsCorrectOption ? "bg-success text-white border-success" : "")
+                                            @(opt.IsSelectedByStudent && !opt.IsCorrectOption ? "bg-danger-subtle text-danger border-danger" : "")
+                                            @(!opt.IsSelectedByStudent && opt.IsCorrectOption ? "bg-success-subtle text-success border-success" : "")
+                                            @(!opt.IsSelectedByStudent && !opt.IsCorrectOption ? "bg-white" : "")
+                                            d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <span class="badge @(opt.IsSelectedByStudent ? "bg-dark" : "bg-light text-dark border") me-2">
+                                                    @opt.OptionText
+                                                </span>
+                                            </div>
+                                            <div>
+                                                @if (opt.IsSelectedByStudent && opt.IsCorrectOption)
+                                                {
+                                                    <span class="badge bg-white text-success fw-bold">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>Học sinh chọn đúng
+                                                    </span>
+                                                }
+                                                else if (opt.IsSelectedByStudent && !opt.IsCorrectOption)
+                                                {
+                                                    <span class="badge bg-danger text-white">
+                                                        <i class="bi bi-x-circle-fill me-1"></i>Học sinh chọn sai
+                                                    </span>
+                                                }
+                                                else if (opt.IsCorrectOption)
+                                                {
+                                                    <span class="badge bg-success text-white">
+                                                        <i class="bi bi-check2-circle me-1"></i>Đáp án đúng
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

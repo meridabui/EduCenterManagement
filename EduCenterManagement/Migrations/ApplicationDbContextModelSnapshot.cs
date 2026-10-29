@@ -587,6 +587,9 @@ namespace EduCenterManagement.Migrations
                     b.Property<DateTime>("AvailableUntil")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -599,7 +602,7 @@ namespace EduCenterManagement.Migrations
                     b.Property<int>("MaxAttempts")
                         .HasColumnType("int");
 
-                    b.Property<int>("SessionId")
+                    b.Property<int?>("SessionId")
                         .HasColumnType("int");
 
                     b.Property<byte>("Status")
@@ -614,6 +617,8 @@ namespace EduCenterManagement.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
 
                     b.HasIndex("CreatedByTeacherId");
 
@@ -1209,6 +1214,12 @@ namespace EduCenterManagement.Migrations
 
             modelBuilder.Entity("EduCenterManagement.Models.Quiz", b =>
                 {
+                    b.HasOne("EduCenterManagement.Models.Class", "Class")
+                        .WithMany()
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("EduCenterManagement.Models.TeacherProfile", "CreatedByTeacher")
                         .WithMany()
                         .HasForeignKey("CreatedByTeacherId")
@@ -1218,8 +1229,9 @@ namespace EduCenterManagement.Migrations
                     b.HasOne("EduCenterManagement.Models.ClassSession", "Session")
                         .WithMany()
                         .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Class");
 
                     b.Navigation("CreatedByTeacher");
 

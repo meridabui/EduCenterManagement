@@ -10,6 +10,12 @@ builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 
 builder.Services.AddScoped<IPasswordHasher<AppUser>,PasswordHasher<AppUser>>();
 
+// Đăng ký Repository & Service cho phân hệ Teacher
+builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherRepository, EduCenterManagement.Repositories.Teacher.TeacherRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherService, EduCenterManagement.Services.Teacher.TeacherService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherQuizRepository, EduCenterManagement.Repositories.Teacher.TeacherQuizRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherQuizService, EduCenterManagement.Services.Teacher.TeacherQuizService>();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));

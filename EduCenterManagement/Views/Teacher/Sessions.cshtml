@@ -1,4 +1,4 @@
-@using EduCenterManagement.Enums
+﻿@using EduCenterManagement.Enums
 @model EduCenterManagement.ViewModels.Teacher.ClassSessionsViewModel
 
 @{
@@ -297,8 +297,8 @@
                                                     </a>
                                                 </li>
                                                 <li>
-                                                    <a class="dropdown-item text-muted disabled" href="#">
-                                                        <i class="bi bi-question-circle me-2 text-warning"></i>Quiz bài tập <small>(Sắp tới)</small>
+                                                    <a class="dropdown-item" asp-controller="TeacherQuiz" asp-action="Create" asp-route-sessionId="@s.SessionId" asp-route-classId="@Model.ClassId">
+                                                        <i class="bi bi-question-circle me-2 text-warning"></i>Tạo Quiz bài tập
                                                     </a>
                                                 </li>
                                             </ul>
