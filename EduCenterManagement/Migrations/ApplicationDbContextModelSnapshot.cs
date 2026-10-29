@@ -129,9 +129,6 @@ namespace EduCenterManagement.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("PrerequisiteClassId")
-                        .HasColumnType("int");
-
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
 
@@ -148,8 +145,6 @@ namespace EduCenterManagement.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PrerequisiteClassId");
 
                     b.HasIndex("SubjectId");
 
@@ -1056,11 +1051,6 @@ namespace EduCenterManagement.Migrations
 
             modelBuilder.Entity("EduCenterManagement.Models.Class", b =>
                 {
-                    b.HasOne("EduCenterManagement.Models.Class", "PrerequisiteClass")
-                        .WithMany()
-                        .HasForeignKey("PrerequisiteClassId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("EduCenterManagement.Models.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
@@ -1072,8 +1062,6 @@ namespace EduCenterManagement.Migrations
                         .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("PrerequisiteClass");
-
                     b.Navigation("Subject");
 
                     b.Navigation("Teacher");
@@ -1082,7 +1070,7 @@ namespace EduCenterManagement.Migrations
             modelBuilder.Entity("EduCenterManagement.Models.ClassSchedule", b =>
                 {
                     b.HasOne("EduCenterManagement.Models.Class", "Class")
-                        .WithMany()
+                        .WithMany("ClassSchedules")
                         .HasForeignKey("ClassId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -1383,6 +1371,11 @@ namespace EduCenterManagement.Migrations
                     b.Navigation("Subject");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EduCenterManagement.Models.Class", b =>
+                {
+                    b.Navigation("ClassSchedules");
                 });
 #pragma warning restore 612, 618
         }

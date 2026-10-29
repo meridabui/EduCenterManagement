@@ -1,4 +1,5 @@
-﻿
+﻿using System.Collections.Generic;
+using EduCenterManagement.Models;
 using EduCenterManagement.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -31,9 +32,6 @@ namespace EduCenterManagement.Models
         [Range(typeof(decimal), "0", "9999999999999999")]
         public decimal Fee { get; set; }
 
-        // Lớp tiên quyết (nếu có): Student phải hoàn thành lớp này trước khi đăng ký (BR14-4).
-        public int? PrerequisiteClassId { get; set; }
-
         public ClassStatus Status { get; set; } = ClassStatus.Draft;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -45,8 +43,7 @@ namespace EduCenterManagement.Models
 
         [ForeignKey(nameof(TeacherId))]
         public TeacherProfile? Teacher { get; set; }
-
-        [ForeignKey(nameof(PrerequisiteClassId))]
-        public Class? PrerequisiteClass { get; set; }
+        public ICollection<ClassSchedule> ClassSchedules { get; set; }
+            = new List<ClassSchedule>();
     }
 }

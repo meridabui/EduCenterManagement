@@ -74,7 +74,6 @@ namespace EduCenterManagement.Controllers
                 .Where(c => c.Status == ClassStatus.Open && c.StartDate > today)
                 .Include(c => c.Subject)
                 .Include(c => c.Teacher)
-                .Include(c => c.PrerequisiteClass)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
 
@@ -128,7 +127,6 @@ namespace EduCenterManagement.Controllers
                         ClassName = c.Name,
                         SubjectName = c.Subject?.Name ?? "Chưa xác định",
                         TeacherName = c.Teacher?.FullName,
-                        PrerequisiteName = c.PrerequisiteClass?.Name,
                         StartDate = c.StartDate,
                         EndDate = c.EndDate,
                         Fee = c.Fee,

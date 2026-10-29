@@ -227,17 +227,10 @@ namespace EduCenterManagement.Data
                 .HasForeignKey(x => x.TeacherId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // CLASS - PREREQUISITE CLASS (tự tham chiếu, tùy chọn)
-            modelBuilder.Entity<Class>()
-                .HasOne(x => x.PrerequisiteClass)
-                .WithMany()
-                .HasForeignKey(x => x.PrerequisiteClassId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             // CLASS - CLASS SCHEDULES
             modelBuilder.Entity<ClassSchedule>()
                 .HasOne(x => x.Class)
-                .WithMany()
+                .WithMany(x => x.ClassSchedules)
                 .HasForeignKey(x => x.ClassId)
                 .OnDelete(DeleteBehavior.Restrict);
 
