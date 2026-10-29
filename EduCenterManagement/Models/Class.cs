@@ -1,4 +1,5 @@
-﻿
+﻿using System.Collections.Generic;
+using EduCenterManagement.Models;
 using EduCenterManagement.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -42,5 +43,7 @@ namespace EduCenterManagement.Models
 
         [ForeignKey(nameof(TeacherId))]
         public TeacherProfile? Teacher { get; set; }
+        public ICollection<ClassSchedule> ClassSchedules { get; set; }
+            = new List<ClassSchedule>();
     }
 }

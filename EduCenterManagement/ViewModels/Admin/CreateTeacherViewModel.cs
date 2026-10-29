@@ -1,15 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿
+using System.ComponentModel.DataAnnotations;
 
 namespace EduCenterManagement.ViewModels.Admin
 {
     public class CreateTeacherViewModel
     {
-
         [Required(ErrorMessage = "Vui lòng chọn môn học.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Môn học không hợp lệ.")]
+        [Range(1, int.MaxValue,
+            ErrorMessage = "Môn học không hợp lệ.")]
         [Display(Name = "Môn chuyên trách")]
         public int SubjectId { get; set; }
-
 
         [Required(ErrorMessage = "Vui lòng nhập họ tên.")]
         [StringLength(100)]
@@ -23,7 +23,7 @@ namespace EduCenterManagement.ViewModels.Admin
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
-        [MinLength(8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
+        [MinLength(8, ErrorMessage = "Mật khẩu tối thiểu 8 ký tự.")]
         [DataType(DataType.Password)]
         [Display(Name = "Mật khẩu ban đầu")]
         public string Password { get; set; } = string.Empty;

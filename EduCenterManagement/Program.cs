@@ -3,12 +3,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using EduCenterManagement.Models;
+using EduCenterManagement.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 
-builder.Services.AddScoped<IPasswordHasher<AppUser>,PasswordHasher<AppUser>>();
+// SMTP: gửi email xác thực, xác nhận đăng ký lớp...
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
+
+builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddHostedService<EnrollmentExpiryWorker>();
+// Đăng ký Repository & Service cho phân hệ Student
+builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentTimetableRepository, EduCenterManagement.Repositories.Student.StudentTimetableRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentTimetableService, EduCenterManagement.Services.Student.StudentTimetableService>();
 
 // Đăng ký Repository & Service cho phân hệ Teacher
 builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherRepository, EduCenterManagement.Repositories.Teacher.TeacherRepository>();

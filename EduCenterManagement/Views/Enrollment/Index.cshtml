@@ -1,0 +1,130 @@
+﻿@model EduCenterManagement.ViewModels.Registration.EnrollmentIndexViewModel
+
+@{
+    ViewData["Title"] = "Đăng ký lớp học";
+}
+
+<div class="container mt-4" style="max-width: 1000px;">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="mb-0">Đăng ký lớp học</h2>
+        <a asp-controller="ParentDashboard" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            Về trang phụ huynh
+        </a>
+    </div>
+    <p class="text-muted">
+        Chọn học sinh rồi chọn lớp. Sau khi đăng ký, chỗ được giữ trong 15 phút để chờ thanh toán.
+    </p>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success">@successMessage</div>
+}
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+    @if (!Model.Students.Any())
+    {
+        <div class="alert alert-warning">
+            Bạn chưa có học sinh nào được liên kết. Hãy gửi Linking Code cho con và chấp nhận yêu cầu liên kết
+            ở <a asp-controller="ParentDashboard" asp-action="Index">trang phụ huynh</a>.
+        </div>
+    }
+    else
+    {
+        <form method="get" asp-action="Index" class="row g-2 align-items-end mb-4">
+            <div class="col-sm-6">
+                <label for="studentId" class="form-label fw-semibold">Học sinh</label>
+                <select id="studentId" name="studentId" class="form-select" onchange="this.form.submit()">
+                    @if (!Model.SelectedStudentId.HasValue)
+                    {
+                        <option value="" selected>-- Chọn học sinh --</option>
+                    }
+                    @foreach (var s in Model.Students)
+                    {
+                        <option value="@s.Id" selected="@(Model.SelectedStudentId == s.Id)">@s.FullName</option>
+                    }
+                </select>
+            </div>
+        </form>
+
+        @if (!Model.Classes.Any())
+        {
+            <p class="text-muted">Hiện chưa có lớp nào đang mở đăng ký.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Lớp</th>
+                            <th>Lịch học</th>
+                            <th>Thời gian</th>
+                            <th class="text-end">Học phí</th>
+                            <th class="text-center">Chỗ trống</th>
+                            <th class="text-end"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Classes)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@c.ClassName</div>
+                                    <div class="text-muted small">@c.SubjectName</div>
+                                    @if (!string.IsNullOrWhiteSpace(c.TeacherName))
+                                    {
+                                        <div class="text-muted small">GV: @c.TeacherName</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(c.PrerequisiteName))
+                                    {
+                                        <div class="small text-danger">Tiên quyết: @c.PrerequisiteName</div>
+                                    }
+                                </td>
+                                <td class="small">
+                                    @foreach (var s in c.Schedules)
+                                    {
+                                        <div>
+                                            @(s.DayOfWeek == 8 ? "Chủ nhật" : $"Thứ {s.DayOfWeek}"),
+                                            @s.StartTime.ToString("HH:mm")-@s.EndTime.ToString("HH:mm")
+                                        </div>
+                                    }
+                                </td>
+                                <td class="small">
+                                    @c.StartDate.ToString("dd/MM/yyyy") - @c.EndDate.ToString("dd/MM/yyyy")
+                                </td>
+                                <td class="text-end">@c.Fee.ToString("N0") đ</td>
+                                <td class="text-center">@c.SeatsLeft / @c.MaxStudents</td>
+                                <td class="text-end">
+                                    @if (c.AlreadyRegistered)
+                                    {
+                                        <span class="badge bg-info text-dark">Đã đăng ký</span>
+                                    }
+                                    else if (c.SeatsLeft <= 0)
+                                    {
+                                        <span class="badge bg-secondary">Hết chỗ</span>
+                                    }
+                                    else if (!Model.SelectedStudentId.HasValue)
+                                    {
+                                        <button type="button" class="btn btn-primary btn-sm" disabled>Đăng ký</button>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="Register" method="post" class="d-inline"
+                                              onsubmit="return confirm('Đăng ký lớp này? Chỗ sẽ được giữ trong 15 phút.');">
+                                            <input type="hidden" name="studentId" value="@Model.SelectedStudentId" />
+                                            <input type="hidden" name="classId" value="@c.ClassId" />
+                                            <button type="submit" class="btn btn-primary btn-sm">Đăng ký</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>

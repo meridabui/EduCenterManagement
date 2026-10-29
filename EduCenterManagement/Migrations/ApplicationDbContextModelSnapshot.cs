@@ -1078,7 +1078,7 @@ namespace EduCenterManagement.Migrations
             modelBuilder.Entity("EduCenterManagement.Models.ClassSchedule", b =>
                 {
                     b.HasOne("EduCenterManagement.Models.Class", "Class")
-                        .WithMany()
+                        .WithMany("ClassSchedules")
                         .HasForeignKey("ClassId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -1386,6 +1386,11 @@ namespace EduCenterManagement.Migrations
                     b.Navigation("Subject");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EduCenterManagement.Models.Class", b =>
+                {
+                    b.Navigation("ClassSchedules");
                 });
 #pragma warning restore 612, 618
         }

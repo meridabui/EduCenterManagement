@@ -230,7 +230,7 @@ namespace EduCenterManagement.Data
             // CLASS - CLASS SCHEDULES
             modelBuilder.Entity<ClassSchedule>()
                 .HasOne(x => x.Class)
-                .WithMany()
+                .WithMany(x => x.ClassSchedules)
                 .HasForeignKey(x => x.ClassId)
                 .OnDelete(DeleteBehavior.Restrict);
 
