@@ -1,4 +1,4 @@
-using EduCenterManagement.Data;
+﻿using EduCenterManagement.Data;
 using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
 using Microsoft.EntityFrameworkCore;
@@ -83,8 +83,8 @@ namespace EduCenterManagement.Repositories.Student
         {
             var raw = await _context.Quizzes
                 .AsNoTracking()
-                .Where(q => sessionIds.Contains(q.SessionId) && q.Status == QuizStatus.Published)
-                .GroupBy(q => q.SessionId)
+                .Where(q => q.SessionId.HasValue && sessionIds.Contains(q.SessionId.Value) && q.Status == QuizStatus.Published)
+                .GroupBy(q => q.SessionId!.Value)
                 .Select(g => new
                 {
                     SessionId = g.Key,
