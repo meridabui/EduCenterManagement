@@ -1,195 +1,227 @@
 ﻿@model EduCenterManagement.ViewModels.Admin.ClassViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Sửa lớp học";
+    var slots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var schedules = Model.Schedules ?? new List<EduCenterManagement.ViewModels.Admin.ClassScheduleInputViewModel>();
+    if (schedules.Count == 0)
+    {
+        schedules.Add(new EduCenterManagement.ViewModels.Admin.ClassScheduleInputViewModel());
+    }
 }
 
-<div class="container mt-4" style="max-width: 800px;">
+<div class="container mt-4 mb-5" style="max-width: 1000px;">
     <h2 class="mb-4">Sửa thông tin lớp học</h2>
 
     <div class="card shadow-sm">
         <div class="card-body p-4">
-            <form asp-controller="Classes"
-                  asp-action="Edit"
-                  asp-route-id="@Model.Id"
-                  method="post">
-
+            <form asp-controller="Classes" asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editClassForm">
                 @Html.AntiForgeryToken()
-
                 <input type="hidden" asp-for="Id" />
 
-                <div asp-validation-summary="ModelOnly"
-                     class="text-danger mb-3"></div>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-                <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name"
-                          class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="SubjectId" class="form-label"></label>
-                    <select asp-for="SubjectId"
-                            asp-items="ViewBag.Subjects"
-                            class="form-select">
-                        <option value="">-- Chọn môn học --</option>
-                    </select>
-                    <span asp-validation-for="SubjectId"
-                          class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="TeacherId" class="form-label"></label>
-                    <select asp-for="TeacherId"
-                            asp-items="ViewBag.Teachers"
-                            class="form-select">
-                        <option value="">-- Chưa phân công giáo viên --</option>
-                    </select>
-                    <span asp-validation-for="TeacherId"
-                          class="text-danger"></span>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="SubjectId" class="form-label"></label>
+                        <select asp-for="SubjectId" asp-items="ViewBag.Subjects" class="form-select" id="SubjectId">
+                            <option value="">-- Chọn môn học --</option>
+                        </select>
+                        <span asp-validation-for="SubjectId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
                         <label asp-for="StartDate" class="form-label"></label>
-                        <input asp-for="StartDate"
-                               type="date"
-                               class="form-control" />
-                        <span asp-validation-for="StartDate"
-                              class="text-danger"></span>
+                        <input asp-for="StartDate" type="date" class="form-control" />
+                        <span asp-validation-for="StartDate" class="text-danger"></span>
                     </div>
-
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-6">
                         <label asp-for="EndDate" class="form-label"></label>
-                        <input asp-for="EndDate"
-                               type="date"
-                               class="form-control" />
-                        <span asp-validation-for="EndDate"
-                              class="text-danger"></span>
+                        <input asp-for="EndDate" type="date" class="form-control" />
+                        <span asp-validation-for="EndDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="MaxStudents" class="form-label"></label>
+                        <input asp-for="MaxStudents" type="number" min="1" max="1000" class="form-control" />
+                        <span asp-validation-for="MaxStudents" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Fee" class="form-label"></label>
+                        <input asp-for="Fee" type="number" min="0" step="1" class="form-control" />
+                        <span asp-validation-for="Fee" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="TeacherId" class="form-label"></label>
+                        <select asp-for="TeacherId" asp-items="ViewBag.Teachers" class="form-select" id="TeacherId">
+                            <option value="">-- Chưa phân công giáo viên --</option>
+                        </select>
+                        <span asp-validation-for="TeacherId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PrerequisiteClassId" class="form-label"></label>
+                        <select asp-for="PrerequisiteClassId" asp-items="ViewBag.PrerequisiteClasses" class="form-select">
+                            <option value="">-- Không yêu cầu lớp tiên quyết --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Status" class="form-label"></label>
+                        <select asp-for="Status" asp-items="Html.GetEnumSelectList<EduCenterManagement.Enums.ClassStatus>()" class="form-select"></select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label asp-for="MaxStudents" class="form-label"></label>
-                    <input asp-for="MaxStudents"
-                           type="number"
-                           min="1"
-                           max="1000"
-                           class="form-control" />
-                    <span asp-validation-for="MaxStudents"
-                          class="text-danger"></span>
+                <hr class="my-4" />
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-1">Lịch học trong tuần</h5>
+                        <p class="text-muted small mb-0">Mỗi thứ có thể chọn một ca học riêng.</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" id="addScheduleBtn">+ Thêm lịch</button>
                 </div>
 
-                <div class="mb-3">
-                    <label asp-for="Fee" class="form-label"></label>
-                    <input asp-for="Fee"
-                           type="number"
-                           min="0"
-                           step="any"
-                           class="form-control" />
-                    <span asp-validation-for="Fee"
-                          class="text-danger"></span>
+                <div asp-validation-for="Schedules" class="text-danger mb-2"></div>
+                <div id="scheduleError" class="text-danger mb-2"></div>
+                <div id="scheduleContainer">
+                    @for (var i = 0; i < schedules.Count; i++)
+                    {
+                        <div class="schedule-row row g-2 align-items-end border rounded p-3 mb-2">
+                            <div class="col-md-5">
+                                <label class="form-label">Thứ trong tuần</label>
+                                <select name="Schedules[@i].DayOfWeek" class="form-select day-select" required>
+                                    <option value="2" selected="@(schedules[i].DayOfWeek == 2)">Thứ 2</option>
+                                    <option value="3" selected="@(schedules[i].DayOfWeek == 3)">Thứ 3</option>
+                                    <option value="4" selected="@(schedules[i].DayOfWeek == 4)">Thứ 4</option>
+                                    <option value="5" selected="@(schedules[i].DayOfWeek == 5)">Thứ 5</option>
+                                    <option value="6" selected="@(schedules[i].DayOfWeek == 6)">Thứ 6</option>
+                                    <option value="7" selected="@(schedules[i].DayOfWeek == 7)">Thứ 7</option>
+                                    <option value="8" selected="@(schedules[i].DayOfWeek == 8)">Chủ nhật</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Ca học</label>
+                                <select name="Schedules[@i].TimeSlotId" class="form-select slot-select" required>
+                                    <option value="">-- Chọn ca học --</option>
+                                    @foreach (var slot in slots)
+                                    {
+                                        <option value="@slot.Value" selected="@(slot.Value == schedules[i].TimeSlotId.ToString())">@slot.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-danger remove-schedule w-100">Xóa</button>
+                            </div>
+                        </div>
+                    }
                 </div>
 
-                <div class="mb-3">
-                    <label asp-for="Status" class="form-label"></label>
-                    <select asp-for="Status"
-                            asp-items="Html.GetEnumSelectList<EduCenterManagement.Enums.ClassStatus>()"
-                            class="form-select">
-                    </select>
-                    <span asp-validation-for="Status"
-                          class="text-danger"></span>
-                </div>
+                <template id="scheduleTemplate">
+                    <div class="schedule-row row g-2 align-items-end border rounded p-3 mb-2">
+                        <div class="col-md-5">
+                            <label class="form-label">Thứ trong tuần</label>
+                            <select class="form-select day-select" data-name="DayOfWeek" required>
+                                <option value="2">Thứ 2</option><option value="3">Thứ 3</option>
+                                <option value="4">Thứ 4</option><option value="5">Thứ 5</option>
+                                <option value="6">Thứ 6</option><option value="7">Thứ 7</option>
+                                <option value="8">Chủ nhật</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Ca học</label>
+                            <select class="form-select slot-select" data-name="TimeSlotId" required>
+                                <option value="">-- Chọn ca học --</option>
+                                @foreach (var slot in slots)
+                                {
+                                    <option value="@slot.Value">@slot.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2"><button type="button" class="btn btn-outline-danger remove-schedule w-100">Xóa</button></div>
+                    </div>
+                </template>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        Lưu thay đổi
-                    </button>
-
-                    <a asp-controller="Classes"
-                       asp-action="Index"
-                       class="btn btn-outline-secondary">
-                        Hủy
-                    </a>
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    <a asp-controller="Classes" asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const subjectSelect = document.getElementById("SubjectId");
-            const teacherSelect = document.getElementById("TeacherId");
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('scheduleContainer');
+            const template = document.getElementById('scheduleTemplate');
+            const addButton = document.getElementById('addScheduleBtn');
+            const form = document.getElementById('editClassForm');
+            const error = document.getElementById('scheduleError');
+            let nextIndex = container.querySelectorAll('.schedule-row').length;
 
-            if (!subjectSelect || !teacherSelect) return;
-
-            const teachersUrl =
-                '@Url.Action("GetTeachersBySubject", "Classes")';
-
-            async function loadTeachers(preserveSelection = false) {
-                const subjectId = subjectSelect.value;
-                const previousTeacherId = preserveSelection
-                    ? teacherSelect.value
-                    : "";
-
-                teacherSelect.innerHTML =
-                    '<option value="">-- Chọn giáo viên --</option>';
-
-                teacherSelect.disabled = true;
-
-                if (!subjectId) {
-                    teacherSelect.disabled = false;
-                    return;
-                }
-
-                try {
-                    const response = await fetch(
-                        `${teachersUrl}?subjectId=${encodeURIComponent(subjectId)}`,
-                        {
-                            headers: { "Accept": "application/json" }
-                        }
-                    );
-
-                    if (!response.ok) {
-                        throw new Error("Không tải được danh sách Teacher.");
-                    }
-
-                    const teachers = await response.json();
-
-                    teachers.forEach(function (teacher) {
-                        const option = document.createElement("option");
-                        option.value = teacher.id;
-                        option.textContent = teacher.fullName;
-
-                        if (String(teacher.id) === previousTeacherId) {
-                            option.selected = true;
-                        }
-
-                        teacherSelect.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error(error);
-
-                    const option = document.createElement("option");
-                    option.value = "";
-                    option.textContent = "-- Không tải được danh sách giáo viên --";
-                    teacherSelect.appendChild(option);
-                } finally {
-                    teacherSelect.disabled = false;
-                }
+            function reindexRows() {
+                container.querySelectorAll('.schedule-row').forEach((row, index) => {
+                    row.querySelector('.day-select').name = `Schedules[${index}].DayOfWeek`;
+                    row.querySelector('.slot-select').name = `Schedules[${index}].TimeSlotId`;
+                });
+                nextIndex = container.querySelectorAll('.schedule-row').length;
             }
 
-            subjectSelect.addEventListener("change", function () {
-                loadTeachers(false);
+            addButton.addEventListener('click', function () {
+                const fragment = template.content.cloneNode(true);
+                container.appendChild(fragment);
+                reindexRows();
+                error.textContent = '';
             });
 
-            loadTeachers(true);
+            container.addEventListener('click', function (event) {
+                const button = event.target.closest('.remove-schedule');
+                if (!button) return;
+                if (container.querySelectorAll('.schedule-row').length <= 1) {
+                    error.textContent = 'Lớp phải có ít nhất một lịch học.';
+                    return;
+                }
+                button.closest('.schedule-row').remove();
+                reindexRows();
+            });
+
+            form.addEventListener('submit', function (event) {
+                reindexRows();
+                const rows = [...container.querySelectorAll('.schedule-row')];
+                const days = rows.map(r => r.querySelector('.day-select').value);
+                const duplicate = new Set(days).size !== days.length;
+                const incomplete = rows.some(r => !r.querySelector('.day-select').value || !r.querySelector('.slot-select').value);
+                if (rows.length === 0 || duplicate || incomplete) {
+                    event.preventDefault();
+                    error.textContent = duplicate
+                        ? 'Mỗi thứ chỉ được chọn một lần.'
+                        : 'Vui lòng chọn thứ và ca học cho từng lịch.';
+                }
+            });
+
+            const subjectSelect = document.getElementById('SubjectId');
+            const teacherSelect = document.getElementById('TeacherId');
+            const teachersUrl = '@Url.Action("GetTeachersBySubject", "Classes")';
+            async function loadTeachers(preserve) {
+                const selected = preserve ? teacherSelect.value : '';
+                teacherSelect.innerHTML = '<option value="">-- Chưa phân công giáo viên --</option>';
+                if (!subjectSelect.value) return;
+                try {
+                    const response = await fetch(`${teachersUrl}?subjectId=${encodeURIComponent(subjectSelect.value)}`);
+                    if (!response.ok) throw new Error('Không tải được giáo viên.');
+                    const teachers = await response.json();
+                    teachers.forEach(t => {
+                        const option = new Option(t.fullName, t.id, false, String(t.id) === selected);
+                        teacherSelect.add(option);
+                    });
+                } catch (e) { console.error(e); }
+            }
+            subjectSelect.addEventListener('change', () => loadTeachers(false));
         });
     </script>
 }

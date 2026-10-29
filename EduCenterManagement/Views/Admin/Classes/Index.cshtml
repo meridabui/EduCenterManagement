@@ -1,162 +1,694 @@
 ﻿@model IEnumerable<EduCenterManagement.Models.Class>
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using EduCenterManagement.Enums
 
 @{
     ViewData["Title"] = "Quản lý lớp học";
+    var subjects = ViewBag.Subjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var timeSlots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var teachers = ViewBag.Teachers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var prerequisites = ViewBag.PrerequisiteClasses as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var openCreateModal = ViewBag.OpenCreateModal is bool open && open;
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Quản lý lớp học</h2>
+<style>
+    .class-page { color: #172b4d; }
+    .class-header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:28px; }
+    .class-header h2 { font-size:23px; font-weight:750; margin-bottom:7px; }
+    .class-header p { color:#718096; margin:0; }
+    .btn-purple { background:#5145e5; border-color:#5145e5; color:#fff; border-radius:10px; padding:11px 18px; font-weight:600; }
+    .btn-purple:hover { background:#4338ca; border-color:#4338ca; color:#fff; }
+    .class-table-card { border:1px solid #dce4ef; border-radius:16px; overflow:hidden; box-shadow:0 2px 5px rgba(20,40,80,.04); background:#fff; }
+    .class-table { margin-bottom:0; }
+    .class-table thead th { background:#f7f9fc; color:#60748f; font-size:12px; font-weight:700; text-transform:uppercase; white-space:nowrap; padding:16px 18px; border-bottom:1px solid #dce4ef; }
+    .class-table tbody td { padding:15px 18px; vertical-align:middle; border-color:#edf1f7; }
+    .class-code { font-weight:750; white-space:nowrap; }
+    .teacher-unassigned { color:#e11d48; font-weight:600; }
+    .btn-assign { background:#eef2ff; color:#4338ca; border:0; border-radius:7px; padding:7px 12px; font-weight:600; white-space:nowrap; }
+    .btn-assign:hover { background:#dfe5ff; color:#3730a3; }
+    .modal-content { border:0; border-radius:18px; overflow:hidden; }
+    .modal-header { background:#f7f9fc; padding:22px 28px; border-bottom:1px solid #edf1f7; }
+    .modal-title { font-size:21px; font-weight:750; color:#263449; }
+    .modal-body { padding:26px 28px; }
+    .modal-body .form-label { font-size:13px; font-weight:700; color:#43516a; margin-bottom:7px; }
+    .modal-body .form-control, .modal-body .form-select { min-height:46px; border-radius:10px; border-color:#cbd5e1; }
+    .modal-body .form-control:focus, .modal-body .form-select:focus { border-color:#8177f5; box-shadow:0 0 0 3px rgba(81,69,229,.1); }
+    .schedule-row { background:#fff; }
+    .schedule-row .form-label { margin-bottom:5px; }
+    .modal-footer { padding:0 28px 26px; border-top:0; }
+    .status-badge { display:inline-block; border-radius:6px; padding:5px 9px; font-size:12px; font-weight:700; }
+    .status-open { background:#d1fae5; color:#047857; }
+    .status-draft { background:#eef2f7; color:#475569; }
+    .status-progress { background:#dbeafe; color:#1d4ed8; }
+    .status-completed { background:#cffafe; color:#0e7490; }
+    .status-cancelled { background:#ffe4e6; color:#be123c; }
+    .schedule-chip { display:inline-block; background:#f1f5f9; border-radius:6px; padding:4px 7px; margin:2px 3px 2px 0; white-space:nowrap; font-size:12px; }
+    .capacity-track { height:18px; display:flex; overflow:hidden; border-radius:999px; background:#e5e7eb; }
+    .capacity-confirmed { background:#10b981; }
+    .capacity-reserved { background:#fbbf24; }
+    .capacity-free { background:#e5e7eb; }
+    .conflict-box { display:none; border:1px solid #fecaca; color:#b91c1c; background:#fef2f2; border-radius:9px; padding:10px 12px; margin-top:12px; font-size:13px; }
+    @@media(max-width:768px) { .class-header { align-items:flex-start; flex-direction:column; } .modal-body { padding:20px; } .modal-header { padding:20px; } .modal-footer { padding:0 20px 20px; } }
+    /* Modal tạo lớp không vượt quá chiều cao màn hình */
+    
+/* Modal tạo lớp: cuộn nội dung, giữ cố định header và footer */
+#createClassModal .modal-dialog {
+    width: min(960px, calc(100% - 24px));
+    max-width: 960px;
+    height: calc(100dvh - 24px);
+    margin: 12px auto;
+}
 
-        <a asp-controller="Classes"
-           asp-action="Create"
-           class="btn btn-primary">
-            + Thêm lớp học
-        </a>
+#createClassModal .modal-content {
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#createClassModal .modal-header {
+    flex: 0 0 auto;
+}
+
+/* Form phải là flex container vì nó bao quanh body và footer */
+#createClassModal #createClassForm {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#createClassModal .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+#createClassModal .modal-footer {
+    flex: 0 0 auto;
+    padding: 16px 28px 24px;
+    background: #fff;
+    border-top: 1px solid #edf1f7;
+}
+
+@@media (max-width: 576px) {
+    #createClassModal .modal-dialog {
+        width: calc(100% - 16px);
+        height: calc(100dvh - 16px);
+        margin: 8px auto;
+    }
+
+    #createClassModal .modal-footer {
+        padding: 12px 16px 16px;
+    }
+}
+
+</style>
+
+<div class="container-fluid mt-4 mb-5 class-page">
+    <div class="class-header">
+        <div>
+            <h2>Quản lý danh sách lớp học</h2>
+            <p>Tạo lớp, thiết lập lịch học theo từng thứ và phân công giáo viên</p>
+        </div>
+        <button type="button" class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#createClassModal">
+            <span class="me-1">＋</span> Mở lớp học mới
+        </button>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
             @TempData["SuccessMessage"]
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Đóng"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
         </div>
     }
-
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
             @TempData["ErrorMessage"]
-            <button type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Đóng"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
         </div>
     }
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Tên lớp</th>
-                            <th>Subject</th>
-                            <th>Teacher</th>
-                            <th>Ngày bắt đầu</th>
-                            <th>Ngày kết thúc</th>
-                            <th>Học phí</th>
-                            <th>Sĩ số tối đa</th>
-                            <th>Trạng thái</th>
-                            <th style="min-width: 250px;">Thao tác</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @if (Model.Any())
-                        {
-                            foreach (var item in Model)
-                            {
-                                <tr>
-                                    <td>@item.Id</td>
-                                    <td>@item.Name</td>
-                                    <td>@item.Subject.Name</td>
-
-                                    <td>
-                                        @(item.Teacher?.FullName ?? "Chưa phân công")
-                                    </td>
-
-                                    <td>
-                                        @item.StartDate.ToString("dd/MM/yyyy")
-                                    </td>
-
-                                    <td>
-                                        @item.EndDate.ToString("dd/MM/yyyy")
-                                    </td>
-
-                                    <td>
-                                        @item.Fee.ToString("N0") đ
-                                    </td>
-
-                                    <td>@item.MaxStudents</td>
-
-                                    <td>
-                                        @switch (item.Status)
-                                        {
-                                            case EduCenterManagement.Enums.ClassStatus.Draft:
-                                                <span class="badge bg-secondary">Draft</span>
-                                                break;
-
-                                            case EduCenterManagement.Enums.ClassStatus.Open:
-                                                <span class="badge bg-success">Open</span>
-                                                break;
-
-                                            case EduCenterManagement.Enums.ClassStatus.InProgress:
-                                                <span class="badge bg-primary">In Progress</span>
-                                                break;
-
-                                            case EduCenterManagement.Enums.ClassStatus.Completed:
-                                                <span class="badge bg-info">Completed</span>
-                                                break;
-
-                                            case EduCenterManagement.Enums.ClassStatus.Cancelled:
-                                                <span class="badge bg-danger">Cancelled</span>
-                                                break;
-                                        }
-                                    </td>
-
-                                    <td>
-                                        <a asp-controller="Classes"
-                                           asp-action="Details"
-                                           asp-route-id="@item.Id"
-                                           class="btn btn-sm btn-info mb-1">
-                                            Chi tiết
-                                        </a>
-
-                                        <a asp-controller="Classes"
-                                           asp-action="Edit"
-                                           asp-route-id="@item.Id"
-                                           class="btn btn-sm btn-warning mb-1">
-                                            Sửa
-                                        </a>
-
-                                        @if (item.Status !=
-                                            EduCenterManagement.Enums.ClassStatus.Cancelled)
-                                        {
-                                            <a asp-controller="Classes"
-                                               asp-action="Delete"
-                                               asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-danger mb-1">
-                                                Ngừng sử dụng
-                                            </a>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        }
-                        else
+    <div class="class-table-card">
+        <div class="table-responsive">
+            <table class="table table-hover class-table">
+                <thead>
+                    <tr>
+                        <th>Mã lớp</th>
+                        <th>Môn học</th>
+                        <th>Thời gian khóa</th>
+                        <th>Lịch học (thứ / ca)</th>
+                        <th>Giáo viên</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
                         {
                             <tr>
-                                <td colspan="10" class="text-center py-4">
-                                    Chưa có lớp học nào.
-                                    Hãy nhấn <strong>Thêm lớp học</strong>
-                                    để tạo mới.
+                                <td class="class-code">@item.Name</td>
+                                <td>@(item.Subject?.Name ?? "Chưa có môn học")</td>
+                                <td class="text-nowrap">@item.StartDate.ToString("dd/MM/yyyy") – @item.EndDate.ToString("dd/MM/yyyy")</td>
+                                <td style="min-width:210px">
+                                    @if (item.ClassSchedules != null && item.ClassSchedules.Any())
+                                    {
+                                        foreach (var schedule in item.ClassSchedules.OrderBy(s => s.DayOfWeek))
+                                        {
+                                            var dayText = schedule.DayOfWeek == 8 ? "CN" : $"Thứ {schedule.DayOfWeek}";
+                                            <div class="schedule-chip">
+                                                <strong>@dayText</strong> · @(schedule.TimeSlot?.Name ?? "Ca không xác định")
+                                                @if (schedule.TimeSlot != null)
+                                                {
+                                                    <span>(@schedule.TimeSlot.StartTime.ToString("HH:mm")–@schedule.TimeSlot.EndTime.ToString("HH:mm"))</span>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Chưa có lịch</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Teacher == null)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-danger quick-assign-btn" data-class-id="@item.Id">
+                                            ⚠ Chưa có GV · Gán ngay
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <div class="fw-semibold">@item.Teacher.FullName</div>
+                                        <button type="button" class="btn btn-sm btn-link p-0 quick-assign-btn" data-class-id="@item.Id">Đổi giáo viên</button>
+                                    }
+                                </td>
+                                <td>
+                                    @switch (item.Status)
+                                    {
+                                        case ClassStatus.Draft:
+                                            <span class="status-badge status-draft">Draft</span>
+                                            break;
+                                        case ClassStatus.Open:
+                                            <span class="status-badge status-open">Open</span>
+                                            break;
+                                        case ClassStatus.InProgress:
+                                            <span class="status-badge status-progress">Đang học</span>
+                                            break;
+                                        case ClassStatus.Completed:
+                                            <span class="status-badge status-completed">Hoàn thành</span>
+                                            break;
+                                        case ClassStatus.Cancelled:
+                                            <span class="status-badge status-cancelled">Đã hủy</span>
+                                            break;
+                                        default:
+                                            <span class="status-badge status-draft">@item.Status</span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-success mb-1 capacity-btn" data-class-id="@item.Id">Xem sĩ số</button>
+                                    <a asp-controller="Classes" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info mb-1">Chi tiết</a>
+                                    <a asp-controller="Classes" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning mb-1">Sửa</a>
+                                    @if (item.Status != ClassStatus.Cancelled)
+                                    {
+                                        <a asp-controller="Classes" asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger mb-1">Ngừng</a>
+                                    }
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                    else
+                    {
+                        <tr><td colspan="7" class="text-center py-5">Chưa có lớp học nào. Nhấn <strong>Mở lớp học mới</strong> để bắt đầu.</td></tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <a asp-controller="Admin"
-       asp-action="Index"
-       class="btn btn-outline-secondary mt-3">
-        Quay lại Dashboard
-    </a>
+    <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary mt-3">← Quay lại Dashboard</a>
 </div>
+
+<!-- MODAL TẠO LỚP -->
+<div class="modal fade" id="createClassModal" tabindex="-1" aria-labelledby="createClassModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="createClassModalLabel">Mở lớp học mới</h5>
+                    <div class="text-muted small">Khai báo lớp, học phí, lịch theo từng thứ và giáo viên phụ trách</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <form asp-controller="Classes" asp-action="Create" method="post" id="createClassForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" id="createValidationSummary"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="SubjectId" class="form-label">Môn học (*)</label>
+                            <select id="SubjectId" name="SubjectId" class="form-select" required>
+                                <option value="">-- Chọn môn học --</option>
+                                @foreach (var subject in subjects)
+                                {
+                                    <option value="@subject.Value">@subject.Text</option>
+                                }
+                            </select>
+                            <span class="text-danger small" data-valmsg-for="SubjectId"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="Name" class="form-label">Mã lớp / tên lớp (*)</label>
+                            <input id="Name" name="Name" class="form-control" maxlength="100" placeholder="VD: MAT10-A1" required />
+                            <span class="text-danger small" data-valmsg-for="Name"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="StartDate" class="form-label">Ngày bắt đầu (*)</label>
+                            <input id="StartDate" name="StartDate" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="EndDate" class="form-label">Ngày kết thúc (*)</label>
+                            <input id="EndDate" name="EndDate" type="date" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <span class="text-danger small" data-valmsg-for="EndDate"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="MaxStudents" class="form-label">Sĩ số tối đa (*)</label>
+                            <input id="MaxStudents" name="MaxStudents" type="number" class="form-control" min="1" max="1000" value="20" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="Fee" class="form-label">Học phí (VNĐ) (*)</label>
+                            <input id="Fee" name="Fee" type="number" class="form-control" min="0" step="1000" value="0" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="TeacherId" class="form-label">Giáo viên phụ trách (tùy chọn)</label>
+                            <select id="TeacherId" name="TeacherId" class="form-select">
+                                <option value="">-- Chưa phân công giáo viên --</option>
+                                @foreach (var teacher in teachers)
+                                {
+                                    <option value="@teacher.Value">@teacher.Text</option>
+                                }
+                            </select>
+                            <span class="text-danger small" data-valmsg-for="TeacherId"></span>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-1">Thiết lập lịch học trong tuần (*)</h6>
+                            <div class="text-muted small">Mỗi thứ chỉ chọn một ca; các thứ khác nhau có thể chọn ca khác nhau.</div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="addCreateScheduleBtn">＋ Thêm lịch</button>
+                    </div>
+                    <div id="createScheduleContainer">
+                        <div class="row g-2 align-items-end border rounded-3 p-3 mb-2 schedule-row">
+                            <div class="col-md-5">
+                                <label class="form-label">Thứ trong tuần</label>
+                                <select name="Schedules[0].DayOfWeek" class="form-select day-select" required>
+                                    <option value="2">Thứ 2</option>
+                                    <option value="3">Thứ 3</option>
+                                    <option value="4">Thứ 4</option>
+                                    <option value="5">Thứ 5</option>
+                                    <option value="6">Thứ 6</option>
+                                    <option value="7">Thứ 7</option>
+                                    <option value="8">Chủ nhật</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Ca học</label>
+                                <select name="Schedules[0].TimeSlotId" class="form-select slot-select" required>
+                                    <option value="">-- Chọn ca học --</option>
+                                    @foreach (var slot in timeSlots)
+                                    {
+                                        <option value="@slot.Value">@slot.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-danger w-100 remove-schedule">Xóa</button>
+                            </div>
+                        </div>
+                    </div>
+                    <template id="createScheduleTemplate">
+                        <div class="row g-2 align-items-end border rounded-3 p-3 mb-2 schedule-row">
+                            <div class="col-md-5">
+                                <label class="form-label">Thứ trong tuần</label>
+                                <select class="form-select day-select" data-field="DayOfWeek" required>
+                                    <option value="2">Thứ 2</option>
+                                    <option value="3">Thứ 3</option>
+                                    <option value="4">Thứ 4</option>
+                                    <option value="5">Thứ 5</option>
+                                    <option value="6">Thứ 6</option>
+                                    <option value="7">Thứ 7</option>
+                                    <option value="8">Chủ nhật</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Ca học</label>
+                                <select class="form-select slot-select" data-field="TimeSlotId" required>
+                                    <option value="">-- Chọn ca học --</option>
+                                    @foreach (var slot in timeSlots)
+                                    {
+                                        <option value="@slot.Value">@slot.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100 remove-schedule">Xóa</button></div>
+                        </div>
+                    </template>
+                    <div id="createScheduleError" class="conflict-box" role="alert"></div>
+                    <div class="alert alert-info mt-3 mb-0">Nếu chưa phân công giáo viên, lớp được tạo ở trạng thái <strong>Draft</strong>. Có thể gán giáo viên sau.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-purple" id="createClassSubmit">Lưu &amp; mở lớp học</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PHÂN CÔNG GIÁO VIÊN -->
+<div class="modal fade" id="assignTeacherModal" tabindex="-1" aria-labelledby="assignTeacherTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div><h5 class="modal-title" id="assignTeacherTitle">Phân công giáo viên</h5><div class="text-muted small" id="assignClassSchedule">Đang tải lịch học...</div></div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <form id="assignTeacherForm" method="post" action="@Url.Action("AssignTeacher", "Classes")">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="ClassId" id="assignClassId" />
+                    <div class="mb-3"><label for="assignTeacherId" class="form-label">Giáo viên phụ trách</label><select name="TeacherId" id="assignTeacherId" class="form-select" required><option value="">-- Chọn giáo viên --</option></select></div>
+                    <div id="assignConflict" class="conflict-box" role="alert"></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-purple" id="assignTeacherSubmit">Lưu phân công</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL XEM SĨ SỐ -->
+<div class="modal fade" id="capacityModal" tabindex="-1" aria-labelledby="capacityTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><div><h5 class="modal-title" id="capacityTitle">Chi tiết sĩ số lớp</h5><div class="text-muted small" id="capacitySubtitle">Đang tải...</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap gap-3 mb-3 small">
+                    <span><span class="badge" style="background:#10b981">&nbsp;</span> Đã xác nhận: <strong id="capacityConfirmed">0</strong></span>
+                    <span><span class="badge" style="background:#fbbf24">&nbsp;</span> Đang giữ chỗ: <strong id="capacityReserved">0</strong></span>
+                    <span><span class="badge" style="background:#e5e7eb">&nbsp;</span> Còn trống: <strong id="capacityAvailable">0</strong></span>
+                </div>
+                <div class="capacity-track mb-4"><div id="capacityConfirmedBar" class="capacity-confirmed" style="width:0%"></div><div id="capacityReservedBar" class="capacity-reserved" style="width:0%"></div><div id="capacityFreeBar" class="capacity-free" style="width:100%"></div></div>
+                <div class="table-responsive"><table class="table table-sm table-hover align-middle"><thead class="table-light"><tr><th>Học sinh</th><th>Mã phụ huynh</th><th>Hạn giữ chỗ</th><th>Trạng thái</th></tr></thead><tbody id="capacityStudents"><tr><td colspan="4" class="text-center text-muted">Đang tải...</td></tr></tbody></table></div>
+                <div id="capacityError" class="text-danger small"></div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Đóng</button></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const createForm = document.getElementById("createClassForm");
+            const scheduleContainer = document.getElementById("createScheduleContainer");
+            const scheduleTemplate = document.getElementById("createScheduleTemplate");
+            const addScheduleButton = document.getElementById("addCreateScheduleBtn");
+            const scheduleError = document.getElementById("createScheduleError");
+            const createSubmit = document.getElementById("createClassSubmit");
+            const subjectSelect = document.getElementById("SubjectId");
+            const teacherSelect = document.getElementById("TeacherId");
+            const startDate = document.getElementById("StartDate");
+            const endDate = document.getElementById("EndDate");
+            const teachersUrl = '@Url.Action("GetTeachersBySubject", "Classes")';
+            const conflictUrl = '@Url.Action("CheckConflict", "Classes")';
+            let conflictRequestId = 0;
+
+            function reindexSchedules() {
+                scheduleContainer.querySelectorAll(".schedule-row").forEach((row, index) => {
+                    row.querySelector(".day-select").name = `Schedules[${index}].DayOfWeek`;
+                    row.querySelector(".slot-select").name = `Schedules[${index}].TimeSlotId`;
+                });
+            }
+
+            function validateUniqueDays() {
+                const rows = [...scheduleContainer.querySelectorAll(".schedule-row")];
+                const days = rows.map(row => row.querySelector(".day-select").value);
+                return new Set(days).size === days.length;
+            }
+
+            addScheduleButton.addEventListener("click", () => {
+                scheduleContainer.appendChild(scheduleTemplate.content.cloneNode(true));
+                reindexSchedules();
+                scheduleError.style.display = "none";
+                checkTeacherConflicts();
+            });
+
+            scheduleContainer.addEventListener("click", event => {
+                const button = event.target.closest(".remove-schedule");
+                if (!button) return;
+                if (scheduleContainer.querySelectorAll(".schedule-row").length <= 1) {
+                    showScheduleError("Lớp phải có ít nhất một lịch học.");
+                    return;
+                }
+                button.closest(".schedule-row").remove();
+                reindexSchedules();
+                checkTeacherConflicts();
+            });
+
+            function showScheduleError(message) {
+                scheduleError.textContent = message;
+                scheduleError.style.display = "block";
+            }
+
+            async function loadTeachers(preserveSelection = false) {
+                const subjectId = subjectSelect.value;
+                const oldValue = preserveSelection ? teacherSelect.value : "";
+                teacherSelect.innerHTML = '<option value="">-- Chưa phân công giáo viên --</option>';
+                if (!subjectId) return;
+                teacherSelect.disabled = true;
+                try {
+                    const response = await fetch(`${teachersUrl}?subjectId=${encodeURIComponent(subjectId)}`);
+                    if (!response.ok) throw new Error("Không tải được danh sách giáo viên.");
+                    const data = await response.json();
+                    data.forEach(teacher => {
+                        const option = document.createElement("option");
+                        option.value = teacher.id;
+                        option.textContent = teacher.fullName;
+                        if (String(teacher.id) === oldValue) option.selected = true;
+                        teacherSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    showScheduleError(error.message || "Không tải được giáo viên.");
+                } finally {
+                    teacherSelect.disabled = false;
+                }
+                checkTeacherConflicts();
+            }
+
+            subjectSelect.addEventListener("change", () => loadTeachers(false));
+            [teacherSelect, startDate, endDate].forEach(el => el.addEventListener("change", checkTeacherConflicts));
+            scheduleContainer.addEventListener("change", event => {
+                if (event.target.matches(".day-select, .slot-select")) checkTeacherConflicts();
+            });
+
+            async function checkTeacherConflicts() {
+                const requestId = ++conflictRequestId;
+                const teacherId = teacherSelect.value;
+                const start = startDate.value;
+                const end = endDate.value;
+                const rows = [...scheduleContainer.querySelectorAll(".schedule-row")];
+                reindexSchedules();
+
+                if (!validateUniqueDays()) {
+                    showScheduleError("Mỗi thứ chỉ được chọn một ca học.");
+                    createSubmit.disabled = true;
+                    return;
+                }
+                if (!teacherId || !start || !end || end < start || rows.some(r => !r.querySelector(".slot-select").value)) {
+                    scheduleError.style.display = "none";
+                    createSubmit.disabled = false;
+                    return;
+                }
+
+                createSubmit.disabled = true;
+                scheduleError.style.display = "none";
+                try {
+                    const allConflicts = [];
+                    for (const row of rows) {
+                        const day = row.querySelector(".day-select").value;
+                        const slot = row.querySelector(".slot-select").value;
+                        const query = new URLSearchParams({
+                            teacherId, startDate: start, endDate: end,
+                            timeSlotId: slot, days: day
+                        });
+                        const response = await fetch(`${conflictUrl}?${query.toString()}`);
+                        const result = await response.json();
+                        if (response.status === 409 && result.conflicts) allConflicts.push(...result.conflicts);
+                    }
+                    if (requestId !== conflictRequestId) return;
+                    if (allConflicts.length) {
+                        const unique = [...new Set(allConflicts.map(c =>
+                            `Lớp ${c.className} – ${c.dayLabel} – ${c.slotName}`))];
+                        showScheduleError("Giáo viên trùng lịch: " + unique.join("; "));
+                        createSubmit.disabled = true;
+                    } else {
+                        scheduleError.style.display = "none";
+                        createSubmit.disabled = false;
+                    }
+                } catch (error) {
+                    if (requestId !== conflictRequestId) return;
+                    showScheduleError("Không kiểm tra được lịch giáo viên. Hãy thử lại.");
+                    createSubmit.disabled = true;
+                }
+            }
+
+            createForm.addEventListener("submit", event => {
+                reindexSchedules();
+                const rows = [...scheduleContainer.querySelectorAll(".schedule-row")];
+                if (!rows.length || rows.some(r => !r.querySelector(".slot-select").value)) {
+                    event.preventDefault();
+                    showScheduleError("Vui lòng chọn thứ và ca học cho tất cả lịch.");
+                    return;
+                }
+                if (!validateUniqueDays()) {
+                    event.preventDefault();
+                    showScheduleError("Mỗi thứ chỉ được chọn một ca học.");
+                    return;
+                }
+                if (endDate.value && startDate.value && endDate.value < startDate.value) {
+                    event.preventDefault();
+                    showScheduleError("Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.");
+                }
+            });
+
+            // Quick assign teacher modal
+            const assignModalElement = document.getElementById("assignTeacherModal");
+            const assignModal = bootstrap.Modal.getOrCreateInstance(assignModalElement);
+            const assignForm = document.getElementById("assignTeacherForm");
+            const assignTeacherSelect = document.getElementById("assignTeacherId");
+            const assignError = document.getElementById("assignConflict");
+            const assignSubmit = document.getElementById("assignTeacherSubmit");
+
+            document.querySelectorAll(".quick-assign-btn").forEach(button => {
+                button.addEventListener("click", async () => {
+                    const id = button.dataset.classId;
+                    document.getElementById("assignClassId").value = id;
+                    document.getElementById("assignClassSchedule").textContent = "Đang tải lịch học...";
+                    assignTeacherSelect.innerHTML = '<option value="">-- Chọn giáo viên --</option>';
+                    assignError.style.display = "none";
+                    assignSubmit.disabled = false;
+                    assignModal.show();
+                    try {
+                        const response = await fetch(`@Url.Action("AssignInfo", "Classes")?id=${encodeURIComponent(id)}`);
+                        if (!response.ok) throw new Error("Không tải được thông tin lớp.");
+                        const data = await response.json();
+                        document.getElementById("assignTeacherTitle").textContent = `Phân công giáo viên – ${data.className}`;
+                        document.getElementById("assignClassSchedule").textContent = `${(data.days || []).join(", ")} · ${data.slot || "Chưa có lịch"}`;
+                        data.teachers.forEach(t => {
+                            const option = document.createElement("option");
+                            option.value = t.id;
+                            option.textContent = t.fullName;
+                            if (String(t.id) === String(data.currentTeacherId)) option.selected = true;
+                            assignTeacherSelect.appendChild(option);
+                        });
+                    } catch (error) {
+                        assignError.textContent = error.message;
+                        assignError.style.display = "block";
+                    }
+                });
+            });
+
+            assignForm.addEventListener("submit", async event => {
+                event.preventDefault();
+                assignError.style.display = "none";
+                assignSubmit.disabled = true;
+                try {
+                    const response = await fetch(assignForm.action, {
+                        method: "POST",
+                        body: new FormData(assignForm),
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        let message = result.message || "Không thể phân công giáo viên.";
+                        if (result.conflicts) {
+                            message = "Giáo viên trùng lịch: " + result.conflicts.map(c =>
+                                `${c.className} (${c.dayLabel}, ${c.slotName})`).join("; ");
+                        }
+                        throw new Error(message);
+                    }
+                    window.location.reload();
+                } catch (error) {
+                    assignError.textContent = error.message;
+                    assignError.style.display = "block";
+                    assignSubmit.disabled = false;
+                }
+            });
+
+            // Capacity modal
+            const capacityModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("capacityModal"));
+            document.querySelectorAll(".capacity-btn").forEach(button => {
+                button.addEventListener("click", async () => {
+                    const id = button.dataset.classId;
+                    document.getElementById("capacitySubtitle").textContent = "Đang tải sĩ số...";
+                    document.getElementById("capacityStudents").innerHTML = '<tr><td colspan="4" class="text-center text-muted">Đang tải...</td></tr>';
+                    document.getElementById("capacityError").textContent = "";
+                    capacityModal.show();
+                    try {
+                        const response = await fetch(`@Url.Action("Capacity", "Classes")?id=${encodeURIComponent(id)}`);
+                        if (!response.ok) throw new Error("Không tải được thông tin sĩ số.");
+                        const data = await response.json();
+                        document.getElementById("capacityTitle").textContent = `Sĩ số lớp ${data.className}`;
+                        document.getElementById("capacitySubtitle").textContent = `${data.occupied}/${data.max} học sinh · Tỷ lệ lấp đầy ${data.max ? Math.round(data.occupied * 100 / data.max) : 0}%`;
+                        document.getElementById("capacityConfirmed").textContent = data.confirmed;
+                        document.getElementById("capacityReserved").textContent = data.reserved;
+                        document.getElementById("capacityAvailable").textContent = data.available;
+                        const max = Math.max(Number(data.max) || 0, 1);
+                        document.getElementById("capacityConfirmedBar").style.width = `${data.confirmed * 100 / max}%`;
+                        document.getElementById("capacityReservedBar").style.width = `${data.reserved * 100 / max}%`;
+                        document.getElementById("capacityFreeBar").style.width = `${data.available * 100 / max}%`;
+                        const tbody = document.getElementById("capacityStudents");
+                        tbody.replaceChildren();
+                        if (!data.students || data.students.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Chưa có học sinh đăng ký.</td></tr>';
+                        } else {
+                            data.students.forEach(student => {
+                                const tr = document.createElement("tr");
+                                const values = [student.studentName || "—", student.parentId ?? "—", student.reservedUntil ? new Date(student.reservedUntil).toLocaleString("vi-VN") : "—", student.status === "Confirmed" ? "Đã xác nhận" : "Đang giữ chỗ"];
+                                values.forEach((value, index) => {
+                                    const td = document.createElement("td");
+                                    td.textContent = value;
+                                    if (index === 3) td.innerHTML = student.status === "Confirmed" ? '<span class="badge bg-success">Đã xác nhận</span>' : '<span class="badge bg-warning text-dark">Đang giữ chỗ</span>';
+                                    tr.appendChild(td);
+                                });
+                                tbody.appendChild(tr);
+                            });
+                        }
+                    } catch (error) {
+                        document.getElementById("capacityError").textContent = error.message;
+                    }
+                });
+            });
+
+            @if (openCreateModal)
+            {
+                    <text>
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById("createClassModal")).show();
+                    </text>
+            }
+        });
+    </script>
+}
