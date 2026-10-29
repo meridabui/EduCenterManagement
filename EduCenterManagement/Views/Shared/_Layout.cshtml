@@ -45,6 +45,10 @@
                             <li class="nav-item me-2">
                                 <span class="nav-link text-muted small">
                                     <i class="bi bi-person-circle me-1"></i>@User.Identity.Name
+                                    @if (User.IsInRole("Teacher"))
+                                    {
+                                        <span class="badge bg-success-subtle text-success border ms-1">Giáo viên</span>
+                                    }
                                     @if (User.IsInRole("Student"))
                                     {
                                         <span class="badge bg-primary-subtle text-primary border ms-1">Học sinh</span>
