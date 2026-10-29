@@ -44,9 +44,6 @@ namespace EduCenterManagement.ViewModels.Admin
         [Display(Name = "Học phí")]
         public decimal Fee { get; set; }
 
-        [Display(Name = "Lớp tiên quyết")]
-        public int? PrerequisiteClassId { get; set; }
-
         [Display(Name = "Trạng thái")]
         public ClassStatus Status { get; set; } = ClassStatus.Draft;
 

@@ -112,24 +112,6 @@ namespace EduCenterManagement.Controllers.Admin
                 return await ReturnCreateErrorAsync();
             }
 
-            if (model.PrerequisiteClassId.HasValue)
-            {
-                bool prerequisiteValid =
-                    model.PrerequisiteClassId.Value > 0 &&
-                    await _context.Classes.AnyAsync(c =>
-                        c.Id == model.PrerequisiteClassId.Value &&
-                        c.Status != ClassStatus.Cancelled);
-
-                if (!prerequisiteValid)
-                {
-                    ModelState.AddModelError(
-                        nameof(model.PrerequisiteClassId),
-                        "Lớp tiên quyết không hợp lệ.");
-
-                    return await ReturnCreateErrorAsync();
-                }
-            }
-
             if (model.TeacherId.HasValue)
             {
                 bool teacherValid =
@@ -175,7 +157,6 @@ namespace EduCenterManagement.Controllers.Admin
                 Name = model.Name,
                 SubjectId = model.SubjectId,
                 TeacherId = model.TeacherId,
-                PrerequisiteClassId = model.PrerequisiteClassId,
                 StartDate = model.StartDate,
                 EndDate = model.EndDate,
                 MaxStudents = model.MaxStudents,
@@ -583,7 +564,6 @@ namespace EduCenterManagement.Controllers.Admin
                 .Include(c => c.Subject)
                 .Include(c => c.Teacher)
                     .ThenInclude(t => t!.User)
-                .Include(c => c.PrerequisiteClass)
                 .Include(c => c.ClassSchedules)
                     .ThenInclude(s => s.TimeSlot)
                 .FirstOrDefaultAsync(c => c.Id == id.Value);
@@ -618,7 +598,6 @@ namespace EduCenterManagement.Controllers.Admin
                 Id = classItem.Id,
                 SubjectId = classItem.SubjectId,
                 TeacherId = classItem.TeacherId,
-                PrerequisiteClassId = classItem.PrerequisiteClassId,
                 Name = classItem.Name,
                 StartDate = classItem.StartDate,
                 EndDate = classItem.EndDate,
@@ -724,24 +703,6 @@ namespace EduCenterManagement.Controllers.Admin
                 return Back();
             }
 
-            if (model.PrerequisiteClassId.HasValue)
-            {
-                bool prerequisiteValid =
-                    model.PrerequisiteClassId.Value != id &&
-                    await _context.Classes.AnyAsync(c =>
-                        c.Id == model.PrerequisiteClassId.Value &&
-                        c.Status != ClassStatus.Cancelled);
-
-                if (!prerequisiteValid)
-                {
-                    ModelState.AddModelError(
-                        nameof(model.PrerequisiteClassId),
-                        "Lớp tiên quyết không hợp lệ.");
-
-                    return Back();
-                }
-            }
-
             if (model.TeacherId.HasValue &&
                 !await IsActiveTeacherForSubjectAsync(
                     model.TeacherId.Value, model.SubjectId))
@@ -830,8 +791,6 @@ namespace EduCenterManagement.Controllers.Admin
                 classItem.Name = model.Name;
                 classItem.SubjectId = model.SubjectId;
                 classItem.TeacherId = model.TeacherId;
-                classItem.PrerequisiteClassId =
-                    model.PrerequisiteClassId;
                 classItem.StartDate = model.StartDate;
                 classItem.EndDate = model.EndDate;
                 classItem.MaxStudents = model.MaxStudents;
@@ -1029,22 +988,6 @@ namespace EduCenterManagement.Controllers.Admin
                     Text = $"{t.Name} " +
                            $"({t.StartTime:HH\\:mm} - {t.EndTime:HH\\:mm})"
                 }).ToList();
-
-            var prerequisiteClasses = await _context.Classes
-                .AsNoTracking()
-                .Where(c =>
-                    c.Status != ClassStatus.Cancelled &&
-                    (!excludeClassId.HasValue ||
-                     c.Id != excludeClassId.Value))
-                .OrderBy(c => c.Name)
-                .Select(c => new { c.Id, c.Name })
-                .ToListAsync();
-
-            ViewBag.PrerequisiteClasses = new SelectList(
-                prerequisiteClasses,
-                "Id",
-                "Name",
-                null);
         }
 
         private void ValidateSchedules(ClassViewModel model)

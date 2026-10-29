@@ -175,28 +175,6 @@ namespace EduCenterManagement.Services
                 }
             }
 
-            // BR14 (4): điều kiện tiên quyết (nếu có).
-            if (classItem.PrerequisiteClassId is int prerequisiteId)
-            {
-                var completed = await _context.Enrollments.AnyAsync(e =>
-                    e.StudentId == studentId &&
-                    e.ClassId == prerequisiteId &&
-                    e.Status == EnrollmentStatus.Paid &&
-                    e.Class.Status == ClassStatus.Completed);
-
-                if (!completed)
-                {
-                    var prerequisiteName = await _context.Classes
-                        .AsNoTracking()
-                        .Where(c => c.Id == prerequisiteId)
-                        .Select(c => c.Name)
-                        .FirstOrDefaultAsync() ?? "tiên quyết";
-
-                    return EnrollmentResult.Fail(
-                        $"Học sinh chưa hoàn thành lớp tiên quyết \"{prerequisiteName}\".");
-                }
-            }
-
             var studentName = await _context.StudentProfiles
                 .AsNoTracking()
                 .Where(s => s.Id == studentId)

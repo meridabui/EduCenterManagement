@@ -7,7 +7,6 @@
     var subjects = ViewBag.Subjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var timeSlots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var teachers = ViewBag.Teachers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
-    var prerequisites = ViewBag.PrerequisiteClasses as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var openCreateModal = ViewBag.OpenCreateModal is bool open && open;
 }
 

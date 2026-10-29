@@ -63,12 +63,6 @@
                         <span asp-validation-for="TeacherId" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
-                        <label asp-for="PrerequisiteClassId" class="form-label"></label>
-                        <select asp-for="PrerequisiteClassId" asp-items="ViewBag.PrerequisiteClasses" class="form-select">
-                            <option value="">-- Không yêu cầu lớp tiên quyết --</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
                         <label asp-for="Status" class="form-label"></label>
                         <select asp-for="Status" asp-items="Html.GetEnumSelectList<EduCenterManagement.Enums.ClassStatus>()" class="form-select"></select>
                         <span asp-validation-for="Status" class="text-danger"></span>
