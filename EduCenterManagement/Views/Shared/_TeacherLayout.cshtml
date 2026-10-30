@@ -153,18 +153,20 @@
                             <span>Buổi học</span>
                         </a>
                     </li> *@
-                    <li class="nav-item">
-                        <a class="nav-link disabled" href="#">
+                                        <li class="nav-item">
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TeacherAttendance" ? "active" : "")"
+                           asp-controller="TeacherAttendance"
+                           asp-action="ClassSessionPickerView">
                             <i class="bi bi-check2-square"></i>
                             <span>Điểm danh</span>
-                            <span class="badge bg-light text-secondary ms-auto small">Sắp tới</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link disabled" href="#">
+                                        <li class="nav-item">
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TeacherSlide" ? "active" : "")"
+                           asp-controller="TeacherSlide"
+                           asp-action="ClassSessionPickerView">
                             <i class="bi bi-file-earmark-slides"></i>
                             <span>Upload Slide</span>
-                            <span class="badge bg-light text-secondary ms-auto small">Sắp tới</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -175,11 +177,12 @@
                             <span>Quản lý Quiz</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link disabled" href="#">
+                                        <li class="nav-item">
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TeacherComment" ? "active" : "")"
+                           asp-controller="TeacherComment"
+                           asp-action="ListComment">
                             <i class="bi bi-chat-left-text"></i>
                             <span>Nhận xét</span>
-                            <span class="badge bg-light text-secondary ms-auto small">Sắp tới</span>
                         </a>
                     </li>
                 </ul>

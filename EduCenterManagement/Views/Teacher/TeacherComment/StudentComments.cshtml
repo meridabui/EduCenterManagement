@@ -1,0 +1,320 @@
+@model EduCenterManagement.ViewModels.Teacher.Comment.StudentCommentDetailViewModel
+
+@{
+    ViewData["Title"] = $"Nhận xét: {Model.StudentName} - Lớp {Model.ClassName}";
+}
+
+<div class="container-fluid py-2">
+    <!-- Breadcrumb & Back buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a asp-action="ListComment" asp-route-classId="@Model.ClassId" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách nhận xét lớp
+            </a>
+            <a asp-controller="Teacher" asp-action="StudentList" asp-route-classId="@Model.ClassId" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-people me-1"></i>Danh sách học sinh
+            </a>
+        </div>
+        <div>
+            <span class="badge bg-primary px-3 py-2 fs-6">
+                Lớp: @Model.ClassName
+            </span>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- Student Header Card -->
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <div>
+                            <h3 class="fw-bold mb-0">@Model.StudentName</h3>
+                            <span class="badge bg-light text-dark border font-monospace mt-1">@Model.StudentCode</span>
+                        </div>
+                    </div>
+                    <div class="text-muted d-flex flex-wrap gap-3 mt-2">
+                        <span><i class="bi bi-door-open me-1 text-primary"></i>Lớp: <strong>@Model.ClassName</strong></span>
+                        <span><i class="bi bi-book me-1 text-info"></i>Môn: <strong>@Model.SubjectName</strong></span>
+                        @if (Model.DateOfBirth.HasValue)
+                        {
+                            <span><i class="bi bi-calendar-heart me-1 text-danger"></i>Ngày sinh: <strong>@Model.DateOfBirth.Value.ToString("dd/MM/yyyy")</strong></span>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="p-3 bg-light rounded border text-center d-inline-block">
+                        <div class="text-muted small">Tổng số nhận xét</div>
+                        <div class="h3 fw-bold text-primary mb-0">@Model.Comments.Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Cột bên trái: Form viết nhận xét mới -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 bg-white sticky-top" style="top: 80px;">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Thêm nhận xét mới
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="CreateComment" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ClassId" value="@Model.ClassId" />
+                        <input type="hidden" name="StudentId" value="@Model.StudentId" />
+
+                        <!-- Chọn Buổi học liên quan -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Phạm vi nhận xét:</label>
+                            <select name="SessionId" class="form-select">
+                                <option value="">-- Nhận xét chung cho toàn khóa học --</option>
+                                @foreach (var session in Model.Sessions)
+                                {
+                                    <option value="@session.Value">@session.Text</option>
+                                }
+                            </select>
+                            <div class="form-text small">Chọn buổi học cụ thể nếu muốn nhận xét về một buổi học nhất định.</div>
+                        </div>
+
+                        <!-- Chọn quyền hiển thị (Visibility) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Đối tượng được xem:</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="Visibility" id="visPublic" value="parent_student" checked>
+                                    <label class="form-check-label" for="visPublic">
+                                        <i class="bi bi-people-fill text-success me-1"></i>Phụ huynh & Học sinh
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="Visibility" id="visTeacher" value="teacher_only">
+                                    <label class="form-check-label" for="visTeacher">
+                                        <i class="bi bi-lock-fill text-warning me-1"></i>Chỉ Giáo viên
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nội dung nhận xét -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Nội dung nhận xét <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="Content" rows="5" class="form-control" 
+                                      placeholder="Nhập nhận xét về thái độ học tập, bài tập, mức độ tiếp thu, lưu ý cho phụ huynh..." required maxlength="2000"></textarea>
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                <i class="bi bi-send me-2"></i>Lưu nhận xét
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột bên phải: Lịch sử nhận xét (Timeline) -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 bg-white">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-clock-history text-primary me-2"></i>Lịch sử nhận xét
+                    </h5>
+                    <span class="badge bg-secondary">@Model.Comments.Count nhận xét</span>
+                </div>
+                <div class="card-body p-4">
+                    @if (Model.Comments == null || !Model.Comments.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-chat-left-dots text-muted" style="font-size: 3.5rem;"></i>
+                            <h5 class="text-muted mt-3">Học sinh chưa có nhận xét nào</h5>
+                            <p class="text-muted small mb-0">Hãy viết nhận xét đầu tiên ở biểu mẫu bên cạnh.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var c in Model.Comments)
+                            {
+                                <div class="card border shadow-none bg-light p-3 position-relative">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">
+                                                <i class="bi bi-calendar2-check me-1"></i>@c.SessionLabel
+                                            </span>
+                                            <span class="@c.VisibilityBadgeClass">
+                                                @c.VisibilityText
+                                            </span>
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editModal-@c.Id">
+                                                        <i class="bi bi-pencil me-2 text-warning"></i>Chỉnh sửa
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@c.Id">
+                                                        <i class="bi bi-trash me-2"></i>Xóa nhận xét
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <!-- Nội dung nhận xét -->
+                                    <div class="text-dark py-2" style="white-space: pre-line; line-height: 1.6;">@c.Content</div>
+
+                                    <div class="d-flex justify-content-between align-items-center text-muted small border-top pt-2 mt-2">
+                                        <span>
+                                            <i class="bi bi-person-circle me-1"></i>@c.TeacherName
+                                        </span>
+                                        <span>
+                                            <i class="bi bi-clock me-1"></i>@c.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                            @if (c.UpdatedAt > c.CreatedAt.AddMinutes(1))
+                                            {
+                                                <span class="fst-italic">(Đã sửa @c.UpdatedAt.ToString("dd/MM/yyyy HH:mm"))</span>
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Modal Chỉnh sửa nhận xét -->
+                                <div class="modal fade" id="editModal-@c.Id" tabindex="-1" aria-labelledby="editLabel-@c.Id" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <form asp-action="EditComment" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="CommentId" value="@c.Id" />
+                                                <input type="hidden" name="ClassId" value="@Model.ClassId" />
+                                                <input type="hidden" name="StudentId" value="@Model.StudentId" />
+
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="editLabel-@c.Id">
+                                                        <i class="bi bi-pencil-square text-warning me-2"></i>Chỉnh sửa nhận xét
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <!-- Buổi học -->
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Buổi học:</label>
+                                                        <select name="SessionId" class="form-select">
+                                                            <option value="">-- Nhận xét chung toàn khóa --</option>
+                                                            @foreach (var session in Model.Sessions)
+                                                            {
+                                                                if (c.SessionId.HasValue && session.Value == c.SessionId.Value.ToString())
+                                                                {
+                                                                    <option value="@session.Value" selected>@session.Text</option>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <option value="@session.Value">@session.Text</option>
+                                                                }
+                                                            }
+                                                        </select>
+                                                    </div>
+
+                                                    <!-- Quyền xem -->
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Đối tượng được xem:</label>
+                                                        <div class="d-flex gap-3">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="Visibility" id="editVisPub-@c.Id" value="parent_student" @(c.Visibility != "teacher_only" ? "checked" : "")>
+                                                                <label class="form-check-label" for="editVisPub-@c.Id">
+                                                                    Phụ huynh & Học sinh
+                                                                </label>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="Visibility" id="editVisTeach-@c.Id" value="teacher_only" @(c.Visibility == "teacher_only" ? "checked" : "")>
+                                                                <label class="form-check-label" for="editVisTeach-@c.Id">
+                                                                    Chỉ Giáo viên
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Nội dung -->
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Nội dung nhận xét <span class="text-danger">*</span></label>
+                                                        <textarea name="Content" rows="5" class="form-control" required maxlength="2000">@c.Content</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                    <button type="submit" class="btn btn-warning btn-sm">
+                                                        <i class="bi bi-check-lg me-1"></i>Lưu thay đổi
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modal Xác nhận xóa -->
+                                <div class="modal fade" id="deleteModal-@c.Id" tabindex="-1" aria-labelledby="delLabel-@c.Id" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="delLabel-@c.Id">
+                                                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Xác nhận xóa nhận xét
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Bạn có chắc chắn muốn xóa nhận xét này?
+                                                <div class="p-2 bg-light border rounded mt-2 small text-muted text-truncate">
+                                                    "@c.Content"
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                <form asp-action="DeleteComment" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@c.Id" />
+                                                    <input type="hidden" name="classId" value="@Model.ClassId" />
+                                                    <input type="hidden" name="studentId" value="@Model.StudentId" />
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="bi bi-trash me-1"></i>Xác nhận Xóa
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

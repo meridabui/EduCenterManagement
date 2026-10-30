@@ -286,14 +286,14 @@
                                                 Thao tác
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a class="dropdown-item text-muted disabled" href="#">
-                                                        <i class="bi bi-check2-square me-2 text-primary"></i>Điểm danh <small>(Sắp tới)</small>
+                                                                                                <li>
+                                                    <a class="dropdown-item" asp-controller="TeacherAttendance" asp-action="Sheet" asp-route-sessionId="@s.SessionId">
+                                                        <i class="bi bi-check2-square me-2 text-primary"></i>Điểm danh
                                                     </a>
                                                 </li>
-                                                <li>
-                                                    <a class="dropdown-item text-muted disabled" href="#">
-                                                        <i class="bi bi-file-earmark-slides me-2 text-success"></i>Tài liệu / Slide <small>(Sắp tới)</small>
+                                                                                                <li>
+                                                    <a class="dropdown-item" asp-controller="TeacherSlide" asp-action="SessionSlides" asp-route-sessionId="@s.SessionId">
+                                                        <i class="bi bi-file-earmark-slides me-2 text-success"></i>Tài liệu / Slide
                                                     </a>
                                                 </li>
                                                 <li>

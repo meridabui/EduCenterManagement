@@ -20,8 +20,11 @@
                     Khóa học: <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong> đến <strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong>
                 </p>
             </div>
-            <div>
-                <span class="badge bg-primary fs-6">
+            <div class="d-flex gap-2">
+                <a asp-controller="TeacherComment" asp-action="ListComment" asp-route-classId="@Model.ClassId" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-chat-left-text me-1"></i>Xem bảng nhận xét lớp
+                </a>
+                <span class="badge bg-primary fs-6 d-flex align-items-center">
                     Sĩ số: @Model.Students.Count học sinh
                 </span>
             </div>
@@ -34,9 +37,10 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4" style="width: 25%;">Mã học sinh</th>
-                            <th style="width: 45%;">Họ và tên</th>
-                            <th class="pe-4" style="width: 30%;">Ngày sinh</th>
+                            <th class="ps-4" style="width: 20%;">Mã học sinh</th>
+                            <th style="width: 35%;">Họ và tên</th>
+                            <th style="width: 25%;">Ngày sinh</th>
+                            <th class="pe-4 text-center" style="width: 20%;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,7 +57,7 @@
                                     <td class="fw-semibold">
                                         @student.FullName
                                     </td>
-                                    <td class="pe-4 text-secondary">
+                                    <td class="text-secondary">
                                         @if (student.DateOfBirth.HasValue)
                                         {
                                             <span>📅 @student.DateOfBirth.Value.ToString("dd/MM/yyyy")</span>
@@ -63,13 +67,20 @@
                                             <span class="text-muted fst-italic">Chưa cập nhật</span>
                                         }
                                     </td>
+                                    <td class="pe-4 text-center">
+                                        <a asp-controller="TeacherComment" asp-action="StudentComments"
+                                           asp-route-classId="@Model.ClassId" asp-route-studentId="@student.StudentId"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-chat-left-text me-1"></i>Nhận xét
+                                        </a>
+                                    </td>
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="3" class="text-center py-5">
+                                <td colspan="4" class="text-center py-5">
                                     <div class="text-muted">
                                         <p class="fs-5 mb-1">Chưa có học sinh nào đăng ký vào lớp học này.</p>
                                         <small>Danh sách sẽ tự động cập nhật khi học sinh đăng ký thành công.</small>

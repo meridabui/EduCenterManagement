@@ -1,0 +1,255 @@
+@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Teacher.Attendance.AttendanceSheetViewModel
+
+@{
+    ViewData["Title"] = $"Điểm danh Buổi {Model.SessionNumber} - Lớp {Model.ClassName}";
+}
+
+<div class="container-fluid">
+    <!-- Nút quay lại & Header -->
+    <div class="mb-4">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" class="btn btn-outline-secondary btn-sm">
+                ⬅ Quay lại lộ trình lớp @Model.ClassName
+            </a>
+            <a asp-controller="TeacherAttendance" asp-action="ClassSessionPickerView" asp-route-classId="@Model.ClassId" class="btn btn-outline-primary btn-sm">
+                🔄 Chọn buổi học khác
+            </a>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h2 class="mb-1">
+                    <i class="bi bi-clipboard-check-fill text-primary me-2"></i>Điểm danh: Buổi @Model.SessionNumber - Lớp @Model.ClassName
+                </h2>
+                <p class="text-muted mb-0">
+                    Môn học: <strong class="text-primary">@Model.SubjectName</strong> |
+                    Ngày học: <strong>@Model.DayOfWeekName (@Model.SessionDate.ToString("dd/MM/yyyy"))</strong> |
+                    Khung giờ: <strong>⏰ @Model.StartsAt.ToString("HH:mm") - @Model.EndsAt.ToString("HH:mm")</strong>
+                </p>
+            </div>
+            <div>
+                @switch (Model.SessionStatus)
+                {
+                    case ClassSessionStatus.Completed:
+                        <span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Buổi học đã hoàn thành</span>
+                        break;
+                    case ClassSessionStatus.Cancelled:
+                        <span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>Buổi học báo nghỉ / hủy</span>
+                        break;
+                    default:
+                        <span class="badge bg-primary fs-6"><i class="bi bi-clock me-1"></i>Đã lên lịch</span>
+                        break;
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- Card Thống kê nhanh & Thao tác đồng loạt -->
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <!-- Thống kê đếm số lượng -->
+                <div class="d-flex gap-3 align-items-center">
+                    <div class="px-3 py-2 bg-light rounded text-center">
+                        <span class="small text-muted d-block">Sĩ số lớp</span>
+                        <strong class="fs-5 text-dark" id="statTotal">@Model.TotalStudents</strong>
+                    </div>
+                    <div class="px-3 py-2 bg-success-subtle text-success rounded text-center">
+                        <span class="small d-block">Có mặt</span>
+                        <strong class="fs-5" id="statPresent">@Model.PresentCount</strong>
+                    </div>
+                    <div class="px-3 py-2 bg-danger-subtle text-danger rounded text-center">
+                        <span class="small d-block">Vắng mặt</span>
+                        <strong class="fs-5" id="statAbsent">@Model.AbsentCount</strong>
+                    </div>
+                </div>
+
+                <!-- Nút thao tác nhanh tất cả -->
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-success btn-sm px-3" id="btnMarkAllPresent">
+                        <i class="bi bi-check-all me-1"></i> Có mặt tất cả
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm px-3" id="btnMarkAllAbsent">
+                        <i class="bi bi-x-circle me-1"></i> Vắng tất cả
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Bảng điểm danh -->
+    <form asp-controller="TeacherAttendance" asp-action="SaveSheet" method="post" id="attendanceForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="SessionId" />
+        <input type="hidden" asp-for="SessionNumber" />
+        <input type="hidden" asp-for="ClassId" />
+        <input type="hidden" asp-for="ClassName" />
+        <input type="hidden" asp-for="SubjectName" />
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3" style="width: 6%;">STT</th>
+                                <th style="width: 14%;">Mã học sinh</th>
+                                <th style="width: 25%;">Họ và tên</th>
+                                <th style="width: 25%;" class="text-center">Điểm danh (Mặc định: Vắng)</th>
+                                <th class="pe-3" style="width: 30%;">Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Students.Any())
+                            {
+                                for (int i = 0; i < Model.Students.Count; i++)
+                                {
+                                    var s = Model.Students[i];
+                                    <tr class="student-row">
+                                        <td class="ps-3 text-muted">@(i + 1)</td>
+                                        <td>
+                                            <input type="hidden" name="Students[@i].StudentId" value="@s.StudentId" />
+                                            <input type="hidden" name="Students[@i].StudentCode" value="@s.StudentCode" />
+                                            <input type="hidden" name="Students[@i].FullName" value="@s.FullName" />
+                                            <span class="badge bg-light text-secondary border font-monospace fs-6">
+                                                @s.StudentCode
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-dark">@s.FullName</div>
+                                            @if (s.DateOfBirth.HasValue)
+                                            {
+                                                <div class="small text-muted">📅 @s.DateOfBirth.Value.ToString("dd/MM/yyyy")</div>
+                                            }
+                                        </td>
+                                        <!-- CỘT 2: 2 NÚT RADIO (MẶC ĐỊNH LÀ ABSENT) -->
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group" aria-label="Attendance Status">
+                                                <!-- Radio Vắng mặt (Absent) - Mặc định -->
+                                                <input type="radio" class="btn-check attendance-radio radio-absent"
+                                                       name="Students[@i].Status"
+                                                       id="status_absent_@i"
+                                                       value="@AttendanceStatus.Absent"
+                                                       @(s.Status == AttendanceStatus.Absent ? "checked" : "") />
+                                                <label class="btn btn-outline-danger btn-sm px-3" for="status_absent_@i">
+                                                    <i class="bi bi-x-circle me-1"></i> Vắng
+                                                </label>
+
+                                                <!-- Radio Có mặt (Present) -->
+                                                <input type="radio" class="btn-check attendance-radio radio-present"
+                                                       name="Students[@i].Status"
+                                                       id="status_present_@i"
+                                                       value="@AttendanceStatus.Present"
+                                                       @(s.Status == AttendanceStatus.Present ? "checked" : "") />
+                                                <label class="btn btn-outline-success btn-sm px-3" for="status_present_@i">
+                                                    <i class="bi bi-check-circle me-1"></i> Có mặt
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <td class="pe-3">
+                                            <input type="text" name="Students[@i].Note" value="@s.Note"
+                                                   class="form-control form-control-sm"
+                                                   placeholder="Nhập ghi chú (nếu có)..." maxlength="500" />
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
+                                        Lớp học này hiện chưa có học sinh nào đăng ký.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer hành động -->
+            @if (Model.Students.Any())
+            {
+                <div class="card-footer bg-white p-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        @if (Model.SessionStatus == ClassSessionStatus.Scheduled)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" asp-for="MarkSessionAsCompleted" id="markCompletedCheck" />
+                                <label class="form-check-label fw-semibold text-success" for="markCompletedCheck">
+                                    <i class="bi bi-check2-circle me-1"></i>Đồng thời đánh dấu Buổi @Model.SessionNumber là "Đã hoàn thành" (Completed)
+                                </label>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Teacher" asp-action="Sessions" asp-route-classId="@Model.ClassId" class="btn btn-light px-4">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm fw-semibold">
+                            <i class="bi bi-save me-1"></i> Lưu kết quả điểm danh
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function updateStats() {
+            var total = document.querySelectorAll('.student-row').length;
+            var present = document.querySelectorAll('.radio-present:checked').length;
+            var absent = document.querySelectorAll('.radio-absent:checked').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statPresent').textContent = present;
+            document.getElementById('statAbsent').textContent = absent;
+        }
+
+        // Bắt sự kiện khi người dùng click đổi radio
+        document.querySelectorAll('.attendance-radio').forEach(function(radio) {
+            radio.addEventListener('change', updateStats);
+        });
+
+        // Nút "Có mặt tất cả"
+        document.getElementById('btnMarkAllPresent').addEventListener('click', function() {
+            document.querySelectorAll('.radio-present').forEach(function(radio) {
+                radio.checked = true;
+            });
+            updateStats();
+        });
+
+        // Nút "Vắng tất cả"
+        document.getElementById('btnMarkAllAbsent').addEventListener('click', function() {
+            document.querySelectorAll('.radio-absent').forEach(function(radio) {
+                radio.checked = true;
+            });
+            updateStats();
+        });
+
+        // Cập nhật thống kê ban đầu
+        updateStats();
+    </script>
+}
+

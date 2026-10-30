@@ -2,6 +2,7 @@ namespace EduCenterManagement.ViewModels.Teacher
 {
     public class StudentItemViewModel
     {
+        public int StudentId { get; set; }
         public string StudentCode { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public DateOnly? DateOfBirth { get; set; }

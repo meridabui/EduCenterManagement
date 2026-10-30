@@ -71,6 +71,7 @@ namespace EduCenterManagement.Services.Teacher
                 EndDate = classItem.EndDate,
                 Students = enrollments.Select(e => new StudentItemViewModel
                 {
+                    StudentId = e.Student.Id,
                     StudentCode = $"HS{e.Student.Id:D3}",
                     FullName = e.Student.FullName,
                     DateOfBirth = e.Student.DateOfBirth
