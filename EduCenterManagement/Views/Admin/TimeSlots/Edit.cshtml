@@ -1,13 +1,14 @@
-﻿@model EduCenterManagement.ViewModels.Admin.TimeSlotViewModel
+@model EduCenterManagement.ViewModels.Admin.TimeSlotViewModel
 
 @{
     ViewData["Title"] = "Sửa khung giờ";
 }
 
-<div class="container mt-4" style="max-width: 650px;">
-    <h2 class="mb-4">Sửa khung giờ học</h2>
+<div class="mx-auto" style="max-width: 760px;">
+    <h1 class="h3 fw-bold mb-2">Sửa khung giờ học</h1>
+    <p class="text-muted mb-4">Quản lý thời gian bắt đầu và kết thúc của ca học.</p>
 
-    <div class="card shadow-sm">
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-body p-4">
             <form asp-controller="TimeSlots"
                   asp-action="Edit"
@@ -22,27 +23,27 @@
                      class="text-danger mb-3"></div>
 
                 <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
+                    <input asp-for="Name" class="form-control form-control-lg fs-6" />
                     <span asp-validation-for="Name"
                           class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="StartTime" class="form-label"></label>
+                    <label asp-for="StartTime" class="form-label fw-semibold"></label>
                     <input asp-for="StartTime"
                            type="time"
-                           class="form-control"
+                           class="form-control form-control-lg fs-6"
                            step="60" />
                     <span asp-validation-for="StartTime"
                           class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="EndTime" class="form-label"></label>
+                    <label asp-for="EndTime" class="form-label fw-semibold"></label>
                     <input asp-for="EndTime"
                            type="time"
-                           class="form-control"
+                           class="form-control form-control-lg fs-6"
                            step="60" />
                     <span asp-validation-for="EndTime"
                           class="text-danger"></span>
@@ -53,7 +54,7 @@
                     Khung giờ không được chồng lấn với khung giờ khác.
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2 border-top pt-4 mt-4">
                     <button type="submit" class="btn btn-primary">
                         Lưu thay đổi
                     </button>
