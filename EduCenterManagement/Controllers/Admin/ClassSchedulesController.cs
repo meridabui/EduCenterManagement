@@ -375,7 +375,7 @@ namespace EduCenterManagement.Controllers.Admin
             return await _context.TeacherProfiles
                 .AnyAsync(t =>
                     t.Id == teacherId &&
-                    t.SubjectId == subjectId &&
+                    t.TeacherSubjects.Any(ts => ts.SubjectId == subjectId) &&
                     t.User.Status == UserStatus.Active &&
                     t.User.Role == UserRole.Teacher);
         }

@@ -16,6 +16,7 @@ namespace EduCenterManagement.Data
         public DbSet<ParentProfile> ParentProfiles { get; set; }
         public DbSet<StudentProfile> StudentProfiles { get; set; }
         public DbSet<TeacherProfile> TeacherProfiles { get; set; }
+        public DbSet<TeacherSubject> TeacherSubjects { get; set; }
 
         public DbSet<Subject> Subjects { get; set; }
         public DbSet<Class> Classes { get; set; }
@@ -211,6 +212,22 @@ namespace EduCenterManagement.Data
                 .HasOne(x => x.User)
                 .WithOne()
                 .HasForeignKey<TeacherProfile>(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // TEACHER - SUBJECTS (N - N)
+            modelBuilder.Entity<TeacherSubject>()
+                .HasKey(x => new { x.TeacherId, x.SubjectId });
+
+            modelBuilder.Entity<TeacherSubject>()
+                .HasOne(x => x.Teacher)
+                .WithMany(x => x.TeacherSubjects)
+                .HasForeignKey(x => x.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TeacherSubject>()
+                .HasOne(x => x.Subject)
+                .WithMany(x => x.TeacherSubjects)
+                .HasForeignKey(x => x.SubjectId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // SUBJECT - CLASSES (1 - N)

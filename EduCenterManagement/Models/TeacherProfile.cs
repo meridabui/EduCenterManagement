@@ -13,11 +13,8 @@ namespace EduCenterManagement.Models
         [Required]
         public int UserId { get; set; }
 
-        [Required]
-        public int SubjectId { get; set; }
-
-        [ForeignKey(nameof(SubjectId))]
-        public Subject Subject { get; set; } = null!;
+        public ICollection<TeacherSubject> TeacherSubjects { get; set; }
+            = new List<TeacherSubject>();
 
         [Required]
         [MaxLength(100)]

@@ -5,11 +5,10 @@ namespace EduCenterManagement.ViewModels.Admin
 {
     public class CreateTeacherViewModel
     {
-        [Required(ErrorMessage = "Vui lòng chọn môn học.")]
-        [Range(1, int.MaxValue,
-            ErrorMessage = "Môn học không hợp lệ.")]
-        [Display(Name = "Môn chuyên trách")]
-        public int SubjectId { get; set; }
+        [Required(ErrorMessage = "Vui lòng chọn ít nhất một môn học.")]
+        [MinLength(1, ErrorMessage = "Vui lòng chọn ít nhất một môn học.")]
+        [Display(Name = "Môn được phân công")]
+        public List<int> SubjectIds { get; set; } = new();
 
         [Required(ErrorMessage = "Vui lòng nhập họ tên.")]
         [StringLength(100)]

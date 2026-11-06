@@ -27,6 +27,8 @@
                 <th>Họ và tên</th>
                 <th>Email</th>
                 <th>Trạng thái</th>
+                <th>Môn được phân công</th>
+                <th>Thao tác</th>
             </tr>
         </thead>
         <tbody>
@@ -39,13 +41,29 @@
                         <td>@teacher.FullName</td>
                         <td>@teacher.User.Email</td>
                         <td>@teacher.User.Status</td>
+                        <td>
+                            @foreach (var assignment in teacher.TeacherSubjects.OrderBy(ts => ts.Subject.Name))
+                            {
+                                <span class="badge bg-secondary me-1 mb-1">
+                                    @assignment.Subject.Name
+                                    @if (assignment.Subject.Status == EduCenterManagement.Enums.SubjectStatus.Inactive)
+                                    {
+                                        <span>(ngừng hoạt động)</span>
+                                    }
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="AssignSubjects" asp-route-id="@teacher.Id"
+                               class="btn btn-sm btn-outline-primary">Quản lý môn</a>
+                        </td>
                     </tr>
                 }
             }
             else
             {
                 <tr>
-                    <td colspan="4" class="text-center">
+                    <td colspan="6" class="text-center">
                         Chưa có Teacher nào.
                     </td>
                 </tr>
