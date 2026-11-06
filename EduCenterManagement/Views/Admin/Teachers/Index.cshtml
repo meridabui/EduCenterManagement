@@ -1,15 +1,15 @@
-﻿@model IEnumerable<EduCenterManagement.Models.TeacherProfile>
+@model IEnumerable<EduCenterManagement.Models.TeacherProfile>
 
 @{
-    ViewData["Title"] = "Quản lý Teacher";
+    ViewData["Title"] = "Quản lý giáo viên";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Quản lý Teacher</h2>
+<div class="admin-management-page">
+    <div class="dashboard-heading flex-wrap">
+        <h1 class="h3 fw-bold mb-0">Quản lý giáo viên</h1>
 
         <a asp-action="Create" class="btn btn-primary">
-            + Thêm Teacher
+            + Thêm giáo viên
         </a>
     </div>
 
@@ -20,7 +20,7 @@
         </div>
     }
 
-    <table class="table table-bordered table-hover">
+    <section class="dashboard-panel p-0 overflow-hidden mb-4"><div class="table-responsive"><table class="table table-hover dashboard-table align-middle mb-0">
         <thead class="table-light">
             <tr>
                 <th>ID</th>
@@ -40,7 +40,7 @@
                         <td>@teacher.Id</td>
                         <td>@teacher.FullName</td>
                         <td>@teacher.User.Email</td>
-                        <td>@teacher.User.Status</td>
+                        <td><span class="badge bg-light text-dark border">@teacher.User.Status</span></td>
                         <td>
                             @foreach (var assignment in teacher.TeacherSubjects.OrderBy(ts => ts.Subject.Name))
                             {
@@ -64,15 +64,15 @@
             {
                 <tr>
                     <td colspan="6" class="text-center">
-                        Chưa có Teacher nào.
+                        Chưa có giáo viên nào.
                     </td>
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div></section>
 
     <a asp-controller="Admin" asp-action="Index"
        class="btn btn-outline-secondary">
-        Quay lại Dashboard
+        Quay lại tổng quan
     </a>
 </div>

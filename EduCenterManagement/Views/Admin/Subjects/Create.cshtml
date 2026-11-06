@@ -1,13 +1,13 @@
-﻿@model EduCenterManagement.ViewModels.Admin.SubjectViewModel
+@model EduCenterManagement.ViewModels.Admin.SubjectViewModel
 
 @{
     ViewData["Title"] = "Thêm môn học";
 }
 
-<div class="container mt-4" style="max-width: 700px;">
-    <h2 class="mb-4">Thêm môn học</h2>
+<div class="mx-auto" style="max-width: 760px;">
+    <h1 class="h3 fw-bold mb-2">Thêm môn học</h1><p class="text-muted mb-4">Bổ sung môn học và thiết lập trạng thái hoạt động.</p>
 
-    <div class="card shadow-sm">
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-body p-4">
             <form asp-controller="Subjects"
                   asp-action="Create"
@@ -19,9 +19,9 @@
                      class="text-danger mb-3"></div>
 
                 <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
                     <input asp-for="Name"
-                           class="form-control"
+                           class="form-control form-control-lg fs-6"
                            placeholder="Nhập tên môn học" />
                     <span asp-validation-for="Name"
                           class="text-danger"></span>
@@ -29,9 +29,9 @@
 
                 <div class="mb-3">
                     <label asp-for="Description"
-                           class="form-label"></label>
+                           class="form-label fw-semibold"></label>
                     <textarea asp-for="Description"
-                              class="form-control"
+                              class="form-control form-control-lg fs-6"
                               rows="4"
                               placeholder="Nhập mô tả môn học (không bắt buộc)"></textarea>
                     <span asp-validation-for="Description"
@@ -39,16 +39,16 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Status" class="form-label"></label>
+                    <label asp-for="Status" class="form-label fw-semibold"></label>
                     <select asp-for="Status"
                             asp-items="Html.GetEnumSelectList<EduCenterManagement.Enums.SubjectStatus>()"
-                            class="form-select">
+                            class="form-select form-select-lg fs-6">
                     </select>
                     <span asp-validation-for="Status"
                           class="text-danger"></span>
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2 border-top pt-4 mt-4">
                     <button type="submit" class="btn btn-primary">
                         Lưu môn học
                     </button>

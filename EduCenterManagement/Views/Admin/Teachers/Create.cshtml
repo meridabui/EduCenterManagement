@@ -1,13 +1,13 @@
-﻿@model EduCenterManagement.ViewModels.Admin.CreateTeacherViewModel
+@model EduCenterManagement.ViewModels.Admin.CreateTeacherViewModel
 
 @{
-    ViewData["Title"] = "Thêm Teacher";
+    ViewData["Title"] = "Thêm giáo viên";
 }
 
-<div class="container mt-4" style="max-width: 650px;">
-    <h2 class="mb-4">Tạo tài khoản Teacher</h2>
+<div class="mx-auto" style="max-width: 760px;">
+    <h1 class="h3 fw-bold mb-2">Tạo tài khoản giáo viên</h1><p class="text-muted mb-4">Thiết lập tài khoản và chọn môn giảng dạy cho giáo viên.</p>
 
-    <div class="card shadow-sm">
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-body p-4">
             <form asp-controller="Teachers"
                   asp-action="Create"
@@ -19,9 +19,9 @@
                      class="text-danger mb-3"></div>
 
                 <div class="mb-3">
-                    <label asp-for="FullName" class="form-label"></label>
-                    <input asp-for="FullName" class="form-control"
-                           placeholder="Nhập họ tên Teacher" />
+                    <label asp-for="FullName" class="form-label fw-semibold"></label>
+                    <input asp-for="FullName" class="form-control form-control-lg fs-6"
+                           placeholder="Nhập họ tên giáo viên" />
                     <span asp-validation-for="FullName"
                           class="text-danger"></span>
                 </div>
@@ -31,7 +31,7 @@
                         <legend class="fs-6">Môn được phân công</legend>
                         @foreach (var subject in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Subjects)
                         {
-                            <div class="form-check">
+                            <div class="form-check mb-2">
                                 <input type="checkbox" name="SubjectIds" value="@subject.Value"
                                        id="subject-@subject.Value" checked="@subject.Selected"
                                        class="form-check-input" />
@@ -44,16 +44,16 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Email" class="form-label"></label>
-                    <input asp-for="Email" class="form-control"
+                    <label asp-for="Email" class="form-label fw-semibold"></label>
+                    <input asp-for="Email" class="form-control form-control-lg fs-6"
                            placeholder="teacher@example.com" />
                     <span asp-validation-for="Email"
                           class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Password" class="form-label"></label>
-                    <input asp-for="Password" class="form-control"
+                    <label asp-for="Password" class="form-label fw-semibold"></label>
+                    <input asp-for="Password" class="form-control form-control-lg fs-6"
                            autocomplete="new-password" />
                     <span asp-validation-for="Password"
                           class="text-danger"></span>
@@ -61,14 +61,14 @@
 
                 <div class="mb-3">
                     <label asp-for="ConfirmPassword"
-                           class="form-label"></label>
-                    <input asp-for="ConfirmPassword" class="form-control"
+                           class="form-label fw-semibold"></label>
+                    <input asp-for="ConfirmPassword" class="form-control form-control-lg fs-6"
                            autocomplete="new-password" />
                     <span asp-validation-for="ConfirmPassword"
                           class="text-danger"></span>
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2 border-top pt-4 mt-4">
                     <button type="submit" class="btn btn-primary">
                         Tạo tài khoản
                     </button>
