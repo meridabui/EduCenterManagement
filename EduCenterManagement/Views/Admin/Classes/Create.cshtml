@@ -1,4 +1,4 @@
-﻿
+
 @model EduCenterManagement.ViewModels.Admin.ClassViewModel
 @using Microsoft.AspNetCore.Mvc.Rendering
 
@@ -12,10 +12,10 @@
         ?? Enumerable.Empty<SelectListItem>();
 }
 
-<div class="container mt-4 mb-5" style="max-width: 900px;">
-    <h2 class="mb-4">Mở lớp học mới</h2>
+<div class="mx-auto mb-4" style="max-width: 900px;">
+    <h1 class="h3 fw-bold mb-4">Mở lớp học mới</h1>
 
-    <div class="card shadow-sm">
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-body p-4">
             <form asp-controller="Classes"
                   asp-action="Create"
@@ -29,19 +29,19 @@
                 <h5 class="mb-3">1. Thông tin lớp học</h5>
 
                 <div class="mb-3">
-                    <label asp-for="Name" class="form-label"></label>
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
                     <input asp-for="Name"
-                           class="form-control"
+                           class="form-control form-control-lg fs-6"
                            placeholder="Ví dụ: Toán A1" />
                     <span asp-validation-for="Name"
                           class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="SubjectId" class="form-label"></label>
+                    <label asp-for="SubjectId" class="form-label fw-semibold"></label>
                     <select asp-for="SubjectId"
                             asp-items="ViewBag.Subjects"
-                            class="form-select">
+                            class="form-select form-select-lg fs-6">
                         <option value="">-- Chọn môn học --</option>
                     </select>
                     <span asp-validation-for="SubjectId"
@@ -49,10 +49,10 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="TeacherId" class="form-label"></label>
+                    <label asp-for="TeacherId" class="form-label fw-semibold"></label>
                     <select asp-for="TeacherId"
                             asp-items="ViewBag.Teachers"
-                            class="form-select">
+                            class="form-select form-select-lg fs-6">
                         <option value="">-- Chưa phân công giáo viên --</option>
                     </select>
                     <span asp-validation-for="TeacherId"
@@ -65,42 +65,42 @@
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label asp-for="StartDate" class="form-label"></label>
+                        <label asp-for="StartDate" class="form-label fw-semibold"></label>
                         <input asp-for="StartDate"
                                type="date"
-                               class="form-control" />
+                               class="form-control form-control-lg fs-6" />
                         <span asp-validation-for="StartDate"
                               class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6 mb-3">
-                        <label asp-for="EndDate" class="form-label"></label>
+                        <label asp-for="EndDate" class="form-label fw-semibold"></label>
                         <input asp-for="EndDate"
                                type="date"
-                               class="form-control" />
+                               class="form-control form-control-lg fs-6" />
                         <span asp-validation-for="EndDate"
                               class="text-danger"></span>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="MaxStudents" class="form-label"></label>
+                    <label asp-for="MaxStudents" class="form-label fw-semibold"></label>
                     <input asp-for="MaxStudents"
                            type="number"
                            min="1"
                            max="1000"
-                           class="form-control" />
+                           class="form-control form-control-lg fs-6" />
                     <span asp-validation-for="MaxStudents"
                           class="text-danger"></span>
                 </div>
 
                 <div class="mb-4">
-                    <label asp-for="Fee" class="form-label"></label>
+                    <label asp-for="Fee" class="form-label fw-semibold"></label>
                     <input asp-for="Fee"
                            type="number"
                            min="0"
                            step="any"
-                           class="form-control" />
+                           class="form-control form-control-lg fs-6" />
                     <span asp-validation-for="Fee"
                           class="text-danger"></span>
                 </div>
@@ -133,7 +133,7 @@
                             <div class="schedule-row border rounded-3 p-3 mb-3">
                                 <div class="row align-items-end">
                                     <div class="col-md-5 mb-2">
-                                        <label class="form-label"
+                                        <label class="form-label fw-semibold"
                                                for="Schedules_@(i)__DayOfWeek">
                                             Thứ trong tuần
                                         </label>
@@ -148,7 +148,7 @@
                                     </div>
 
                                     <div class="col-md-5 mb-2">
-                                        <label class="form-label"
+                                        <label class="form-label fw-semibold"
                                                for="Schedules_@(i)__TimeSlotId">
                                             Khung giờ
                                         </label>
@@ -179,7 +179,7 @@
                     <div class="schedule-row border rounded-3 p-3 mb-3">
                         <div class="row align-items-end">
                             <div class="col-md-5 mb-2">
-                                <label class="form-label"
+                                <label class="form-label fw-semibold"
                                        for="Schedules___index___DayOfWeek">
                                     Thứ trong tuần
                                 </label>
@@ -196,7 +196,7 @@
                             </div>
 
                             <div class="col-md-5 mb-2">
-                                <label class="form-label"
+                                <label class="form-label fw-semibold"
                                        for="Schedules___index___TimeSlotId">
                                     Khung giờ
                                 </label>
@@ -226,11 +226,11 @@
                 <div class="alert alert-info mt-3">
                     Lớp sẽ được tạo ở trạng thái <strong>Draft</strong>.
                     Lớp và các lịch học được lưu cùng nhau.
-                    Bạn có thể phân công Teacher sau, rồi mở đăng ký
+                    Bạn có thể phân công giáo viên sau, rồi mở đăng ký
                     khi lớp đã đáp ứng đủ điều kiện.
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2 border-top pt-4 mt-4">
                     <button type="submit" class="btn btn-primary">
                         Tạo lớp học
                     </button>
