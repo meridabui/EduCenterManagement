@@ -57,6 +57,7 @@ namespace EduCenterManagement.Controllers
                 ClassName = c.Name,
 
                 SubjectName = c.Subject?.Name ?? "Chưa xác định",
+                SubjectId = c.SubjectId,
                 TeacherName = c.Teacher?.FullName,
 
                 StartDate = c.StartDate,

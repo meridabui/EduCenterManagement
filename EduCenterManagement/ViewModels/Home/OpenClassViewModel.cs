@@ -9,6 +9,7 @@ namespace EduCenterManagement.ViewModels.Home
         public string ClassName { get; set; } = string.Empty;
 
         public string SubjectName { get; set; } = string.Empty;
+        public int SubjectId { get; set; }
         public string? TeacherName { get; set; }
 
         public DateOnly StartDate { get; set; }

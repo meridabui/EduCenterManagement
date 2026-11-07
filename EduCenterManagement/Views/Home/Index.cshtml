@@ -372,9 +372,6 @@
                     <li class="nav-item">
                         <a class="nav-link fw-semibold" href="#classes">Lớp học</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link fw-semibold" href="#roles">Dành cho bạn</a>
-                    </li>
                 </ul>
 
                 <div id="guestActions" class="d-flex flex-wrap gap-2 align-items-center @(isAuthenticated ? "ed-hidden" : "")">
@@ -589,11 +586,24 @@
                     </p>
                 </div>
 
-                <div style="min-width:220px">
+                <div class="d-flex flex-wrap gap-2">
+                    <div>
+                        <label for="classSubjectFilter" class="visually-hidden">Lọc theo môn học</label>
+                        <select id="classSubjectFilter" class="form-select ed-form-control">
+                            <option value="">Tất cả môn học</option>
+                            @foreach (var subject in (Model ?? new()).GroupBy(c => c.SubjectId)
+                                .Select(g => g.First()).OrderBy(c => c.SubjectName))
+                            {
+                                <option value="@subject.SubjectId">@subject.SubjectName</option>
+                            }
+                        </select>
+                    </div>
+                    <div style="min-width:220px">
                     <label for="classSearch" class="visually-hidden">Tìm lớp học</label>
                     <input id="classSearch"
                            class="form-control ed-form-control"
                            placeholder="Tìm mã lớp hoặc môn học..." />
+                    </div>
                 </div>
             </div>
 
@@ -604,6 +614,7 @@
                     foreach (var item in Model)
                     {
                         <div class="col-md-6 col-xl-4 ed-class-item"
+                             data-subject-id="@item.SubjectId"
                              data-search="@($"{item.ClassCode} {item.ClassName} {item.SubjectName}".ToLowerInvariant())">
 
                             <article class="ed-class-card">
@@ -706,56 +717,6 @@
             <div id="noClassResults"
                  class="alert alert-light border mt-4 ed-hidden">
                 Không tìm thấy lớp phù hợp.
-            </div>
-        </div>
-    </section>
-
-    <section id="roles" class="ed-section pt-0">
-        <div class="container">
-            <div class="text-center mb-5">
-                <h2 class="ed-section-title display-6">Một nền tảng, bốn vai trò</h2>
-                <p class="ed-section-copy">
-                    Mỗi người dùng có không gian làm việc phù hợp với vai trò của mình.
-                </p>
-            </div>
-
-            <div class="row g-4">
-                <div class="col-sm-6 col-lg-3">
-                    <div class="ed-feature-card">
-                        <div class="ed-feature-icon">⚙</div>
-                        <h3 class="h5 fw-bold">Admin</h3>
-                        <p class="text-secondary mb-0">
-                            Quản lý tài khoản, môn học, lớp, giáo viên và lịch học.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <div class="ed-feature-card">
-                        <div class="ed-feature-icon">✎</div>
-                        <h3 class="h5 fw-bold">Giáo viên</h3>
-                        <p class="text-secondary mb-0">
-                            Theo dõi lớp phụ trách, điểm danh và hoạt động học tập.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <div class="ed-feature-card">
-                        <div class="ed-feature-icon">♡</div>
-                        <h3 class="h5 fw-bold">Phụ huynh</h3>
-                        <p class="text-secondary mb-0">
-                            Kết nối tài khoản với con và theo dõi lịch học.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <div class="ed-feature-card">
-                        <div class="ed-feature-icon">✦</div>
-                        <h3 class="h5 fw-bold">Học sinh</h3>
-                        <p class="text-secondary mb-0">
-                            Xem lịch học, tài liệu, bài kiểm tra và kết quả.
-                        </p>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -1059,21 +1020,25 @@ loginForm.addEventListener("submit", async function (event) {
 
             // Tìm kiếm lớp mẫu.
             const classSearch = document.getElementById("classSearch");
+            const classSubjectFilter = document.getElementById("classSubjectFilter");
             const classItems = Array.from(document.querySelectorAll(".ed-class-item"));
             const noClassResults = document.getElementById("noClassResults");
 
-            classSearch.addEventListener("input", function () {
+            function filterClasses() {
                 const query = classSearch.value.trim().toLowerCase();
                 let visibleCount = 0;
 
                 classItems.forEach(function (item) {
-                    const matches = item.dataset.search.includes(query);
+                    const matches = item.dataset.search.includes(query)
+                        && (!classSubjectFilter.value || item.dataset.subjectId === classSubjectFilter.value);
                     item.classList.toggle("ed-hidden", !matches);
                     if (matches) visibleCount++;
                 });
 
                 noClassResults.classList.toggle("ed-hidden", visibleCount !== 0);
-            });
+            }
+            classSearch.addEventListener("input", filterClasses);
+            classSubjectFilter.addEventListener("change", filterClasses);
 
             // Kiểm tra quyền khi nhấn đăng ký lớp.
         document.querySelectorAll(".register-class-btn").forEach(function (button) {
