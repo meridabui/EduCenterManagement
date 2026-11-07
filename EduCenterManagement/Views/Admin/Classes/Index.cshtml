@@ -10,6 +10,7 @@
     var openCreateModal = ViewBag.OpenCreateModal is bool open && open;
     var filterSubjects = ViewBag.FilterSubjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var filterTeachers = ViewBag.FilterTeachers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var filterStatuses = ViewBag.FilterStatuses as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var hasFilters = ViewBag.HasClassFilters is bool filtered && filtered;
 }
 
@@ -140,19 +141,25 @@
 
     <form asp-controller="Classes" asp-action="Index" method="get" class="dashboard-panel mb-4" aria-label="Lọc danh sách lớp học">
         <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label for="filterSubjectId" class="form-label fw-semibold">Môn học</label>
                 <select id="filterSubjectId" name="subjectId" asp-items="filterSubjects" class="form-select">
                     <option value="">Tất cả môn học</option>
                 </select>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label for="filterTeacherId" class="form-label fw-semibold">Giáo viên</label>
                 <select id="filterTeacherId" name="teacherId" asp-items="filterTeachers" class="form-select">
                     <option value="">Tất cả giáo viên</option>
                 </select>
             </div>
-            <div class="col-12 col-md-4 d-flex flex-wrap gap-2">
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="filterStatus" class="form-label fw-semibold">Trạng thái</label>
+                <select id="filterStatus" name="status" asp-items="filterStatuses" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3 d-flex flex-wrap gap-2">
                 <button type="submit" class="btn btn-primary">Lọc</button>
                 <a asp-controller="Classes" asp-action="Index" class="btn btn-outline-secondary">Xóa lọc</a>
             </div>

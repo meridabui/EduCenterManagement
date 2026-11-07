@@ -30,9 +30,14 @@ namespace EduCenterManagement.Controllers.Admin
         // =========================================================
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? subjectId = null, int? teacherId = null)
+        public async Task<IActionResult> Index(int? subjectId = null, int? teacherId = null, string? status = null)
         {
-            var classes = await BuildIndexAsync(subjectId, teacherId);
+            if (!string.IsNullOrEmpty(status) && status != "Open,InProgress"
+                && (!System.Enum.TryParse<ClassStatus>(status, out var parsedStatus)
+                    || !System.Enum.IsDefined(parsedStatus)))
+                return BadRequest("Trạng thái lớp học không hợp lệ.");
+
+            var classes = await BuildIndexAsync(subjectId, teacherId, status);
 
             return View("~/Views/Admin/Classes/Index.cshtml", classes);
         }
@@ -973,7 +978,7 @@ namespace EduCenterManagement.Controllers.Admin
         // HELPERS
         // =========================================================
 
-        private async Task<List<Class>> BuildIndexAsync(int? subjectId = null, int? teacherId = null)
+        private async Task<List<Class>> BuildIndexAsync(int? subjectId = null, int? teacherId = null, string? status = null)
         {
             await LoadFormDataAsync();
 
@@ -982,7 +987,16 @@ namespace EduCenterManagement.Controllers.Admin
                 .OrderBy(s => s.Name).ToListAsync(), nameof(Subject.Id), nameof(Subject.Name), subjectId);
             ViewBag.FilterTeachers = new SelectList(await _context.TeacherProfiles.AsNoTracking()
                 .OrderBy(t => t.FullName).ToListAsync(), nameof(TeacherProfile.Id), nameof(TeacherProfile.FullName), teacherId);
-            ViewBag.HasClassFilters = subjectId.HasValue || teacherId.HasValue;
+            ViewBag.FilterStatuses = new List<SelectListItem>
+            {
+                new("Bản nháp", "Draft", status == "Draft"),
+                new("Mở đăng ký", "Open", status == "Open"),
+                new("Đang học", "InProgress", status == "InProgress"),
+                new("Hoàn thành", "Completed", status == "Completed"),
+                new("Đã hủy", "Cancelled", status == "Cancelled"),
+                new("Mở đăng ký và đang học", "Open,InProgress", status == "Open,InProgress")
+            };
+            ViewBag.HasClassFilters = subjectId.HasValue || teacherId.HasValue || !string.IsNullOrEmpty(status);
 
             var query = _context.Classes
                 .AsNoTracking()
@@ -991,6 +1005,10 @@ namespace EduCenterManagement.Controllers.Admin
                 query = query.Where(c => c.SubjectId == subjectId.Value);
             if (teacherId.HasValue)
                 query = query.Where(c => c.TeacherId == teacherId.Value);
+            if (status == "Open,InProgress")
+                query = query.Where(c => c.Status == ClassStatus.Open || c.Status == ClassStatus.InProgress);
+            else if (System.Enum.TryParse<ClassStatus>(status, out var selectedStatus))
+                query = query.Where(c => c.Status == selectedStatus);
 
             return await query
                 .AsNoTracking()
