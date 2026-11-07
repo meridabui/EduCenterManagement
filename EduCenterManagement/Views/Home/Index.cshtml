@@ -3,6 +3,7 @@
 
 @{
     ViewData["Title"] = "EduCenter | Học tập thông minh";
+    ViewData["HideNavbar"] = true;
 
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var role = User.FindFirst(
@@ -397,7 +398,7 @@
                     </span>
                     <div class="me-1">
                         <div class="fw-bold small" id="headerName">@displayName</div>
-                        <span class="badge text-bg-primary" id="headerRole">@roleName</span>
+                        <span class="badge bg-primary-subtle text-dark" id="headerRole">@roleName</span>
                     </div>
                     <a id="portalLink"
                        class="btn ed-btn-primary btn-sm"

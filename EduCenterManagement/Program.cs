@@ -18,6 +18,8 @@ builder.Services.AddHostedService<EnrollmentExpiryWorker>();
 // Đăng ký Repository & Service cho phân hệ Student
 builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentTimetableRepository, EduCenterManagement.Repositories.Student.StudentTimetableRepository>();
 builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentTimetableService, EduCenterManagement.Services.Student.StudentTimetableService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentQuizRepository, EduCenterManagement.Repositories.Student.StudentQuizRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentQuizService, EduCenterManagement.Services.Student.StudentQuizService>();
 
 // Đăng ký Repository & Service cho phân hệ Teacher
 builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherRepository, EduCenterManagement.Repositories.Teacher.TeacherRepository>();

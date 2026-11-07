@@ -1,0 +1,118 @@
+@using EduCenterManagement.Enums
+@using EduCenterManagement.ViewModels.Student
+@model QuizResultViewModel
+
+@{
+    ViewData["Title"] = $"Kết quả - {Model.Title}";
+    var percent = Model.TotalPoints > 0 ? (int)Math.Round(Model.Score * 100 / Model.TotalPoints) : 0;
+    var scoreColor = percent >= 80 ? "success" : percent >= 50 ? "warning" : "danger";
+    var statusText = Model.Status switch
+    {
+        QuizAttemptStatus.Submitted => "Đã nộp",
+        QuizAttemptStatus.AutoSubmitted => "Tự động nộp khi hết giờ",
+        QuizAttemptStatus.Expired => "Quá hạn (không nộp bài)",
+        _ => Model.Status.ToString()
+    };
+}
+
+<div class="container mt-4 mb-5" style="max-width: 860px;">
+    <div class="mb-3">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Danh sách bài quiz
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]</div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>@TempData["Success"]</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center g-3">
+                <div class="col-md-8">
+                    <h4 class="fw-bold mb-1">@Model.Title</h4>
+                    <div class="text-muted small mb-2">@Model.ClassName · Lượt @Model.AttemptNumber / @Model.MaxAttempts</div>
+                    <div class="small">
+                        <div><i class="bi bi-flag me-1"></i>Trạng thái: <strong>@statusText</strong></div>
+                        <div><i class="bi bi-clock me-1"></i>Bắt đầu: @Model.StartedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        @if (Model.SubmittedAt.HasValue)
+                        {
+                            <div><i class="bi bi-send-check me-1"></i>Nộp lúc: @Model.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        }
+                        <div><i class="bi bi-check2-square me-1"></i>Đúng @Model.CorrectCount / @Model.QuestionCount câu</div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end text-center">
+                    <div class="display-5 fw-bold text-@scoreColor">@Model.Score.ToString("0.##")<span class="fs-4 text-muted">/@Model.TotalPoints.ToString("0.##")</span></div>
+                    <div class="text-muted small">@percent%</div>
+                    @if (Model.CanRetake)
+                    {
+                        <form asp-action="Start" asp-route-id="@Model.QuizId" method="post" class="mt-2"
+                              onsubmit="return confirm('Bắt đầu lượt làm mới?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-arrow-repeat me-1"></i>Làm lại
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.ShowCorrectAnswers)
+    {
+        <div class="alert alert-info small">
+            <i class="bi bi-info-circle me-1"></i>Đáp án đúng sẽ được hiển thị khi bạn dùng hết lượt làm bài hoặc khi bài quiz kết thúc.
+        </div>
+    }
+
+    @foreach (var q in Model.Questions)
+    {
+        <div class="card border-0 shadow-sm mb-3 border-start border-4 border-@(q.IsCorrect ? "success" : "danger")">
+            <div class="card-body">
+                <div class="d-flex justify-content-between gap-2 mb-2">
+                    <div class="fw-semibold">Câu @q.Number. <span style="white-space: pre-line;">@q.QuestionText</span></div>
+                    <span class="badge @(q.IsCorrect ? "bg-success" : "bg-danger") align-self-start">
+                        @q.EarnedPoints.ToString("0.##") / @q.Points.ToString("0.##")
+                    </span>
+                </div>
+
+                @foreach (var o in q.Options)
+                {
+                    bool selected = q.SelectedOptionId == o.OptionId;
+                    bool highlightCorrect = Model.ShowCorrectAnswers && o.IsCorrect;
+                    var css = selected
+                        ? (q.IsCorrect ? "border-success bg-success-subtle" : "border-danger bg-danger-subtle")
+                        : highlightCorrect ? "border-success" : "";
+
+                    <div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center @css">
+                        <span>
+                            <i class="bi @(selected ? "bi-record-circle-fill" : "bi-circle") me-2"></i>@o.OptionText
+                        </span>
+                        <span class="small">
+                            @if (selected)
+                            {
+                                <span class="fw-semibold @(q.IsCorrect ? "text-success" : "text-danger")">Bạn chọn</span>
+                            }
+                            @if (highlightCorrect)
+                            {
+                                <span class="text-success fw-semibold ms-2"><i class="bi bi-check-lg"></i> Đáp án đúng</span>
+                            }
+                        </span>
+                    </div>
+                }
+
+                @if (!q.SelectedOptionId.HasValue)
+                {
+                    <div class="text-muted small fst-italic">Bạn chưa trả lời câu này.</div>
+                }
+            </div>
+        </div>
+    }
+</div>

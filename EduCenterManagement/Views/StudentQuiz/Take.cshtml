@@ -1,0 +1,130 @@
+@using EduCenterManagement.ViewModels.Student
+@model TakeQuizViewModel
+
+@{
+    ViewData["Title"] = $"Làm bài - {Model.Title}";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 860px;">
+    <div class="card border-0 shadow-sm mb-3 sticky-top" style="top: 0.5rem; z-index: 10;">
+        <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-0">@Model.Title</h5>
+                <div class="text-muted small">@Model.ClassName · Lượt @Model.AttemptNumber / @Model.MaxAttempts</div>
+            </div>
+            <div class="text-end">
+                <div class="small text-muted">Thời gian còn lại</div>
+                <div id="timer" class="fs-4 fw-bold font-monospace text-primary">--:--</div>
+            </div>
+        </div>
+        <div class="progress rounded-0" style="height: 4px;">
+            <div id="answeredBar" class="progress-bar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <form id="quizForm" asp-action="Submit" asp-route-id="@Model.AttemptId" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="isAutoSubmit" id="isAutoSubmit" value="false" />
+
+        @foreach (var q in Model.Questions)
+        {
+            <div class="card border-0 shadow-sm mb-3 question-card" data-question="@q.QuestionId">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between gap-2 mb-2">
+                        <div class="fw-semibold">Câu @q.Number. <span style="white-space: pre-line;">@q.QuestionText</span></div>
+                        <span class="badge bg-light text-dark border align-self-start">@q.Points.ToString("0.##") điểm</span>
+                    </div>
+
+                    @foreach (var o in q.Options)
+                    {
+                        var inputId = $"q{q.QuestionId}_o{o.OptionId}";
+                        <div class="form-check border rounded px-3 py-2 mb-2 ms-0">
+                            <input class="form-check-input ms-0 me-2" type="radio"
+                                   name="answers[@q.QuestionId]" id="@inputId" value="@o.OptionId" />
+                            <label class="form-check-label w-100" for="@inputId">@o.OptionText</label>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Đã trả lời <span id="answeredCount">0</span> / @Model.Questions.Count câu</span>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send me-1"></i>Nộp bài
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById("quizForm");
+            const timerEl = document.getElementById("timer");
+            const totalQuestions = @Model.Questions.Count;
+            const storageKey = "quiz-attempt-@Model.AttemptId";
+            // Mốc hết giờ tính từ số giây còn lại do server trả về (không phụ thuộc giờ máy học sinh)
+            const deadline = Date.now() + @Model.RemainingSeconds * 1000;
+            let submitting = false;
+
+            // Khôi phục đáp án đã chọn nếu học sinh lỡ tải lại trang
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+                Object.entries(saved).forEach(([name, value]) => {
+                    const input = form.querySelector(`input[name="${name}"][value="${value}"]`);
+                    if (input) input.checked = true;
+                });
+            } catch (e) { }
+
+            function updateProgress() {
+                const answered = form.querySelectorAll("input[type=radio]:checked").length;
+                document.getElementById("answeredCount").textContent = answered;
+                document.getElementById("answeredBar").style.width = (totalQuestions ? answered * 100 / totalQuestions : 0) + "%";
+            }
+
+            form.addEventListener("change", function (e) {
+                if (e.target.type !== "radio") return;
+                try {
+                    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+                    saved[e.target.name] = e.target.value;
+                    localStorage.setItem(storageKey, JSON.stringify(saved));
+                } catch (err) { }
+                updateProgress();
+            });
+
+            form.addEventListener("submit", function (e) {
+                if (submitting) return;
+                const isAuto = document.getElementById("isAutoSubmit").value === "true";
+                if (!isAuto) {
+                    const answered = form.querySelectorAll("input[type=radio]:checked").length;
+                    const msg = answered < totalQuestions
+                        ? `Bạn mới trả lời ${answered}/${totalQuestions} câu. Vẫn nộp bài?`
+                        : "Xác nhận nộp bài?";
+                    if (!confirm(msg)) { e.preventDefault(); return; }
+                }
+                submitting = true;
+                try { localStorage.removeItem(storageKey); } catch (err) { }
+            });
+
+            function tick() {
+                const remaining = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+                const m = Math.floor(remaining / 60), s = remaining % 60;
+                timerEl.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+                if (remaining <= 60) timerEl.classList.replace("text-primary", "text-danger");
+
+                if (remaining <= 0 && !submitting) {
+                    document.getElementById("isAutoSubmit").value = "true";
+                    submitting = true;
+                    try { localStorage.removeItem(storageKey); } catch (err) { }
+                    form.submit(); // form.submit() không kích hoạt sự kiện submit nên không hỏi xác nhận
+                    return;
+                }
+                setTimeout(tick, 1000);
+            }
+
+            updateProgress();
+            tick();
+        })();
+    </script>
+}
