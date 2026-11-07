@@ -54,13 +54,7 @@ namespace EduCenterManagement.ViewModels.Admin
         public IEnumerable<ValidationResult> Validate(
             ValidationContext validationContext)
         {
-            if (StartDate < DateOnly.FromDateTime(DateTime.Today))
-            {
-                yield return new ValidationResult(
-                    "Ngày bắt đầu không được là ngày trong quá khứ.",
-                    new[] { nameof(StartDate) });
-            }
-
+            // The controller checks past start dates against the persisted class date.
             if (EndDate <= StartDate)
             {
                 yield return new ValidationResult(

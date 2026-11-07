@@ -4,6 +4,8 @@
 
 @{
     ViewData["Title"] = "Quản lý lớp học";
+    var pagination = (EduCenterManagement.ViewModels.Admin.PaginationViewModel)ViewBag.Pagination;
+    var rowNumber = pagination.Offset;
     var subjects = ViewBag.Subjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var timeSlots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var teachers = ViewBag.Teachers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
@@ -165,13 +167,14 @@
             </div>
         </div>
     </form>
-    <p class="text-muted small">Hiển thị @(Model?.Count() ?? 0) lớp học@(hasFilters ? " phù hợp với bộ lọc" : "").</p>
+    <p class="text-muted small">Tổng cộng @pagination.TotalCount lớp học@(hasFilters ? " phù hợp với bộ lọc" : "").</p>
 
     <div class="class-table-card">
         <div class="table-responsive">
             <table class="table table-hover class-table dashboard-table">
                 <thead>
                     <tr>
+                        <th>STT</th>
                         <th>Mã lớp</th>
                         <th>Môn học</th>
                         <th>Thời gian khóa</th>
@@ -187,6 +190,7 @@
                         foreach (var item in Model)
                         {
                             <tr>
+                                <td>@(++rowNumber)</td>
                                 <td class="class-code">@item.Name</td>
                                 <td>@(item.Subject?.Name ?? "Chưa có môn học")</td>
                                 <td class="text-nowrap">@item.StartDate.ToString("dd/MM/yyyy") – @item.EndDate.ToString("dd/MM/yyyy")</td>
@@ -260,7 +264,7 @@
                     }
                     else
                     {
-                        <tr><td colspan="7" class="text-center py-5">
+                        <tr><td colspan="8" class="text-center py-5">
                             @if (hasFilters)
                             {
                                 <span>Không có lớp học phù hợp. Hãy thay đổi điều kiện hoặc </span>
@@ -277,6 +281,7 @@
         </div>
     </div>
 
+    <partial name="_Pagination" model="pagination" />
     <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary mt-3">← Quay lại tổng quan</a>
 </div>
 

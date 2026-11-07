@@ -20,11 +20,16 @@ namespace EduCenterManagement.Controllers.Admin
         }
 
         // GET: /Subjects
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
+            var pagination = new PaginationViewModel(await _context.Subjects.CountAsync(), page);
+            ViewBag.Pagination = pagination;
             var subjects = await _context.Subjects
                 .AsNoTracking()
                 .OrderBy(s => s.Name)
+                .ThenBy(s => s.Id)
+                .Skip(pagination.Offset)
+                .Take(PaginationViewModel.PageSize)
                 .ToListAsync();
 
             return View("~/Views/Admin/Subjects/Index.cshtml", subjects);

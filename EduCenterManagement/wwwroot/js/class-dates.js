@@ -2,7 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("form[data-class-dates]").forEach(form => {
         const start = form.querySelector('[name="StartDate"]');
         const end = form.querySelector('[name="EndDate"]');
-        const today = start.min;
+        const today = form.dataset.today || start.min;
+        const originalStart = form.dataset.originalStart;
 
         function showError(input, message) {
             input.setCustomValidity(message);
@@ -20,7 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!Number.isNaN(next.getTime())) minEnd = next.toISOString().slice(0, 10);
             }
             end.min = minEnd;
-            const startError = start.value && start.value < today
+            const unchanged = Boolean(originalStart) && start.value === originalStart;
+            start.min = unchanged && originalStart < today ? originalStart : today;
+            const startError = start.value && start.value < today && !unchanged
                 ? "Ngày bắt đầu không được là ngày trong quá khứ." : "";
             const endError = start.value && end.value && end.value <= start.value
                 ? "Ngày kết thúc phải sau ngày bắt đầu." : "";

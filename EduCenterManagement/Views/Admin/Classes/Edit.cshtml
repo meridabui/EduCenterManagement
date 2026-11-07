@@ -3,6 +3,7 @@
 
 @{
     ViewData["Title"] = "Sửa lớp học";
+    var originalStartDate = ViewBag.OriginalStartDate is DateOnly savedDate ? savedDate : Model.StartDate;
     var slots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var schedules = Model.Schedules ?? new List<EduCenterManagement.ViewModels.Admin.ClassScheduleInputViewModel>();
     if (schedules.Count == 0)
@@ -16,7 +17,7 @@
 
     <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-body p-4">
-            <form asp-controller="Classes" asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editClassForm" data-class-dates>
+            <form asp-controller="Classes" asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editClassForm" data-class-dates data-original-start="@originalStartDate.ToString("yyyy-MM-dd")" data-today="@DateTime.Today.ToString("yyyy-MM-dd")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
 

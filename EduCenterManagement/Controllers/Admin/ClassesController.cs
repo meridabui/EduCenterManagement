@@ -30,14 +30,14 @@ namespace EduCenterManagement.Controllers.Admin
         // =========================================================
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? subjectId = null, int? teacherId = null, string? status = null)
+        public async Task<IActionResult> Index(int? subjectId = null, int? teacherId = null, string? status = null, int page = 1)
         {
             if (!string.IsNullOrEmpty(status) && status != "Open,InProgress"
                 && (!System.Enum.TryParse<ClassStatus>(status, out var parsedStatus)
                     || !System.Enum.IsDefined(parsedStatus)))
                 return BadRequest("Trạng thái lớp học không hợp lệ.");
 
-            var classes = await BuildIndexAsync(subjectId, teacherId, status);
+            var classes = await BuildIndexAsync(subjectId, teacherId, status, page);
 
             return View("~/Views/Admin/Classes/Index.cshtml", classes);
         }
@@ -704,6 +704,9 @@ namespace EduCenterManagement.Controllers.Admin
                 model.TeacherId,
                 id);
 
+            // Use the persisted date, not a value supplied by the browser.
+            ViewBag.OriginalStartDate = classItem.StartDate;
+
             IActionResult Back()
             {
                 return View("~/Views/Admin/Classes/Edit.cshtml", model);
@@ -711,7 +714,7 @@ namespace EduCenterManagement.Controllers.Admin
 
             ValidateSchedules(model);
 
-            ValidateClassDates(model);
+            ValidateClassDates(model, classItem.StartDate);
 
             if (!ModelState.IsValid)
                 return Back();
@@ -866,15 +869,12 @@ namespace EduCenterManagement.Controllers.Admin
                         _context.ClassSchedules.Add(schedule);
                 }
                 await _context.SaveChangesAsync();
-                var sessionResult = await _sessions.SynchronizeAsync(classItem, newSchedules);
+                await _sessions.SynchronizeAsync(classItem, newSchedules);
                 _context.ClassSchedules.RemoveRange(oldSchedules.Except(newSchedules));
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                TempData["SuccessMessage"] =
-                    $"Đã cập nhật lớp {classItem.Name} và " +
-                    $"{newSchedules.Count} lịch học. Đã thêm {sessionResult.Added}, " +
-                    $"gỡ {sessionResult.Removed} buổi chưa học; giữ nguyên các buổi đã có dữ liệu.";
+                TempData["SuccessMessage"] = "Đã cập nhật thành công.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -978,7 +978,7 @@ namespace EduCenterManagement.Controllers.Admin
         // HELPERS
         // =========================================================
 
-        private async Task<List<Class>> BuildIndexAsync(int? subjectId = null, int? teacherId = null, string? status = null)
+        private async Task<List<Class>> BuildIndexAsync(int? subjectId = null, int? teacherId = null, string? status = null, int page = 1)
         {
             await LoadFormDataAsync();
 
@@ -1010,13 +1010,19 @@ namespace EduCenterManagement.Controllers.Admin
             else if (System.Enum.TryParse<ClassStatus>(status, out var selectedStatus))
                 query = query.Where(c => c.Status == selectedStatus);
 
+            var pagination = new PaginationViewModel(await query.CountAsync(), page);
+            ViewBag.Pagination = pagination;
+
             return await query
                 .AsNoTracking()
                 .Include(c => c.Subject)
                 .Include(c => c.Teacher)
                 .Include(c => c.ClassSchedules)
                     .ThenInclude(s => s.TimeSlot)
-                .OrderBy(c => c.Id)
+                .OrderByDescending(c => c.CreatedAt)
+                .ThenByDescending(c => c.Id)
+                .Skip(pagination.Offset)
+                .Take(PaginationViewModel.PageSize)
                 .ToListAsync();
         }
 
@@ -1074,9 +1080,9 @@ namespace EduCenterManagement.Controllers.Admin
                 }).ToList();
         }
 
-        private void ValidateClassDates(ClassViewModel model)
+        private void ValidateClassDates(ClassViewModel model, DateOnly? originalStartDate = null)
         {
-            if (model.StartDate < DateOnly.FromDateTime(DateTime.Today))
+            if (model.StartDate != originalStartDate && model.StartDate < DateOnly.FromDateTime(DateTime.Today))
                 ModelState.AddModelError(nameof(model.StartDate),
                     "Ngày bắt đầu không được là ngày trong quá khứ.");
 

@@ -2,6 +2,8 @@
 
 @{
     ViewData["Title"] = "Quản lý môn học";
+    var pagination = (EduCenterManagement.ViewModels.Admin.PaginationViewModel)ViewBag.Pagination;
+    var rowNumber = pagination.Offset;
 }
 
 <div class="admin-management-page">
@@ -32,7 +34,7 @@
             <div class="table-responsive"><table class="table table-hover dashboard-table align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
+                        <th>STT</th>
                         <th>Tên môn học</th>
                         <th>Mô tả</th>
                         <th>Trạng thái</th>
@@ -45,7 +47,7 @@
                         foreach (var subject in Model)
                         {
                             <tr>
-                                <td>@subject.Id</td>
+                                <td>@(++rowNumber)</td>
                                 <td>@subject.Name</td>
                                 <td>@subject.Description</td>
                                 <td>
@@ -95,6 +97,7 @@
                     }
                 </tbody>
             </table></div>
+            <partial name="_Pagination" model="pagination" />
         </div>
     </div>
 
