@@ -11,7 +11,7 @@
 <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
 <a class="admin-brand" asp-controller="Admin" asp-action="Index">EduCenter<span>QUẢN TRỊ TRUNG TÂM</span></a>
 <nav>
-@foreach (var item in new[] { ("Admin", "Tổng quan"), ("Teachers", "Giáo viên"), ("Subjects", "Môn học"), ("Classes", "Lớp học"), ("ClassSchedules", "Lịch học"), ("TimeSlots", "Khung giờ") })
+@foreach (var item in new[] { ("Admin", "Tổng quan"), ("Teachers", "Giáo viên"), ("Subjects", "Môn học"), ("Classes", "Lớp học"), ("TimeSlots", "Khung giờ") })
 {
 var active = string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), item.Item1, StringComparison.OrdinalIgnoreCase);
 <a asp-controller="@item.Item1" asp-action="Index" class="admin-nav-link @(active ? "active" : "")" aria-current="@(active ? "page" : null)">@item.Item2</a>
