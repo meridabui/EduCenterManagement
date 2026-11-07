@@ -4,9 +4,9 @@
     ViewData["Title"] = "Quản lý khung giờ";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Quản lý khung giờ học</h2>
+<div class="admin-management-page">
+    <div class="dashboard-heading flex-wrap">
+        <h1 class="h3 fw-bold mb-0">Quản lý khung giờ học</h1>
 
         <div class="d-flex gap-2">
             <form asp-controller="TimeSlots"
@@ -50,10 +50,10 @@
         </div>
     }
 
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
+        <div class="card-body p-4">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
+                <table class="table table-hover dashboard-table align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>ID</th>
@@ -81,13 +81,13 @@
                                             EduCenterManagement.Enums.TimeSlotStatus.Active)
                                         {
                                             <span class="badge bg-success">
-                                                Active - Đang hoạt động
+                                                Đang hoạt động
                                             </span>
                                         }
                                         else
                                         {
                                             <span class="badge bg-secondary">
-                                                Inactive - Ngừng hoạt động
+                                                Ngừng hoạt động
                                             </span>
                                         }
                                     </td>
@@ -96,14 +96,14 @@
                                         <a asp-controller="TimeSlots"
                                            asp-action="Details"
                                            asp-route-id="@slot.Id"
-                                           class="btn btn-sm btn-info mb-1">
+                                           class="btn btn-sm btn-outline-primary mb-1">
                                             Chi tiết
                                         </a>
 
                                         <a asp-controller="TimeSlots"
                                            asp-action="Edit"
                                            asp-route-id="@slot.Id"
-                                           class="btn btn-sm btn-warning mb-1">
+                                           class="btn btn-sm btn-outline-secondary mb-1">
                                             Sửa
                                         </a>
 
@@ -113,7 +113,7 @@
                                             <a asp-controller="TimeSlots"
                                                asp-action="Delete"
                                                asp-route-id="@slot.Id"
-                                               class="btn btn-sm btn-danger mb-1">
+                                               class="btn btn-sm btn-outline-danger mb-1">
                                                 Ngừng kích hoạt
                                             </a>
                                         }
@@ -128,7 +128,7 @@
                                                 @Html.AntiForgeryToken()
 
                                                 <button type="submit"
-                                                        class="btn btn-sm btn-success mb-1">
+                                                        class="btn btn-sm btn-outline-success mb-1">
                                                     Kích hoạt lại
                                                 </button>
                                             </form>
@@ -169,6 +169,6 @@
     <a asp-controller="Admin"
        asp-action="Index"
        class="btn btn-outline-secondary mt-3">
-        Quay lại Dashboard
+        Quay lại tổng quan
     </a>
 </div>

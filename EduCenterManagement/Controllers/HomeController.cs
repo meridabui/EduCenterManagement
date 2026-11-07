@@ -25,10 +25,12 @@ namespace EduCenterManagement.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            // Chỉ lấy lớp đang mở đăng ký.
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            // Chỉ lấy lớp đang mở đăng ký và bắt đầu sau hôm nay.
             var classes = await _context.Classes
                 .AsNoTracking()
-                .Where(c => c.Status == ClassStatus.Open)
+                .Where(c => c.Status == ClassStatus.Open && c.StartDate > today)
                 .Include(c => c.Subject)
                 .Include(c => c.Teacher)
                 .OrderBy(c => c.StartDate)

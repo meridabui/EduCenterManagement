@@ -1,26 +1,26 @@
-﻿@model EduCenterManagement.Models.TimeSlot
+@model EduCenterManagement.Models.TimeSlot
 
 @{
     ViewData["Title"] = "Ngừng kích hoạt khung giờ";
 }
 
-<div class="container mt-4" style="max-width: 700px;">
-    <h2 class="text-warning mb-4">
+<div class="mx-auto" style="max-width: 760px;">
+    <h1 class="h3 fw-bold mb-4">
         Ngừng kích hoạt khung giờ
-    </h2>
+    </h1>
 
     <div class="alert alert-warning">
         Bạn có chắc chắn muốn ngừng sử dụng khung giờ này không?
-        Khung giờ sẽ không bị xóa khỏi database và các lịch học cũ
+        Khung giờ sẽ vẫn được lưu trong hệ thống và các lịch học cũ
         vẫn được giữ nguyên.
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header">
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-4 fw-bold">
             Thông tin khung giờ
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             <dl class="row">
                 <dt class="col-sm-4">ID</dt>
                 <dd class="col-sm-8">@Model.Id</dd>
@@ -53,7 +53,7 @@
             </dl>
         </div>
 
-        <div class="card-footer d-flex gap-2">
+        <div class="card-footer bg-white border-top p-4 d-flex flex-wrap gap-2">
             @if (Model.Status ==
                 EduCenterManagement.Enums.TimeSlotStatus.Active)
             {
@@ -64,7 +64,7 @@
 
                     @Html.AntiForgeryToken()
 
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn btn-danger">
                         Ngừng kích hoạt
                     </button>
                 </form>

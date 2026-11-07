@@ -1,18 +1,19 @@
-﻿@model EduCenterManagement.Models.TimeSlot
+@model EduCenterManagement.Models.TimeSlot
 
 @{
     ViewData["Title"] = "Chi tiết khung giờ";
 }
 
-<div class="container mt-4" style="max-width: 700px;">
-    <h2 class="mb-4">Chi tiết khung giờ học</h2>
+<div class="mx-auto" style="max-width: 760px;">
+    <h1 class="h3 fw-bold mb-2">Chi tiết khung giờ học</h1>
+    <p class="text-muted mb-4">Quản lý thời gian bắt đầu và kết thúc của ca học.</p>
 
-    <div class="card shadow-sm">
-        <div class="card-header">
-            Thông tin TimeSlot
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-4 fw-bold">
+            Thông tin khung giờ
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             <dl class="row">
                 <dt class="col-sm-4">ID</dt>
                 <dd class="col-sm-8">@Model.Id</dd>
@@ -42,11 +43,11 @@
             </dl>
         </div>
 
-        <div class="card-footer d-flex gap-2">
+        <div class="card-footer bg-white border-top p-4 d-flex flex-wrap gap-2">
             <a asp-controller="TimeSlots"
                asp-action="Edit"
                asp-route-id="@Model.Id"
-               class="btn btn-warning">
+               class="btn btn-primary">
                 Sửa khung giờ
             </a>
 

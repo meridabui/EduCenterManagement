@@ -362,7 +362,7 @@ namespace EduCenterManagement.Controllers.Admin
             var teachers = await _context.TeacherProfiles
                 .AsNoTracking()
                 .Where(t =>
-                    t.SubjectId == classItem.SubjectId &&
+                    t.TeacherSubjects.Any(ts => ts.SubjectId == classItem.SubjectId) &&
                     t.User.Status == UserStatus.Active &&
                     t.User.Role == UserRole.Teacher)
                 .OrderBy(t => t.FullName)
@@ -904,7 +904,7 @@ namespace EduCenterManagement.Controllers.Admin
             var teachers = await _context.TeacherProfiles
                 .AsNoTracking()
                 .Where(t =>
-                    t.SubjectId == subjectId &&
+                    t.TeacherSubjects.Any(ts => ts.SubjectId == subjectId) &&
                     t.User.Status == UserStatus.Active &&
                     t.User.Role == UserRole.Teacher)
                 .OrderBy(t => t.FullName)
@@ -962,7 +962,7 @@ namespace EduCenterManagement.Controllers.Admin
             if (selectedSubjectId.HasValue)
             {
                 teachersQuery = teachersQuery.Where(t =>
-                    t.SubjectId == selectedSubjectId.Value);
+                    t.TeacherSubjects.Any(ts => ts.SubjectId == selectedSubjectId.Value));
             }
 
             var teachers = await teachersQuery
@@ -1061,7 +1061,7 @@ namespace EduCenterManagement.Controllers.Admin
         {
             return await _context.TeacherProfiles.AnyAsync(t =>
                 t.Id == teacherId &&
-                t.SubjectId == subjectId &&
+                t.TeacherSubjects.Any(ts => ts.SubjectId == subjectId) &&
                 t.User.Status == UserStatus.Active &&
                 t.User.Role == UserRole.Teacher);
         }

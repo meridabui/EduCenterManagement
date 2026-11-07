@@ -1,11 +1,11 @@
-﻿@model EduCenterManagement.Models.Class
+@model EduCenterManagement.Models.Class
 
 @{
     ViewData["Title"] = "Ngừng sử dụng lớp học";
 }
 
-<div class="container mt-4" style="max-width: 850px;">
-    <h2 class="text-warning mb-4">Ngừng sử dụng lớp học</h2>
+<div class="mx-auto" style="max-width: 850px;">
+    <h1 class="h3 fw-bold mb-4">Ngừng sử dụng lớp học</h1>
 
     <div class="alert alert-warning">
         Bạn có chắc chắn muốn ngừng sử dụng lớp học này không?
@@ -13,12 +13,12 @@
         thanh toán, điểm danh và kết quả học tập vẫn được giữ nguyên.
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header">
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-4 fw-bold">
             Thông tin lớp học
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             <dl class="row">
                 <dt class="col-sm-4">Mã lớp</dt>
                 <dd class="col-sm-8">@Model.Id</dd>
@@ -52,7 +52,7 @@
             </dl>
         </div>
 
-        <div class="card-footer d-flex gap-2">
+        <div class="card-footer bg-white border-top p-4 d-flex flex-wrap gap-2">
             @if (Model.Status !=
                 EduCenterManagement.Enums.ClassStatus.Cancelled)
             {
@@ -63,7 +63,7 @@
 
                     @Html.AntiForgeryToken()
 
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn btn-danger">
                         Xác nhận ngừng sử dụng
                     </button>
                 </form>

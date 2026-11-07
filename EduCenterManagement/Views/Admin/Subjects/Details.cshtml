@@ -1,18 +1,18 @@
-﻿@model EduCenterManagement.Models.Subject
+@model EduCenterManagement.Models.Subject
 
 @{
     ViewData["Title"] = "Chi tiết môn học";
 }
 
-<div class="container mt-4" style="max-width: 800px;">
-    <h2 class="mb-4">Chi tiết môn học</h2>
+<div class="mx-auto" style="max-width: 900px;">
+    <h1 class="h3 fw-bold mb-2">Chi tiết môn học</h1><p class="text-muted mb-4">Xem thông tin và lịch sử cập nhật của môn học.</p>
 
-    <div class="card shadow-sm">
-        <div class="card-header">
-            Thông tin Subject
+    <div class="card border-0 dashboard-panel p-0 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-4 fw-bold">
+            Thông tin môn học
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             <dl class="row">
                 <dt class="col-sm-4">ID</dt>
                 <dd class="col-sm-8">@Model.Id</dd>
@@ -54,10 +54,10 @@
             </dl>
         </div>
 
-        <div class="card-footer d-flex gap-2">
+        <div class="card-footer bg-white border-top p-4 d-flex flex-wrap gap-2">
             <a asp-action="Edit"
                asp-route-id="@Model.Id"
-               class="btn btn-warning">
+               class="btn btn-primary">
                 Sửa môn học
             </a>
 

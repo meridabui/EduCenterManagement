@@ -975,9 +975,6 @@ namespace EduCenterManagement.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("SubjectId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -986,12 +983,25 @@ namespace EduCenterManagement.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SubjectId");
-
                     b.HasIndex("UserId")
                         .IsUnique();
 
                     b.ToTable("teacher_profiles");
+                });
+
+            modelBuilder.Entity("EduCenterManagement.Models.TeacherSubject", b =>
+                {
+                    b.Property<int>("TeacherId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int");
+
+                    b.HasKey("TeacherId", "SubjectId");
+
+                    b.HasIndex("SubjectId");
+
+                    b.ToTable("teacher_subjects");
                 });
 
             modelBuilder.Entity("EduCenterManagement.Models.TimeSlot", b =>
@@ -1371,26 +1381,47 @@ namespace EduCenterManagement.Migrations
 
             modelBuilder.Entity("EduCenterManagement.Models.TeacherProfile", b =>
                 {
-                    b.HasOne("EduCenterManagement.Models.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("EduCenterManagement.Models.AppUser", "User")
                         .WithOne()
                         .HasForeignKey("EduCenterManagement.Models.TeacherProfile", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EduCenterManagement.Models.TeacherSubject", b =>
+                {
+                    b.HasOne("EduCenterManagement.Models.Subject", "Subject")
+                        .WithMany("TeacherSubjects")
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EduCenterManagement.Models.TeacherProfile", "Teacher")
+                        .WithMany("TeacherSubjects")
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Subject");
 
-                    b.Navigation("User");
+                    b.Navigation("Teacher");
                 });
 
             modelBuilder.Entity("EduCenterManagement.Models.Class", b =>
                 {
                     b.Navigation("ClassSchedules");
+                });
+
+            modelBuilder.Entity("EduCenterManagement.Models.Subject", b =>
+                {
+                    b.Navigation("TeacherSubjects");
+                });
+
+            modelBuilder.Entity("EduCenterManagement.Models.TeacherProfile", b =>
+                {
+                    b.Navigation("TeacherSubjects");
                 });
 #pragma warning restore 612, 618
         }

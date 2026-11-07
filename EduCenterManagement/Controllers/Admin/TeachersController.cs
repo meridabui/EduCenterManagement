@@ -30,6 +30,8 @@ namespace EduCenterManagement.Controllers.Admin
             var teachers = await _context.TeacherProfiles
                 .AsNoTracking()
                 .Include(t => t.User)
+                .Include(t => t.TeacherSubjects)
+                    .ThenInclude(ts => ts.Subject)
                 .OrderBy(t => t.FullName)
                 .ToListAsync();
 
@@ -55,7 +57,8 @@ namespace EduCenterManagement.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateTeacherViewModel model)
         {
-            await LoadSubjectsAsync(model.SubjectId);
+            model.SubjectIds = (model.SubjectIds ?? new List<int>()).Distinct().ToList();
+            await LoadSubjectsAsync(model.SubjectIds);
 
             if (!ModelState.IsValid)
             {
@@ -80,17 +83,8 @@ namespace EduCenterManagement.Controllers.Admin
                     model);
             }
 
-            bool subjectExists = await _context.Subjects
-                .AnyAsync(s =>
-                    s.Id == model.SubjectId &&
-                    s.Status == SubjectStatus.Active);
-
-            if (!subjectExists)
+            if (!await ValidateSubjectsAsync(model.SubjectIds))
             {
-                ModelState.AddModelError(
-                    nameof(model.SubjectId),
-                    "Môn học không tồn tại hoặc đã ngừng hoạt động.");
-
                 return View(
                     "~/Views/Admin/Teachers/Create.cshtml",
                     model);
@@ -122,7 +116,9 @@ namespace EduCenterManagement.Controllers.Admin
                 var teacher = new TeacherProfile
                 {
                     UserId = user.Id,
-                    SubjectId = model.SubjectId,
+                    TeacherSubjects = model.SubjectIds
+                        .Select(id => new TeacherSubject { SubjectId = id })
+                        .ToList(),
                     FullName = model.FullName.Trim(),
                     CreatedAt = now,
                     UpdatedAt = now
@@ -134,7 +130,7 @@ namespace EduCenterManagement.Controllers.Admin
                 await transaction.CommitAsync();
 
                 TempData["SuccessMessage"] =
-                    "Tạo tài khoản Teacher và gán môn chuyên trách thành công.";
+                    "Tạo tài khoản Teacher và phân công các môn học thành công.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -153,19 +149,137 @@ namespace EduCenterManagement.Controllers.Admin
         }
 
 
-        private async Task LoadSubjectsAsync(int? selectedSubjectId = null)
+        [HttpGet]
+        public async Task<IActionResult> AssignSubjects(int id)
         {
+            var teacher = await _context.TeacherProfiles
+                .AsNoTracking()
+                .Include(t => t.TeacherSubjects)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (teacher == null)
+                return NotFound();
+
+            var model = new AssignTeacherSubjectsViewModel
+            {
+                TeacherId = teacher.Id,
+                SubjectIds = teacher.TeacherSubjects.Select(ts => ts.SubjectId).ToList()
+            };
+
+            ViewBag.TeacherName = teacher.FullName;
+            await LoadSubjectsAsync(model.SubjectIds, model.SubjectIds);
+            return View("~/Views/Admin/Teachers/AssignSubjects.cshtml", model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignSubjects(AssignTeacherSubjectsViewModel model)
+        {
+            var teacher = await _context.TeacherProfiles
+                .Include(t => t.TeacherSubjects)
+                .FirstOrDefaultAsync(t => t.Id == model.TeacherId);
+
+            if (teacher == null)
+                return NotFound();
+
+            var currentSubjectIds = teacher.TeacherSubjects.Select(ts => ts.SubjectId).ToList();
+            model.SubjectIds = (model.SubjectIds ?? new List<int>()).Distinct().ToList();
+            ViewBag.TeacherName = teacher.FullName;
+            await LoadSubjectsAsync(model.SubjectIds, currentSubjectIds);
+
+            if (!ModelState.IsValid ||
+                !await ValidateSubjectsAsync(model.SubjectIds, currentSubjectIds))
+            {
+                return View("~/Views/Admin/Teachers/AssignSubjects.cshtml", model);
+            }
+
+            var removedSubjectIds = currentSubjectIds.Except(model.SubjectIds).ToList();
+            var blockingClasses = await _context.Classes
+                .AsNoTracking()
+                .Where(c => c.TeacherId == teacher.Id &&
+                    removedSubjectIds.Contains(c.SubjectId) &&
+                    c.Status != ClassStatus.Completed &&
+                    c.Status != ClassStatus.Cancelled)
+                .OrderBy(c => c.Name)
+                .Select(c => c.Name)
+                .ToListAsync();
+
+            if (blockingClasses.Count > 0)
+            {
+                ModelState.AddModelError(nameof(model.SubjectIds),
+                    "Không thể bỏ môn vì giáo viên vẫn phụ trách các lớp: " +
+                    string.Join(", ", blockingClasses) +
+                    ". Hãy phân công lại giáo viên hoặc hoàn tất xử lý các lớp trước.");
+                return View("~/Views/Admin/Teachers/AssignSubjects.cshtml", model);
+            }
+
+            _context.TeacherSubjects.RemoveRange(teacher.TeacherSubjects
+                .Where(ts => removedSubjectIds.Contains(ts.SubjectId)).ToList());
+
+            foreach (var subjectId in model.SubjectIds.Except(currentSubjectIds))
+            {
+                teacher.TeacherSubjects.Add(new TeacherSubject { SubjectId = subjectId });
+            }
+
+            teacher.UpdatedAt = DateTime.UtcNow;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                ModelState.AddModelError(string.Empty,
+                    "Không thể cập nhật môn được phân công. Vui lòng tải lại trang và thử lại.");
+                return View("~/Views/Admin/Teachers/AssignSubjects.cshtml", model);
+            }
+
+            TempData["SuccessMessage"] = "Đã cập nhật các môn được phân công cho giáo viên.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<bool> ValidateSubjectsAsync(
+            List<int> subjectIds, List<int>? currentSubjectIds = null)
+        {
+            if (subjectIds.Count == 0)
+            {
+                ModelState.AddModelError(nameof(CreateTeacherViewModel.SubjectIds),
+                    "Vui lòng chọn ít nhất một môn học.");
+                return false;
+            }
+
+            currentSubjectIds ??= new List<int>();
+            var validCount = await _context.Subjects.CountAsync(s =>
+                subjectIds.Contains(s.Id) &&
+                (s.Status == SubjectStatus.Active || currentSubjectIds.Contains(s.Id)));
+
+            if (validCount != subjectIds.Count)
+            {
+                ModelState.AddModelError(nameof(CreateTeacherViewModel.SubjectIds),
+                    "Môn học không tồn tại hoặc đã ngừng hoạt động. Chỉ được thêm môn đang hoạt động.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task LoadSubjectsAsync(
+            List<int>? selectedSubjectIds = null, List<int>? currentSubjectIds = null)
+        {
+            selectedSubjectIds ??= new List<int>();
+            currentSubjectIds ??= new List<int>();
             var subjects = await _context.Subjects
                 .AsNoTracking()
-                .Where(s => s.Status == SubjectStatus.Active)
+                .Where(s => s.Status == SubjectStatus.Active || currentSubjectIds.Contains(s.Id))
                 .OrderBy(s => s.Name)
                 .ToListAsync();
 
-            ViewBag.Subjects = new SelectList(
-                subjects,
-                nameof(Subject.Id),
-                nameof(Subject.Name),
-                selectedSubjectId);
+            ViewBag.Subjects = subjects.Select(s => new SelectListItem
+            {
+                Value = s.Id.ToString(),
+                Text = s.Name + (s.Status == SubjectStatus.Inactive ? " (ngừng hoạt động)" : ""),
+                Selected = selectedSubjectIds.Contains(s.Id)
+            }).ToList();
         }
 
 

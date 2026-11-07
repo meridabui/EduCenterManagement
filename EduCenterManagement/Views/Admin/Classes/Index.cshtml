@@ -1,4 +1,4 @@
-﻿@model IEnumerable<EduCenterManagement.Models.Class>
+@model IEnumerable<EduCenterManagement.Models.Class>
 @using Microsoft.AspNetCore.Mvc.Rendering
 @using EduCenterManagement.Enums
 
@@ -13,25 +13,25 @@
 <style>
     .class-page { color: #172b4d; }
     .class-header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:28px; }
-    .class-header h2 { font-size:23px; font-weight:750; margin-bottom:7px; }
-    .class-header p { color:#718096; margin:0; }
-    .btn-purple { background:#5145e5; border-color:#5145e5; color:#fff; border-radius:10px; padding:11px 18px; font-weight:600; }
-    .btn-purple:hover { background:#4338ca; border-color:#4338ca; color:#fff; }
-    .class-table-card { border:1px solid #dce4ef; border-radius:16px; overflow:hidden; box-shadow:0 2px 5px rgba(20,40,80,.04); background:#fff; }
+    .class-header h1 { font-size:28px; font-weight:750; margin-bottom:7px; }
+    .class-header p { color:#52637a; margin:0; }
+    .btn-purple { background:#2563eb; border-color:#2563eb; color:#fff; border-radius:10px; padding:11px 18px; font-weight:600; }
+    .btn-purple:hover { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
+    .class-table-card { border:1px solid #dce4ef; border-radius:14px; overflow:hidden; box-shadow:0 2px 5px rgba(20,40,80,.04); background:#fff; }
     .class-table { margin-bottom:0; }
-    .class-table thead th { background:#f7f9fc; color:#60748f; font-size:12px; font-weight:700; text-transform:uppercase; white-space:nowrap; padding:16px 18px; border-bottom:1px solid #dce4ef; }
+    .class-table thead th { background:#f7f9fc; color:#52637a; font-size:12px; font-weight:700; text-transform:uppercase; white-space:nowrap; padding:16px 18px; border-bottom:1px solid #dce4ef; }
     .class-table tbody td { padding:15px 18px; vertical-align:middle; border-color:#edf1f7; }
     .class-code { font-weight:750; white-space:nowrap; }
     .teacher-unassigned { color:#e11d48; font-weight:600; }
-    .btn-assign { background:#eef2ff; color:#4338ca; border:0; border-radius:7px; padding:7px 12px; font-weight:600; white-space:nowrap; }
-    .btn-assign:hover { background:#dfe5ff; color:#3730a3; }
-    .modal-content { border:0; border-radius:18px; overflow:hidden; }
+    .btn-assign { background:#eff6ff; color:#1d4ed8; border:0; border-radius:7px; padding:7px 12px; font-weight:600; white-space:nowrap; }
+    .btn-assign:hover { background:#dbeafe; color:#1e40af; }
+    .modal-content { border:0; border-radius:14px; overflow:hidden; }
     .modal-header { background:#f7f9fc; padding:22px 28px; border-bottom:1px solid #edf1f7; }
     .modal-title { font-size:21px; font-weight:750; color:#263449; }
     .modal-body { padding:26px 28px; }
     .modal-body .form-label { font-size:13px; font-weight:700; color:#43516a; margin-bottom:7px; }
     .modal-body .form-control, .modal-body .form-select { min-height:46px; border-radius:10px; border-color:#cbd5e1; }
-    .modal-body .form-control:focus, .modal-body .form-select:focus { border-color:#8177f5; box-shadow:0 0 0 3px rgba(81,69,229,.1); }
+    .modal-body .form-control:focus, .modal-body .form-select:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
     .schedule-row { background:#fff; }
     .schedule-row .form-label { margin-bottom:5px; }
     .modal-footer { padding:0 28px 26px; border-top:0; }
@@ -109,10 +109,10 @@
 
 </style>
 
-<div class="container-fluid mt-4 mb-5 class-page">
+<div class="class-page">
     <div class="class-header">
         <div>
-            <h2>Quản lý danh sách lớp học</h2>
+            <h1>Quản lý lớp học</h1>
             <p>Tạo lớp, thiết lập lịch học theo từng thứ và phân công giáo viên</p>
         </div>
         <button type="button" class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#createClassModal">
@@ -137,7 +137,7 @@
 
     <div class="class-table-card">
         <div class="table-responsive">
-            <table class="table table-hover class-table">
+            <table class="table table-hover class-table dashboard-table">
                 <thead>
                     <tr>
                         <th>Mã lớp</th>
@@ -182,7 +182,7 @@
                                     @if (item.Teacher == null)
                                     {
                                         <button type="button" class="btn btn-sm btn-outline-danger quick-assign-btn" data-class-id="@item.Id">
-                                            ⚠ Chưa có GV · Gán ngay
+                                            Chưa phân công · Gán ngay
                                         </button>
                                     }
                                     else
@@ -195,10 +195,10 @@
                                     @switch (item.Status)
                                     {
                                         case ClassStatus.Draft:
-                                            <span class="status-badge status-draft">Draft</span>
+                                            <span class="status-badge status-draft">Bản nháp</span>
                                             break;
                                         case ClassStatus.Open:
-                                            <span class="status-badge status-open">Open</span>
+                                            <span class="status-badge status-open">Mở đăng ký</span>
                                             break;
                                         case ClassStatus.InProgress:
                                             <span class="status-badge status-progress">Đang học</span>
@@ -216,8 +216,8 @@
                                 </td>
                                 <td class="text-nowrap">
                                     <button type="button" class="btn btn-sm btn-outline-success mb-1 capacity-btn" data-class-id="@item.Id">Xem sĩ số</button>
-                                    <a asp-controller="Classes" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info mb-1">Chi tiết</a>
-                                    <a asp-controller="Classes" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning mb-1">Sửa</a>
+                                    <a asp-controller="Classes" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary mb-1">Chi tiết</a>
+                                    <a asp-controller="Classes" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary mb-1">Sửa</a>
                                     @if (item.Status != ClassStatus.Cancelled)
                                     {
                                         <a asp-controller="Classes" asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger mb-1">Ngừng</a>
@@ -235,7 +235,7 @@
         </div>
     </div>
 
-    <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary mt-3">← Quay lại Dashboard</a>
+    <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary mt-3">← Quay lại tổng quan</a>
 </div>
 
 <!-- MODAL TẠO LỚP -->
@@ -255,8 +255,8 @@
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" id="createValidationSummary"></div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="SubjectId" class="form-label">Môn học (*)</label>
-                            <select id="SubjectId" name="SubjectId" class="form-select" required>
+                            <label for="SubjectId" class="form-label fw-semibold">Môn học (*)</label>
+                            <select id="SubjectId" name="SubjectId" class="form-select form-select-lg fs-6" required>
                                 <option value="">-- Chọn môn học --</option>
                                 @foreach (var subject in subjects)
                                 {
@@ -266,30 +266,30 @@
                             <span class="text-danger small" data-valmsg-for="SubjectId"></span>
                         </div>
                         <div class="col-md-6">
-                            <label for="Name" class="form-label">Mã lớp / tên lớp (*)</label>
-                            <input id="Name" name="Name" class="form-control" maxlength="100" placeholder="VD: MAT10-A1" required />
+                            <label for="Name" class="form-label fw-semibold">Mã lớp / tên lớp (*)</label>
+                            <input id="Name" name="Name" class="form-control form-control-lg fs-6" maxlength="100" placeholder="VD: MAT10-A1" required />
                             <span class="text-danger small" data-valmsg-for="Name"></span>
                         </div>
                         <div class="col-md-6">
-                            <label for="StartDate" class="form-label">Ngày bắt đầu (*)</label>
-                            <input id="StartDate" name="StartDate" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <label for="StartDate" class="form-label fw-semibold">Ngày bắt đầu (*)</label>
+                            <input id="StartDate" name="StartDate" type="date" class="form-control form-control-lg fs-6" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
                         </div>
                         <div class="col-md-6">
-                            <label for="EndDate" class="form-label">Ngày kết thúc (*)</label>
-                            <input id="EndDate" name="EndDate" type="date" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <label for="EndDate" class="form-label fw-semibold">Ngày kết thúc (*)</label>
+                            <input id="EndDate" name="EndDate" type="date" class="form-control form-control-lg fs-6" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
                             <span class="text-danger small" data-valmsg-for="EndDate"></span>
                         </div>
                         <div class="col-md-6">
-                            <label for="MaxStudents" class="form-label">Sĩ số tối đa (*)</label>
-                            <input id="MaxStudents" name="MaxStudents" type="number" class="form-control" min="1" max="1000" value="20" required />
+                            <label for="MaxStudents" class="form-label fw-semibold">Sĩ số tối đa (*)</label>
+                            <input id="MaxStudents" name="MaxStudents" type="number" class="form-control form-control-lg fs-6" min="1" max="1000" value="20" required />
                         </div>
                         <div class="col-md-6">
-                            <label for="Fee" class="form-label">Học phí (VNĐ) (*)</label>
-                            <input id="Fee" name="Fee" type="number" class="form-control" min="0" step="1000" value="0" required />
+                            <label for="Fee" class="form-label fw-semibold">Học phí (VNĐ) (*)</label>
+                            <input id="Fee" name="Fee" type="number" class="form-control form-control-lg fs-6" min="0" step="any" value="0" required />
                         </div>
                         <div class="col-md-6">
-                            <label for="TeacherId" class="form-label">Giáo viên phụ trách (tùy chọn)</label>
-                            <select id="TeacherId" name="TeacherId" class="form-select">
+                            <label for="TeacherId" class="form-label fw-semibold">Giáo viên phụ trách (tùy chọn)</label>
+                            <select id="TeacherId" name="TeacherId" class="form-select form-select-lg fs-6">
                                 <option value="">-- Chưa phân công giáo viên --</option>
                                 @foreach (var teacher in teachers)
                                 {
@@ -311,7 +311,7 @@
                     <div id="createScheduleContainer">
                         <div class="row g-2 align-items-end border rounded-3 p-3 mb-2 schedule-row">
                             <div class="col-md-5">
-                                <label class="form-label">Thứ trong tuần</label>
+                                <label class="form-label fw-semibold">Thứ trong tuần</label>
                                 <select name="Schedules[0].DayOfWeek" class="form-select day-select" required>
                                     <option value="2">Thứ 2</option>
                                     <option value="3">Thứ 3</option>
@@ -323,7 +323,7 @@
                                 </select>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Ca học</label>
+                                <label class="form-label fw-semibold">Ca học</label>
                                 <select name="Schedules[0].TimeSlotId" class="form-select slot-select" required>
                                     <option value="">-- Chọn ca học --</option>
                                     @foreach (var slot in timeSlots)
@@ -340,7 +340,7 @@
                     <template id="createScheduleTemplate">
                         <div class="row g-2 align-items-end border rounded-3 p-3 mb-2 schedule-row">
                             <div class="col-md-5">
-                                <label class="form-label">Thứ trong tuần</label>
+                                <label class="form-label fw-semibold">Thứ trong tuần</label>
                                 <select class="form-select day-select" data-field="DayOfWeek" required>
                                     <option value="2">Thứ 2</option>
                                     <option value="3">Thứ 3</option>
@@ -352,7 +352,7 @@
                                 </select>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Ca học</label>
+                                <label class="form-label fw-semibold">Ca học</label>
                                 <select class="form-select slot-select" data-field="TimeSlotId" required>
                                     <option value="">-- Chọn ca học --</option>
                                     @foreach (var slot in timeSlots)
@@ -388,7 +388,7 @@
                 @Html.AntiForgeryToken()
                 <div class="modal-body">
                     <input type="hidden" name="ClassId" id="assignClassId" />
-                    <div class="mb-3"><label for="assignTeacherId" class="form-label">Giáo viên phụ trách</label><select name="TeacherId" id="assignTeacherId" class="form-select" required><option value="">-- Chọn giáo viên --</option></select></div>
+                    <div class="mb-3"><label for="assignTeacherId" class="form-label fw-semibold">Giáo viên phụ trách</label><select name="TeacherId" id="assignTeacherId" class="form-select form-select-lg fs-6" required><option value="">-- Chọn giáo viên --</option></select></div>
                     <div id="assignConflict" class="conflict-box" role="alert"></div>
                 </div>
                 <div class="modal-footer"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-purple" id="assignTeacherSubmit">Lưu phân công</button></div>
