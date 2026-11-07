@@ -217,14 +217,24 @@
                                 <td>
                                     @if (item.Teacher == null)
                                     {
+                                        @if (item.Status == ClassStatus.Draft)
+                                        {
                                         <button type="button" class="btn btn-sm btn-outline-danger quick-assign-btn" data-class-id="@item.Id">
                                             Chưa phân công · Gán ngay
                                         </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chưa phân công</span>
+                                        }
                                     }
                                     else
                                     {
                                         <div class="fw-semibold">@item.Teacher.FullName</div>
-                                        <button type="button" class="btn btn-sm btn-link p-0 quick-assign-btn" data-class-id="@item.Id">Đổi giáo viên</button>
+                                        @if (item.Status == ClassStatus.Draft)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-link p-0 quick-assign-btn" data-class-id="@item.Id">Đổi giáo viên</button>
+                                        }
                                     }
                                 </td>
                                 <td>
@@ -253,10 +263,9 @@
                                 <td class="text-nowrap">
                                     <button type="button" class="btn btn-sm btn-outline-success mb-1 capacity-btn" data-class-id="@item.Id">Xem sĩ số</button>
                                     <a asp-controller="Classes" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary mb-1">Chi tiết</a>
-                                    <a asp-controller="Classes" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary mb-1">Sửa</a>
-                                    @if (item.Status != ClassStatus.Cancelled)
+                                    @if (item.Status == ClassStatus.Draft)
                                     {
-                                        <a asp-controller="Classes" asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger mb-1">Ngừng</a>
+                                        <a asp-controller="Classes" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary mb-1">Sửa</a>
                                     }
                                 </td>
                             </tr>

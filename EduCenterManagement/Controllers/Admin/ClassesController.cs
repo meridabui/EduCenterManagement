@@ -18,11 +18,13 @@ namespace EduCenterManagement.Controllers.Admin
     {
         private readonly ApplicationDbContext _context;
         private readonly ClassSessionService _sessions;
+        private readonly ClassLifecycleService _lifecycle;
 
-        public ClassesController(ApplicationDbContext context, ClassSessionService sessions)
+        public ClassesController(ApplicationDbContext context, ClassSessionService sessions, ClassLifecycleService lifecycle)
         {
             _context = context;
             _sessions = sessions;
+            _lifecycle = lifecycle;
         }
 
         // =========================================================
@@ -164,9 +166,7 @@ namespace EduCenterManagement.Controllers.Admin
                 EndDate = model.EndDate,
                 MaxStudents = model.MaxStudents,
                 Fee = model.Fee,
-                Status = model.TeacherId.HasValue
-                    ? ClassStatus.Open
-                    : ClassStatus.Draft,
+                Status = ClassStatus.Draft,
                 CreatedAt = now,
                 UpdatedAt = now
             };
@@ -203,6 +203,7 @@ namespace EduCenterManagement.Controllers.Admin
                 TempData["SuccessMessage"] =
                     $"Đã tạo lớp {classItem.Name} với " +
                     $"{schedules.Count} lịch học và {sessionResult.Added} buổi học.";
+                TempData["SuccessMessage"] += " Lớp đang ở Bản nháp; hãy mở đăng ký khi đã kiểm tra thông tin.";
 
                 if (!model.TeacherId.HasValue)
                 {
@@ -424,6 +425,9 @@ namespace EduCenterManagement.Controllers.Admin
                 });
             }
 
+            await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (!await LockDraftAsync(model.ClassId))
+                return BadRequest(new { message = "Chỉ được phân công giáo viên khi lớp còn Bản nháp." });
             var classItem = await _context.Classes
                 .Include(c => c.ClassSchedules)
                 .FirstOrDefaultAsync(c => c.Id == model.ClassId);
@@ -475,15 +479,11 @@ namespace EduCenterManagement.Controllers.Admin
 
             classItem.TeacherId = model.TeacherId;
 
-            if (classItem.Status == ClassStatus.Draft &&
-                proposed.Count > 0)
-            {
-                classItem.Status = ClassStatus.Open;
-            }
 
             classItem.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return Ok(new
             {
@@ -595,9 +595,9 @@ namespace EduCenterManagement.Controllers.Admin
             if (classItem == null)
                 return NotFound();
 
-            if (classItem.Status is ClassStatus.Cancelled or ClassStatus.Completed)
+            if (classItem.Status is not (ClassStatus.Draft or ClassStatus.Open))
             {
-                TempData["ErrorMessage"] = "Không thể tạo buổi cho lớp đã hủy hoặc hoàn thành.";
+                TempData["ErrorMessage"] = "Chỉ tạo buổi học cho lớp Bản nháp hoặc Mở đăng ký chưa có buổi.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
@@ -666,6 +666,12 @@ namespace EduCenterManagement.Controllers.Admin
                     .ToList()
             };
 
+            if (classItem.Status != ClassStatus.Draft)
+            {
+                TempData["ErrorMessage"] = "Thông tin lớp đã khóa. Chỉ được sửa lớp ở trạng thái Bản nháp.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             await LoadFormDataAsync(
                 model.SubjectId,
                 model.TeacherId,
@@ -687,6 +693,11 @@ namespace EduCenterManagement.Controllers.Admin
             if (id != model.Id)
                 return NotFound();
 
+            await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (!await LockDraftAsync(id))
+                return Conflict("Thông tin lớp đã khóa. Chỉ được sửa lớp ở trạng thái Bản nháp.");
+            if (model.Status != ClassStatus.Draft)
+                return BadRequest("Hãy dùng thao tác chuyển trạng thái riêng trong Chi tiết lớp học.");
             var classItem = await _context.Classes
                 .Include(c => c.ClassSchedules)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -785,28 +796,6 @@ namespace EduCenterManagement.Controllers.Admin
                 return Back();
             }
 
-            bool requiresTeacher =
-                model.Status == ClassStatus.Open ||
-                model.Status == ClassStatus.InProgress;
-
-            if (requiresTeacher && !model.TeacherId.HasValue)
-            {
-                ModelState.AddModelError(
-                    nameof(model.TeacherId),
-                    "Phải phân công giáo viên trước khi mở lớp.");
-
-                return Back();
-            }
-
-            if (requiresTeacher && model.Schedules.Count == 0)
-            {
-                ModelState.AddModelError(
-                    nameof(model.Schedules),
-                    "Lớp phải có ít nhất một lịch học.");
-
-                return Back();
-            }
-
             if (model.TeacherId.HasValue)
             {
                 var proposed = model.Schedules
@@ -833,8 +822,7 @@ namespace EduCenterManagement.Controllers.Admin
 
             var now = DateTime.UtcNow;
 
-            await using var transaction =
-                await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+
 
             try
             {
@@ -845,7 +833,7 @@ namespace EduCenterManagement.Controllers.Admin
                 classItem.EndDate = model.EndDate;
                 classItem.MaxStudents = model.MaxStudents;
                 classItem.Fee = model.Fee;
-                classItem.Status = model.Status;
+                classItem.Status = ClassStatus.Draft;
                 classItem.UpdatedAt = now;
 
                 var oldSchedules = classItem.ClassSchedules.ToList();
@@ -909,44 +897,39 @@ namespace EduCenterManagement.Controllers.Admin
             if (classItem == null)
                 return NotFound();
 
+            if (classItem.Status != ClassStatus.Open)
+            {
+                TempData["ErrorMessage"] = "Chỉ được hủy lớp đang Mở đăng ký.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
             return View("~/Views/Admin/Classes/Delete.cshtml", classItem);
         }
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public Task<IActionResult> DeleteConfirmed(int id)
+            => ChangeStatus(id, ClassStatus.Cancelled);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeStatus(int id, ClassStatus targetStatus)
         {
-            var classItem = await _context.Classes
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (classItem == null)
-                return NotFound();
-
-            if (classItem.Status == ClassStatus.Cancelled)
-            {
-                TempData["ErrorMessage"] = "Lớp đã bị hủy.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            classItem.Status = ClassStatus.Cancelled;
-            classItem.UpdatedAt = DateTime.UtcNow;
-
+            if (!ModelState.IsValid) return BadRequest("Trạng thái không hợp lệ.");
             try
             {
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] =
-                    "Đã ngừng sử dụng lớp học.";
+                var result = await _lifecycle.ChangeAsync(id, targetStatus);
+                TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
             }
-            catch (DbUpdateException)
+            catch (Exception ex) when (ex is DbUpdateException or System.Data.Common.DbException)
             {
-                TempData["ErrorMessage"] =
-                    "Không thể ngừng lớp học.";
+                TempData["ErrorMessage"] = "Không thể chuyển trạng thái. Vui lòng tải lại trang và thử lại.";
             }
-
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new { id });
         }
 
+        private async Task<bool> LockDraftAsync(int id)
+            => await _context.Classes.Where(c => c.Id == id && c.Status == ClassStatus.Draft)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.UpdatedAt, c => c.UpdatedAt)) == 1;
         // =========================================================
         // DANH SÁCH GIÁO VIÊN THEO MÔN HỌC
         // =========================================================

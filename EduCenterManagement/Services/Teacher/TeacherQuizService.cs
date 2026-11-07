@@ -155,6 +155,8 @@ namespace EduCenterManagement.Services.Teacher
             {
                 return (false, "Lớp học không tồn tại hoặc bạn không phụ trách lớp này.", 0);
             }
+            if (classItem.Status is not (ClassStatus.Open or ClassStatus.InProgress))
+                return (false, "Chỉ quản lý Quiz khi lớp Mở đăng ký hoặc Đang học.", 0);
 
             if (model.SessionId.HasValue && model.SessionId.Value > 0)
             {
@@ -271,11 +273,13 @@ namespace EduCenterManagement.Services.Teacher
             var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
             if (teacher == null) return (false, "Không tìm thấy hồ sơ giáo viên.");
 
-            var quiz = await _repo.GetQuizByIdAsync(model.QuizId);
+            var quiz = await _repo.GetQuizWithDetailsByIdAsync(model.QuizId);
             if (quiz == null || quiz.CreatedByTeacherId != teacher.Id)
             {
                 return (false, "Bài Quiz không tồn tại hoặc bạn không có quyền sửa đề thi này.");
             }
+            if (quiz.Class.Status is not (ClassStatus.Open or ClassStatus.InProgress))
+                return (false, "Chỉ quản lý Quiz khi lớp Mở đăng ký hoặc Đang học.");
 
             if (string.IsNullOrWhiteSpace(model.QuestionText))
             {
@@ -325,6 +329,8 @@ namespace EduCenterManagement.Services.Teacher
             var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
             if (teacher == null) return (false, "Không tìm thấy hồ sơ giáo viên.");
 
+            if (!await CanManageQuizAsync(quizId, teacher.Id))
+                return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
             bool deleted = await _repo.DeleteQuestionAsync(questionId, quizId, teacher.Id);
             if (!deleted) return (false, "Không tìm thấy câu hỏi hoặc bạn không có quyền xóa.");
 
@@ -392,6 +398,8 @@ namespace EduCenterManagement.Services.Teacher
 
             var targetClass = await _repo.GetClassByIdAndTeacherAsync(model.TargetClassId, teacher.Id);
             if (targetClass == null) return (false, "Lớp học mục tiêu không hợp lệ.", 0);
+            if (targetClass.Status is not (ClassStatus.Open or ClassStatus.InProgress))
+                return (false, "Chỉ quản lý Quiz khi lớp Mở đăng ký hoặc Đang học.", 0);
 
             if (model.TargetSessionId.HasValue && model.TargetSessionId.Value > 0)
             {
@@ -436,6 +444,8 @@ namespace EduCenterManagement.Services.Teacher
             var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
             if (teacher == null) return (false, "Không tìm thấy hồ sơ giáo viên.");
 
+            if (!await CanManageQuizAsync(quizId, teacher.Id))
+                return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
             bool updated = await _repo.UpdateQuizStatusAsync(quizId, teacher.Id, status);
             if (!updated) return (false, "Không có quyền cập nhật bài Quiz này.");
 
@@ -454,10 +464,19 @@ namespace EduCenterManagement.Services.Teacher
             var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
             if (teacher == null) return (false, "Không tìm thấy hồ sơ giáo viên.");
 
+            if (!await CanManageQuizAsync(quizId, teacher.Id))
+                return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
             bool deleted = await _repo.DeleteQuizCascadeAsync(quizId, teacher.Id);
             if (!deleted) return (false, "Bài Quiz không tồn tại hoặc bạn không có quyền xóa.");
 
             return (true, "Đã xóa bài Quiz thành công.");
+        }
+
+        private async Task<bool> CanManageQuizAsync(int quizId, int teacherId)
+        {
+            var quiz = await _repo.GetQuizWithDetailsByIdAsync(quizId);
+            return quiz != null && quiz.CreatedByTeacherId == teacherId
+                && quiz.Class.Status is ClassStatus.Open or ClassStatus.InProgress;
         }
 
         public async Task<StudentAttemptDetailViewModel?> GetStudentAttemptDetailAsync(int userId, int attemptId)

@@ -1,4 +1,5 @@
 using EduCenterManagement.Models;
+using EduCenterManagement.Enums;
 using EduCenterManagement.Repositories.Teacher;
 using EduCenterManagement.ViewModels.Teacher.Slide;
 using Microsoft.AspNetCore.Hosting;
@@ -129,6 +130,9 @@ namespace EduCenterManagement.Services.Teacher
                 return (false, "Buổi học không tồn tại hoặc bạn không có quyền tải lên tài liệu cho buổi này.");
             }
 
+            if (session.Class.Status is not (ClassStatus.Open or ClassStatus.InProgress))
+                return (false, "Chỉ quản lý tài liệu khi lớp Mở đăng ký hoặc Đang học.");
+
             if (model.File == null || model.File.Length == 0)
             {
                 return (false, "Vui lòng chọn tệp tin cần tải lên.");
@@ -202,6 +206,8 @@ namespace EduCenterManagement.Services.Teacher
             {
                 return (false, "Tài liệu không tồn tại hoặc bạn không có quyền xóa.");
             }
+            if (slide.Session.Class.Status is not (ClassStatus.Open or ClassStatus.InProgress))
+                return (false, "Chỉ quản lý tài liệu khi lớp Mở đăng ký hoặc Đang học.");
 
             try
             {

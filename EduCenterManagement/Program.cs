@@ -18,6 +18,7 @@ builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ClassSessionService>();
+builder.Services.AddScoped<ClassLifecycleService>();
 builder.Services.AddHostedService<EnrollmentExpiryWorker>();
 
 // Lập lịch và gửi email nhắc buổi học cho học sinh trước 24 giờ.
