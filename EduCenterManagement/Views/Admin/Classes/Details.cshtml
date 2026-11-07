@@ -9,7 +9,7 @@
     <h1 class="h3 fw-bold mb-4">Chi tiết lớp học</h1>
     @if (Model.Status != EduCenterManagement.Enums.ClassStatus.Draft)
     {
-        <div class="alert alert-info">Thông tin lớp đã khóa. Các thao tác chuyển trạng thái được thực hiện riêng bên dưới.</div>
+        <div class="alert alert-info">Thông tin lớp đã khóa.</div>
     }
 
     @foreach (var key in new[] { "SuccessMessage", "ErrorMessage" })
@@ -142,7 +142,7 @@
                 Sửa lớp học
             </a>
             }
-            <partial name="_ClassStatusActions" model="Model" />
+            <partial name="~/Views/Admin/Classes/_ClassStatusActions.cshtml" model="Model" />
 
             <a asp-controller="Classes"
                asp-action="Index"
