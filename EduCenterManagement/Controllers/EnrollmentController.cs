@@ -34,7 +34,7 @@ namespace EduCenterManagement.Controllers
 
         // GET: /Enrollment?studentId=1
         [HttpGet]
-        public async Task<IActionResult> Index(int? studentId)
+        public async Task<IActionResult> Index(int? studentId, int? subjectId)
         {
             var parent = await GetCurrentParentAsync();
 
@@ -43,17 +43,7 @@ namespace EduCenterManagement.Controllers
                 return Forbid();
             }
 
-            var students = await _context.ParentStudentLinks
-                .AsNoTracking()
-                .Where(l => l.ParentId == parent.Id &&
-                            l.Status == ParentStudentLinkStatus.Accepted)
-                .OrderBy(l => l.Student.FullName)
-                .Select(l => new StudentOptionViewModel
-                {
-                    Id = l.StudentId,
-                    FullName = l.Student.FullName
-                })
-                .ToListAsync();
+            var students = await GetLinkedStudentsAsync(parent.Id);
 
             // Chỉ chấp nhận học sinh thuộc danh sách đã liên kết.
             if (studentId.HasValue && !students.Any(s => s.Id == studentId.Value))
@@ -66,7 +56,6 @@ namespace EduCenterManagement.Controllers
                 studentId = students[0].Id;
             }
 
-            var now = DateTime.UtcNow;
             var today = DateOnly.FromDateTime(DateTime.Now);
 
             var classes = await _context.Classes
@@ -76,78 +65,77 @@ namespace EduCenterManagement.Controllers
                 .Include(c => c.Teacher)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
-
-            var classIds = classes.Select(c => c.Id).ToList();
-
-            var schedules = await _context.ClassSchedules
-                .AsNoTracking()
-                .Where(s => classIds.Contains(s.ClassId))
-                .Include(s => s.TimeSlot)
-                .OrderBy(s => s.DayOfWeek)
-                .ThenBy(s => s.TimeSlot.StartTime)
-                .ToListAsync();
-
-            // BR17: số chỗ đã giữ = Paid + Pending còn trong thời gian giữ chỗ.
-            var heldByClass = await _context.Enrollments
-                .AsNoTracking()
-                .Where(e => classIds.Contains(e.ClassId) &&
-                            (e.Status == EnrollmentStatus.Confirm ||
-                             (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now)))
-                .GroupBy(e => e.ClassId)
-                .Select(g => new { ClassId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.ClassId, x => x.Count);
-
-            var registeredClassIds = new HashSet<int>();
-
-            if (studentId.HasValue)
-            {
-                var ids = await _context.Enrollments
-                    .AsNoTracking()
-                    .Where(e => e.StudentId == studentId.Value &&
-                                classIds.Contains(e.ClassId) &&
-                                (e.Status == EnrollmentStatus.Confirm ||
-                                 (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now)))
-                    .Select(e => e.ClassId)
-                    .ToListAsync();
-
-                registeredClassIds = ids.ToHashSet();
-            }
+            var classOptions = await BuildClassOptionsAsync(classes, studentId);
+            var validSubjectIds = classes.Select(c => c.SubjectId).ToHashSet();
+            if (subjectId.HasValue && !validSubjectIds.Contains(subjectId.Value))
+                subjectId = null;
 
             var model = new EnrollmentIndexViewModel
             {
                 Students = students,
                 SelectedStudentId = studentId,
-                Classes = classes.Select(c =>
-                {
-                    heldByClass.TryGetValue(c.Id, out var held);
-
-                    return new ClassOptionViewModel
+                SelectedSubjectId = subjectId,
+                Subjects = classes
+                    .GroupBy(c => new { c.SubjectId, c.Subject.Name, c.Subject.Description })
+                    .Select(group =>
                     {
-                        ClassId = c.Id,
-                        ClassName = c.Name,
-                        SubjectName = c.Subject?.Name ?? "Chưa xác định",
-                        TeacherName = c.Teacher?.FullName,
-                        StartDate = c.StartDate,
-                        EndDate = c.EndDate,
-                        Fee = c.Fee,
-                        MaxStudents = c.MaxStudents,
-                        SeatsLeft = Math.Max(0, c.MaxStudents - held),
-                        AlreadyRegistered = registeredClassIds.Contains(c.Id),
-                        Schedules = schedules
-                            .Where(s => s.ClassId == c.Id)
-                            .Select(s => new ClassScheduleItemViewModel
-                            {
-                                DayOfWeek = s.DayOfWeek,
-                                TimeSlotName = s.TimeSlot.Name,
-                                StartTime = s.TimeSlot.StartTime,
-                                EndTime = s.TimeSlot.EndTime
-                            })
-                            .ToList()
-                    };
-                }).ToList()
+                        var ids = group.Select(c => c.Id).ToHashSet();
+                        var options = classOptions.Where(c => ids.Contains(c.ClassId)).ToList();
+                        return new SubjectOptionViewModel
+                        {
+                            SubjectId = group.Key.SubjectId,
+                            SubjectName = group.Key.Name,
+                            Description = group.Key.Description,
+                            OpenClassCount = options.Count,
+                            AvailableClassCount = options.Count(c => c.SeatsLeft > 0),
+                            TotalSeatsLeft = options.Sum(c => c.SeatsLeft),
+                            EarliestStartDate = group.Min(c => c.StartDate),
+                            MinimumFee = group.Min(c => c.Fee)
+                        };
+                    })
+                    .OrderBy(subject => subject.SubjectName)
+                    .ToList(),
+                Classes = subjectId.HasValue
+                    ? classOptions.Where(c => classes.Any(entity =>
+                        entity.Id == c.ClassId && entity.SubjectId == subjectId.Value)).ToList()
+                    : new List<ClassOptionViewModel>()
             };
 
             return View(model);
+        }
+
+        // GET: /Enrollment/Details/5?studentId=1
+        [HttpGet]
+        public async Task<IActionResult> Details(int id, int? studentId)
+        {
+            var parent = await GetCurrentParentAsync();
+            if (parent == null)
+                return Forbid();
+
+            var students = await GetLinkedStudentsAsync(parent.Id);
+            if (studentId.HasValue && students.All(student => student.Id != studentId.Value))
+                studentId = null;
+            if (!studentId.HasValue && students.Count == 1)
+                studentId = students[0].Id;
+
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var classItem = await _context.Classes
+                .AsNoTracking()
+                .Where(c => c.Id == id && c.Status == ClassStatus.Open && c.StartDate > today)
+                .Include(c => c.Subject)
+                .Include(c => c.Teacher)
+                .SingleOrDefaultAsync();
+
+            if (classItem == null)
+                return NotFound();
+
+            var option = (await BuildClassOptionsAsync(new List<Class> { classItem }, studentId)).Single();
+            return View(new EnrollmentClassDetailsViewModel
+            {
+                Students = students,
+                SelectedStudentId = studentId,
+                Class = option
+            });
         }
 
         // POST: /Enrollment/Register
@@ -172,13 +160,13 @@ namespace EduCenterManagement.Controllers
             {
                 _logger.LogError(ex, "Register enrollment crashed.");
                 TempData["Error"] = "Có lỗi hệ thống khi đăng ký. Vui lòng thử lại.";
-                return RedirectToAction(nameof(Index), new { studentId });
+                return RedirectToAction(nameof(Details), new { id = classId, studentId });
             }
 
             if (!result.Success)
             {
                 TempData["Error"] = result.Error;
-                return RedirectToAction(nameof(Index), new { studentId });
+                return RedirectToAction(nameof(Details), new { id = classId, studentId });
             }
 
             await TrySendReservationEmailAsync(result);
@@ -217,6 +205,7 @@ namespace EduCenterManagement.Controllers
             return View(new EnrollmentConfirmationViewModel
             {
                 EnrollmentId = enrollment.Id,
+                StudentId = enrollment.StudentId,
                 StudentName = enrollment.Student.FullName,
                 ClassName = enrollment.Class.Name,
                 SubjectName = enrollment.Class.Subject.Name,
@@ -227,6 +216,89 @@ namespace EduCenterManagement.Controllers
                                reservedUntil.HasValue &&
                                reservedUntil.Value > DateTime.UtcNow
             });
+        }
+
+        private Task<List<StudentOptionViewModel>> GetLinkedStudentsAsync(int parentId)
+        {
+            return _context.ParentStudentLinks
+                .AsNoTracking()
+                .Where(link => link.ParentId == parentId &&
+                               link.Status == ParentStudentLinkStatus.Accepted)
+                .OrderBy(link => link.Student.FullName)
+                .Select(link => new StudentOptionViewModel
+                {
+                    Id = link.StudentId,
+                    FullName = link.Student.FullName
+                })
+                .ToListAsync();
+        }
+
+        private async Task<List<ClassOptionViewModel>> BuildClassOptionsAsync(
+            IReadOnlyCollection<Class> classes,
+            int? studentId)
+        {
+            if (classes.Count == 0)
+                return new List<ClassOptionViewModel>();
+
+            var now = DateTime.UtcNow;
+            var classIds = classes.Select(c => c.Id).ToList();
+            var schedules = await _context.ClassSchedules
+                .AsNoTracking()
+                .Where(schedule => classIds.Contains(schedule.ClassId))
+                .Include(schedule => schedule.TimeSlot)
+                .OrderBy(schedule => schedule.DayOfWeek)
+                .ThenBy(schedule => schedule.TimeSlot.StartTime)
+                .ToListAsync();
+
+            var heldByClass = await _context.Enrollments
+                .AsNoTracking()
+                .Where(enrollment => classIds.Contains(enrollment.ClassId) &&
+                    (enrollment.Status == EnrollmentStatus.Confirm ||
+                     (enrollment.Status == EnrollmentStatus.PendingPayment && enrollment.ReservedUntil > now)))
+                .GroupBy(enrollment => enrollment.ClassId)
+                .Select(group => new { ClassId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.ClassId, item => item.Count);
+
+            var registeredClassIds = new HashSet<int>();
+            if (studentId.HasValue)
+            {
+                registeredClassIds = (await _context.Enrollments
+                    .AsNoTracking()
+                    .Where(enrollment => enrollment.StudentId == studentId.Value &&
+                        classIds.Contains(enrollment.ClassId) &&
+                        (enrollment.Status == EnrollmentStatus.Confirm ||
+                         (enrollment.Status == EnrollmentStatus.PendingPayment && enrollment.ReservedUntil > now)))
+                    .Select(enrollment => enrollment.ClassId)
+                    .ToListAsync()).ToHashSet();
+            }
+
+            return classes.Select(classItem =>
+            {
+                heldByClass.TryGetValue(classItem.Id, out var held);
+                return new ClassOptionViewModel
+                {
+                    ClassId = classItem.Id,
+                    SubjectId = classItem.SubjectId,
+                    ClassName = classItem.Name,
+                    SubjectName = classItem.Subject.Name,
+                    TeacherName = classItem.Teacher?.FullName,
+                    StartDate = classItem.StartDate,
+                    EndDate = classItem.EndDate,
+                    Fee = classItem.Fee,
+                    MaxStudents = classItem.MaxStudents,
+                    SeatsLeft = Math.Max(0, classItem.MaxStudents - held),
+                    AlreadyRegistered = registeredClassIds.Contains(classItem.Id),
+                    Schedules = schedules
+                        .Where(schedule => schedule.ClassId == classItem.Id)
+                        .Select(schedule => new ClassScheduleItemViewModel
+                        {
+                            DayOfWeek = schedule.DayOfWeek,
+                            TimeSlotName = schedule.TimeSlot.Name,
+                            StartTime = schedule.TimeSlot.StartTime,
+                            EndTime = schedule.TimeSlot.EndTime
+                        }).ToList()
+                };
+            }).ToList();
         }
 
         private async Task<ParentProfile?> GetCurrentParentAsync()

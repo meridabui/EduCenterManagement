@@ -45,6 +45,14 @@
                                 </a>
                             </li>
                         }
+                        @if (User.IsInRole("Parent"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark fw-semibold" asp-area="" asp-controller="ParentDashboard" asp-action="Index">
+                                    <i class="bi bi-people me-1"></i>Trang phụ huynh
+                                </a>
+                            </li>
+                        }
                     </ul>
                     <ul class="navbar-nav align-items-center">
                         @if (User.Identity != null && User.Identity.IsAuthenticated)

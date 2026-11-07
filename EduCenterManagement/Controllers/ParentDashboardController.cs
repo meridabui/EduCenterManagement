@@ -27,55 +27,22 @@ namespace EduCenterManagement.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var parent = await GetCurrentParentAsync();
+            var model = await BuildDashboardViewModelAsync();
+            return model == null ? Forbid() : View(model);
+        }
 
-            if (parent == null)
-            {
-                return Forbid();
-            }
+        [HttpGet]
+        public async Task<IActionResult> AcademicTracking()
+        {
+            var model = await BuildDashboardViewModelAsync();
+            return model == null ? Forbid() : View(model);
+        }
 
-            var links = await _context.ParentStudentLinks
-                .AsNoTracking()
-                .Where(l => l.ParentId == parent.Id &&
-                            (l.Status == ParentStudentLinkStatus.Pending ||
-                             l.Status == ParentStudentLinkStatus.Accepted))
-                .OrderByDescending(l => l.RequestedAt)
-                .Select(l => new LinkItemViewModel
-                {
-                    LinkId = l.Id,
-                    FullName = l.Student.FullName,
-                    Email = l.Student.User.Email,
-                    Status = l.Status,
-                    RequestedAt = l.RequestedAt,
-                    RespondedAt = l.RespondedAt
-                })
-                .ToListAsync();
-
-            var notifications = await _context.Notifications
-                .AsNoTracking()
-                .Where(n => n.UserId == parent.UserId)
-                .OrderByDescending(n => n.CreatedAt)
-                .Take(5)
-                .Select(n => new NotificationItemViewModel
-                {
-                    Title = n.Title,
-                    Message = n.Message,
-                    CreatedAt = n.CreatedAt
-                })
-                .ToListAsync();
-
-            return View(new ParentDashboardViewModel
-            {
-                FullName = parent.FullName,
-                LinkingCode = parent.LinkingCode,
-                PendingRequests = links
-                    .Where(l => l.Status == ParentStudentLinkStatus.Pending)
-                    .ToList(),
-                LinkedStudents = links
-                    .Where(l => l.Status == ParentStudentLinkStatus.Accepted)
-                    .ToList(),
-                Notifications = notifications
-            });
+        [HttpGet]
+        public async Task<IActionResult> Links()
+        {
+            var model = await BuildDashboardViewModelAsync();
+            return model == null ? Forbid() : View(model);
         }
 
         // POST: /ParentDashboard/Respond
@@ -97,7 +64,7 @@ namespace EduCenterManagement.Controllers
             if (!accept && !reject)
             {
                 TempData["Error"] = "Thao tác không hợp lệ.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Links));
             }
 
             // Chỉ xử lý yêu cầu gửi tới chính Parent này.
@@ -113,7 +80,7 @@ namespace EduCenterManagement.Controllers
             if (link.Status != ParentStudentLinkStatus.Pending)
             {
                 TempData["Error"] = "Yêu cầu này đã được xử lý trước đó.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Links));
             }
 
             var now = DateTime.UtcNow;
@@ -144,14 +111,65 @@ namespace EduCenterManagement.Controllers
             {
                 _logger.LogError(ex, "Respond failed for link {LinkId}", id);
                 TempData["Error"] = "Không thể xử lý yêu cầu. Vui lòng thử lại.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Links));
             }
 
             TempData["Success"] = accept
                 ? $"Đã chấp nhận liên kết với học sinh {link.Student.FullName}."
                 : $"Đã từ chối yêu cầu của học sinh {link.Student.FullName}.";
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Links));
+        }
+
+        private async Task<ParentDashboardViewModel?> BuildDashboardViewModelAsync()
+        {
+            var parent = await GetCurrentParentAsync();
+            if (parent == null)
+                return null;
+
+            var links = await _context.ParentStudentLinks
+                .AsNoTracking()
+                .Where(link => link.ParentId == parent.Id &&
+                    (link.Status == ParentStudentLinkStatus.Pending ||
+                     link.Status == ParentStudentLinkStatus.Accepted))
+                .OrderByDescending(link => link.RequestedAt)
+                .Select(link => new LinkItemViewModel
+                {
+                    LinkId = link.Id,
+                    StudentId = link.StudentId,
+                    FullName = link.Student.FullName,
+                    Email = link.Student.User.Email,
+                    Status = link.Status,
+                    RequestedAt = link.RequestedAt,
+                    RespondedAt = link.RespondedAt
+                })
+                .ToListAsync();
+
+            var notifications = await _context.Notifications
+                .AsNoTracking()
+                .Where(notification => notification.UserId == parent.UserId)
+                .OrderByDescending(notification => notification.CreatedAt)
+                .Take(5)
+                .Select(notification => new NotificationItemViewModel
+                {
+                    Title = notification.Title,
+                    Message = notification.Message,
+                    CreatedAt = notification.CreatedAt
+                })
+                .ToListAsync();
+
+            return new ParentDashboardViewModel
+            {
+                FullName = parent.FullName,
+                LinkingCode = parent.LinkingCode,
+                PendingRequests = links
+                    .Where(link => link.Status == ParentStudentLinkStatus.Pending)
+                    .ToList(),
+                LinkedStudents = links
+                    .Where(link => link.Status == ParentStudentLinkStatus.Accepted)
+                    .ToList(),
+                Notifications = notifications
+            };
         }
 
         private async Task<ParentProfile?> GetCurrentParentAsync()

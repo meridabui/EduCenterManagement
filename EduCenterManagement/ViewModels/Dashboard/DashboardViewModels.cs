@@ -6,6 +6,7 @@ namespace EduCenterManagement.ViewModels.Dashboard
     public class LinkItemViewModel
     {
         public int LinkId { get; set; }
+        public int StudentId { get; set; }
 
         // Parent xem: thông tin Student. Student xem: thông tin Parent.
         public string FullName { get; set; } = string.Empty;

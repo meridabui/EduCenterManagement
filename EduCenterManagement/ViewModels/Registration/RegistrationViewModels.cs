@@ -19,6 +19,7 @@ namespace EduCenterManagement.ViewModels.Registration
     public class ClassOptionViewModel
     {
         public int ClassId { get; set; }
+        public int SubjectId { get; set; }
         public string ClassName { get; set; } = string.Empty;
         public string SubjectName { get; set; } = string.Empty;
         public string? TeacherName { get; set; }
@@ -37,16 +38,38 @@ namespace EduCenterManagement.ViewModels.Registration
         public List<ClassScheduleItemViewModel> Schedules { get; set; } = new();
     }
 
+    public class SubjectOptionViewModel
+    {
+        public int SubjectId { get; set; }
+        public string SubjectName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int OpenClassCount { get; set; }
+        public int AvailableClassCount { get; set; }
+        public int TotalSeatsLeft { get; set; }
+        public DateOnly EarliestStartDate { get; set; }
+        public decimal MinimumFee { get; set; }
+    }
+
     public class EnrollmentIndexViewModel
     {
         public List<StudentOptionViewModel> Students { get; set; } = new();
         public int? SelectedStudentId { get; set; }
+        public int? SelectedSubjectId { get; set; }
+        public List<SubjectOptionViewModel> Subjects { get; set; } = new();
         public List<ClassOptionViewModel> Classes { get; set; } = new();
+    }
+
+    public class EnrollmentClassDetailsViewModel
+    {
+        public List<StudentOptionViewModel> Students { get; set; } = new();
+        public int? SelectedStudentId { get; set; }
+        public ClassOptionViewModel Class { get; set; } = new();
     }
 
     public class EnrollmentConfirmationViewModel
     {
         public int EnrollmentId { get; set; }
+        public int StudentId { get; set; }
         public string StudentName { get; set; } = string.Empty;
         public string ClassName { get; set; } = string.Empty;
         public string SubjectName { get; set; } = string.Empty;

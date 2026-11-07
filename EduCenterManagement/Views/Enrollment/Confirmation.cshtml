@@ -75,7 +75,7 @@
         </div>
     </div>
 
-    <a asp-action="Index" class="btn btn-outline-primary">Đăng ký lớp khác</a>
+    <a asp-action="Index" asp-route-studentId="@Model.StudentId" class="btn btn-outline-primary">Đăng ký lớp khác</a>
     <a asp-controller="ParentDashboard" asp-action="Index" class="btn btn-outline-secondary">Về trang phụ huynh</a>
 </div>
 

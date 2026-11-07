@@ -1,130 +1,149 @@
-﻿@model EduCenterManagement.ViewModels.Registration.EnrollmentIndexViewModel
+@model EduCenterManagement.ViewModels.Registration.EnrollmentIndexViewModel
 
 @{
     ViewData["Title"] = "Đăng ký lớp học";
+    var selectedSubject = Model.Subjects.FirstOrDefault(subject => subject.SubjectId == Model.SelectedSubjectId);
 }
 
-<div class="container mt-4" style="max-width: 1000px;">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="mb-0">Đăng ký lớp học</h2>
-        <a asp-controller="ParentDashboard" asp-action="Index" class="btn btn-outline-secondary btn-sm">
-            Về trang phụ huynh
-        </a>
-    </div>
-    <p class="text-muted">
-        Chọn học sinh rồi chọn lớp. Sau khi đăng ký, chỗ được giữ trong 15 phút để chờ thanh toán.
-    </p>
+<style>
+    .course-hero { background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 65%); border: 1px solid #e0e7ff; }
+    .subject-card, .class-card { transition: transform .18s ease, box-shadow .18s ease; }
+    .subject-card:hover, .class-card:hover { transform: translateY(-3px); box-shadow: 0 .75rem 1.5rem rgba(15,23,42,.1) !important; }
+    .subject-icon { width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center; background: #eef2ff; color: #4f46e5; border-radius: 14px; font-size: 1.4rem; }
+    .class-card .class-heading { background: linear-gradient(135deg, #eef2ff, #f8fafc); }
+</style>
 
-@if (TempData["Success"] is string successMessage)
-{
-    <div class="alert alert-success">@successMessage</div>
-}
-@if (TempData["Error"] is string errorMessage)
-{
-    <div class="alert alert-danger">@errorMessage</div>
-}
+<div class="container-fluid px-0" style="max-width: 1280px;">
+    <section class="course-hero rounded-4 p-4 p-lg-5 mb-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <span class="badge rounded-pill bg-primary-subtle text-primary border mb-3 px-3 py-2">Khám phá khóa học</span>
+                <h1 class="display-6 fw-bold mb-2">Đăng ký lớp học cho con</h1>
+                <p class="text-muted mb-0">Chọn môn học, xem lớp phù hợp và kiểm tra đầy đủ lịch học trước khi đăng ký.</p>
+            </div>
+            <div class="col-lg-5">
+                <label for="courseSearch" class="form-label fw-semibold">Tìm môn học</label>
+                <div class="input-group input-group-lg bg-white rounded-3">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input id="courseSearch" type="search" class="form-control border-start-0" placeholder="Nhập tên môn học..." />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (TempData["Success"] is string successMessage)
+    {
+        <div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>@successMessage</div>
+    }
+    @if (TempData["Error"] is string errorMessage)
+    {
+        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i>@errorMessage</div>
+    }
 
     @if (!Model.Students.Any())
     {
         <div class="alert alert-warning">
-            Bạn chưa có học sinh nào được liên kết. Hãy gửi Linking Code cho con và chấp nhận yêu cầu liên kết
-            ở <a asp-controller="ParentDashboard" asp-action="Index">trang phụ huynh</a>.
+            Bạn chưa có học sinh nào được liên kết. Hãy hoàn tất liên kết tại
+            <a asp-controller="ParentDashboard" asp-action="Index" asp-fragment="linking">trang phụ huynh</a>.
         </div>
     }
     else
     {
-        <form method="get" asp-action="Index" class="row g-2 align-items-end mb-4">
-            <div class="col-sm-6">
-                <label for="studentId" class="form-label fw-semibold">Học sinh</label>
-                <select id="studentId" name="studentId" class="form-select" onchange="this.form.submit()">
-                    @if (!Model.SelectedStudentId.HasValue)
-                    {
-                        <option value="" selected>-- Chọn học sinh --</option>
-                    }
-                    @foreach (var s in Model.Students)
-                    {
-                        <option value="@s.Id" selected="@(Model.SelectedStudentId == s.Id)">@s.FullName</option>
-                    }
-                </select>
-            </div>
-        </form>
-
-        @if (!Model.Classes.Any())
+        @if (!Model.Subjects.Any())
         {
-            <p class="text-muted">Hiện chưa có lớp nào đang mở đăng ký.</p>
+            <div class="alert alert-info">Hiện chưa có môn học nào có lớp đang mở đăng ký.</div>
+        }
+        else if (!Model.SelectedSubjectId.HasValue)
+        {
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <div><h3 class="fw-bold mb-1">Chọn môn học</h3><p class="text-muted mb-0">Nhấn vào một môn để xem các lớp đang mở.</p></div>
+                <span class="badge bg-light text-dark border">@Model.Subjects.Count môn học</span>
+            </div>
+            <div class="row g-4" id="subjectGrid">
+                @foreach (var subject in Model.Subjects)
+                {
+                    <div class="col-md-6 col-xl-4 searchable-item" data-search="@subject.SubjectName.ToLowerInvariant() @subject.Description?.ToLowerInvariant()">
+                        <a asp-action="Index" asp-route-studentId="@Model.SelectedStudentId" asp-route-subjectId="@subject.SubjectId" class="text-decoration-none text-dark">
+                            <article class="card subject-card border-0 shadow-sm h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <span class="subject-icon"><i class="bi bi-book"></i></span>
+                                        <span class="badge bg-success-subtle text-success border">@subject.AvailableClassCount lớp còn chỗ</span>
+                                    </div>
+                                    <h4 class="fw-bold mb-2">@subject.SubjectName</h4>
+                                    <p class="text-muted small mb-4">@(string.IsNullOrWhiteSpace(subject.Description) ? "Khám phá các lớp học đang mở của môn này." : subject.Description)</p>
+                                    <div class="row g-2 small">
+                                        <div class="col-6"><div class="text-muted">Lớp đang mở</div><strong>@subject.OpenClassCount</strong></div>
+                                        <div class="col-6"><div class="text-muted">Tổng chỗ trống</div><strong>@subject.TotalSeatsLeft</strong></div>
+                                        <div class="col-6"><div class="text-muted">Khai giảng sớm</div><strong>@subject.EarliestStartDate.ToString("dd/MM/yyyy")</strong></div>
+                                        <div class="col-6"><div class="text-muted">Học phí từ</div><strong class="text-primary">@subject.MinimumFee.ToString("N0") đ</strong></div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-white border-0 px-4 pb-4 text-primary fw-semibold">Xem các lớp <i class="bi bi-arrow-right ms-1"></i></div>
+                            </article>
+                        </a>
+                    </div>
+                }
+            </div>
         }
         else
         {
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Lớp</th>
-                            <th>Lịch học</th>
-                            <th>Thời gian</th>
-                            <th class="text-end">Học phí</th>
-                            <th class="text-center">Chỗ trống</th>
-                            <th class="text-end"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var c in Model.Classes)
-                        {
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold">@c.ClassName</div>
-                                    <div class="text-muted small">@c.SubjectName</div>
-                                    @if (!string.IsNullOrWhiteSpace(c.TeacherName))
-                                    {
-                                        <div class="text-muted small">GV: @c.TeacherName</div>
-                                    }
-                                    @if (!string.IsNullOrWhiteSpace(c.PrerequisiteName))
-                                    {
-                                        <div class="small text-danger">Tiên quyết: @c.PrerequisiteName</div>
-                                    }
-                                </td>
-                                <td class="small">
-                                    @foreach (var s in c.Schedules)
-                                    {
-                                        <div>
-                                            @(s.DayOfWeek == 8 ? "Chủ nhật" : $"Thứ {s.DayOfWeek}"),
-                                            @s.StartTime.ToString("HH:mm")-@s.EndTime.ToString("HH:mm")
-                                        </div>
-                                    }
-                                </td>
-                                <td class="small">
-                                    @c.StartDate.ToString("dd/MM/yyyy") - @c.EndDate.ToString("dd/MM/yyyy")
-                                </td>
-                                <td class="text-end">@c.Fee.ToString("N0") đ</td>
-                                <td class="text-center">@c.SeatsLeft / @c.MaxStudents</td>
-                                <td class="text-end">
-                                    @if (c.AlreadyRegistered)
-                                    {
-                                        <span class="badge bg-info text-dark">Đã đăng ký</span>
-                                    }
-                                    else if (c.SeatsLeft <= 0)
-                                    {
-                                        <span class="badge bg-secondary">Hết chỗ</span>
-                                    }
-                                    else if (!Model.SelectedStudentId.HasValue)
-                                    {
-                                        <button type="button" class="btn btn-primary btn-sm" disabled>Đăng ký</button>
-                                    }
-                                    else
-                                    {
-                                        <form asp-action="Register" method="post" class="d-inline"
-                                              onsubmit="return confirm('Đăng ký lớp này? Chỗ sẽ được giữ trong 15 phút.');">
-                                            <input type="hidden" name="studentId" value="@Model.SelectedStudentId" />
-                                            <input type="hidden" name="classId" value="@c.ClassId" />
-                                            <button type="submit" class="btn btn-primary btn-sm">Đăng ký</button>
-                                        </form>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div>
+                    <a asp-action="Index" asp-route-studentId="@Model.SelectedStudentId" class="btn btn-outline-secondary btn-sm mb-2"><i class="bi bi-arrow-left me-1"></i>Tất cả môn học</a>
+                    <h3 class="fw-bold mb-1">Các lớp môn @selectedSubject?.SubjectName</h3>
+                    <p class="text-muted mb-0">Chọn “Xem chi tiết” để kiểm tra lịch học và đăng ký.</p>
+                </div>
+                <span class="badge bg-primary-subtle text-primary border px-3 py-2">@Model.Classes.Count lớp đang mở</span>
             </div>
+
+            @if (!Model.Classes.Any())
+            {
+                <div class="alert alert-info">Môn học này hiện không có lớp đang mở.</div>
+            }
+            else
+            {
+                <div class="row g-4" id="classGrid">
+                    @foreach (var classItem in Model.Classes)
+                    {
+                        <div class="col-md-6 col-xl-4 searchable-item" data-search="@classItem.ClassName.ToLowerInvariant() @classItem.SubjectName.ToLowerInvariant() @classItem.TeacherName?.ToLowerInvariant()">
+                            <article class="card class-card border-0 shadow-sm h-100 overflow-hidden">
+                                <div class="class-heading p-4 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <span class="text-primary fw-semibold small">@classItem.SubjectName</span>
+                                        @if (classItem.AlreadyRegistered) { <span class="badge bg-info text-dark">Đã đăng ký</span> }
+                                        else if (classItem.SeatsLeft <= 0) { <span class="badge bg-secondary">Hết chỗ</span> }
+                                        else { <span class="badge bg-success">Đang mở</span> }
+                                    </div>
+                                    <h4 class="fw-bold mt-3 mb-1">@classItem.ClassName</h4>
+                                    <div class="text-muted small">GV: @(classItem.TeacherName ?? "Chưa phân công")</div>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="mb-2"><i class="bi bi-calendar-range text-primary me-2"></i>@classItem.StartDate.ToString("dd/MM/yyyy") - @classItem.EndDate.ToString("dd/MM/yyyy")</div>
+                                    <div class="mb-2"><i class="bi bi-people text-primary me-2"></i>Còn @classItem.SeatsLeft/@classItem.MaxStudents chỗ</div>
+                                    <div class="mb-3"><i class="bi bi-cash-stack text-primary me-2"></i><strong>@classItem.Fee.ToString("N0") đ</strong></div>
+                                    <div class="small text-muted">@classItem.Schedules.Count lịch học mỗi tuần</div>
+                                </div>
+                                <div class="card-footer bg-white border-0 p-4 pt-0">
+                                    <a asp-action="Details" asp-route-id="@classItem.ClassId" asp-route-studentId="@Model.SelectedStudentId" class="btn btn-primary w-100">Xem chi tiết lớp</a>
+                                </div>
+                            </article>
+                        </div>
+                    }
+                </div>
+            }
         }
     }
 </div>
+
+@section Scripts {
+    <script>
+        const courseSearch = document.getElementById('courseSearch');
+        courseSearch?.addEventListener('input', function () {
+            const keyword = this.value.trim().toLowerCase();
+            document.querySelectorAll('.searchable-item').forEach(item => {
+                item.classList.toggle('d-none', !item.dataset.search.includes(keyword));
+            });
+        });
+    </script>
+}

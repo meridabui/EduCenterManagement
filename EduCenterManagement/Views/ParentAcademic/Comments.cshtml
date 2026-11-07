@@ -1,0 +1,60 @@
+@model EduCenterManagement.ViewModels.Parent.ParentCommentsViewModel
+
+@{
+    ViewData["Title"] = $"Nhận xét - {Model.Navigation.StudentName}";
+}
+
+<div class="container-fluid py-4 px-0">
+    <partial name="_ChildAcademicNav" model="Model.Navigation" />
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <input type="hidden" name="studentId" value="@Model.Navigation.StudentId" />
+                <div class="col-md-8">
+                    <label for="classId" class="form-label fw-semibold">Lọc theo lớp</label>
+                    <select id="classId" name="classId" class="form-select">
+                        <option value="">Tất cả các lớp</option>
+                        @foreach (var item in Model.Classes)
+                        {
+                            <option value="@item.ClassId" selected="@(Model.SelectedClassId == item.ClassId)">@item.Label</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-1"></i>Lọc nhận xét
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Comments.Count == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-1"></i>Chưa có nhận xét nào dành cho phụ huynh.
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Comments)
+        {
+            <article class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                        <div>
+                            <h5 class="mb-1">@item.SubjectName - @item.ClassName</h5>
+                            <div class="text-muted small">
+                                <i class="bi bi-person-video3 me-1"></i>@item.TeacherName
+                                <span class="mx-2">•</span>@item.SessionLabel
+                            </div>
+                        </div>
+                        <time class="text-muted small">@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
+                    </div>
+                    <div class="bg-light rounded p-3" style="white-space: pre-line;">@item.Content</div>
+                </div>
+            </article>
+        }
+    }
+</div>
