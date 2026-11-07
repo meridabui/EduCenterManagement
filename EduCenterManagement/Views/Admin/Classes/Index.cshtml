@@ -8,6 +8,9 @@
     var timeSlots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var teachers = ViewBag.Teachers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var openCreateModal = ViewBag.OpenCreateModal is bool open && open;
+    var filterSubjects = ViewBag.FilterSubjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var filterTeachers = ViewBag.FilterTeachers as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var hasFilters = ViewBag.HasClassFilters is bool filtered && filtered;
 }
 
 <style>
@@ -135,6 +138,28 @@
         </div>
     }
 
+    <form asp-controller="Classes" asp-action="Index" method="get" class="dashboard-panel mb-4" aria-label="Lọc danh sách lớp học">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+                <label for="filterSubjectId" class="form-label fw-semibold">Môn học</label>
+                <select id="filterSubjectId" name="subjectId" asp-items="filterSubjects" class="form-select">
+                    <option value="">Tất cả môn học</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-4">
+                <label for="filterTeacherId" class="form-label fw-semibold">Giáo viên</label>
+                <select id="filterTeacherId" name="teacherId" asp-items="filterTeachers" class="form-select">
+                    <option value="">Tất cả giáo viên</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Lọc</button>
+                <a asp-controller="Classes" asp-action="Index" class="btn btn-outline-secondary">Xóa lọc</a>
+            </div>
+        </div>
+    </form>
+    <p class="text-muted small">Hiển thị @(Model?.Count() ?? 0) lớp học@(hasFilters ? " phù hợp với bộ lọc" : "").</p>
+
     <div class="class-table-card">
         <div class="table-responsive">
             <table class="table table-hover class-table dashboard-table">
@@ -228,7 +253,17 @@
                     }
                     else
                     {
-                        <tr><td colspan="7" class="text-center py-5">Chưa có lớp học nào. Nhấn <strong>Mở lớp học mới</strong> để bắt đầu.</td></tr>
+                        <tr><td colspan="7" class="text-center py-5">
+                            @if (hasFilters)
+                            {
+                                <span>Không có lớp học phù hợp. Hãy thay đổi điều kiện hoặc </span>
+                                <a asp-controller="Classes" asp-action="Index">xóa bộ lọc</a><span>.</span>
+                            }
+                            else
+                            {
+                                <span>Chưa có lớp học nào. Nhấn <strong>Mở lớp học mới</strong> để bắt đầu.</span>
+                            }
+                        </td></tr>
                     }
                 </tbody>
             </table>
