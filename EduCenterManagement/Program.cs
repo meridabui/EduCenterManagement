@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using EduCenterManagement.Models;
 using EduCenterManagement.Services;
+using EduCenterManagement.Services.Email;
+using EduCenterManagement.Services.Reminders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,14 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ClassSessionService>();
 builder.Services.AddHostedService<EnrollmentExpiryWorker>();
+
+// Lập lịch và gửi email nhắc buổi học cho học sinh trước 24 giờ.
+builder.Services.Configure<ClassReminderSettings>(
+    builder.Configuration.GetSection(ClassReminderSettings.SectionName));
+builder.Services.AddScoped<ClassReminderPlannerService>();
+builder.Services.AddScoped<EmailOutboxProcessor>();
+builder.Services.AddHostedService<ClassReminderPlannerWorker>();
+builder.Services.AddHostedService<EmailOutboxWorker>();
 // Đăng ký Repository & Service cho phân hệ Student
 builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentTimetableRepository, EduCenterManagement.Repositories.Student.StudentTimetableRepository>();
 builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentTimetableService, EduCenterManagement.Services.Student.StudentTimetableService>();
