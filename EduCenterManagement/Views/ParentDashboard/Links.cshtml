@@ -1,0 +1,68 @@
+@model EduCenterManagement.ViewModels.Dashboard.ParentDashboardViewModel
+
+@{
+    ViewData["Title"] = "Liên kết học sinh";
+}
+
+<div class="container-fluid px-0" style="max-width: 1050px;">
+    <div class="mb-4"><span class="badge bg-primary-subtle text-primary border mb-2">Parent–Student</span><h1 class="fw-bold mb-1">Liên kết học sinh</h1><p class="text-muted mb-0">Quản lý mã liên kết và các yêu cầu từ học sinh.</p></div>
+
+    @if (TempData["Success"] is string successMessage) { <div class="alert alert-success">@successMessage</div> }
+    @if (TempData["Error"] is string errorMessage) { <div class="alert alert-danger">@errorMessage</div> }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="fw-bold">Mã liên kết của bạn</h5>
+            <p class="text-muted">Gửi mã này cho con. Quan hệ chỉ có hiệu lực sau khi bạn chấp nhận yêu cầu.</p>
+            <div class="d-flex flex-wrap align-items-center gap-2"><code id="linkingCode" class="fs-4 px-3 py-2 bg-light border rounded">@Model.LinkingCode</code><button type="button" class="btn btn-outline-primary" id="copyCode"><i class="bi bi-copy me-1"></i>Sao chép</button></div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3"><h5 class="mb-0">Yêu cầu đang chờ (@Model.PendingRequests.Count)</h5></div>
+        <div class="card-body p-0">
+            @if (!Model.PendingRequests.Any())
+            {
+                <div class="p-4 text-muted">Không có yêu cầu nào.</div>
+            }
+            else
+            {
+                <div class="table-responsive"><table class="table align-middle mb-0"><thead class="table-light"><tr><th>Học sinh</th><th>Email</th><th>Thời gian gửi</th><th class="text-end">Thao tác</th></tr></thead><tbody>
+                    @foreach (var item in Model.PendingRequests)
+                    {
+                        <tr><td class="fw-semibold">@item.FullName</td><td>@item.Email</td><td>@item.RequestedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td class="text-end"><form asp-action="Respond" method="post" class="d-inline"><input type="hidden" name="id" value="@item.LinkId" /><button type="submit" name="decision" value="accept" class="btn btn-success btn-sm">Chấp nhận</button> <button type="submit" name="decision" value="reject" class="btn btn-outline-danger btn-sm">Từ chối</button></form></td></tr>
+                    }
+                </tbody></table></div>
+            }
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3"><h5 class="mb-0">Đã liên kết (@Model.LinkedStudents.Count)</h5></div>
+        <div class="card-body">
+            @if (!Model.LinkedStudents.Any())
+            {
+                <p class="text-muted mb-0">Chưa có học sinh nào được liên kết.</p>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var item in Model.LinkedStudents)
+                    {
+                        <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center gap-3"><div><div class="fw-semibold">@item.FullName</div><div class="text-muted small">@item.Email</div></div><span class="badge bg-success-subtle text-success border">Đã liên kết</span></div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('copyCode')?.addEventListener('click', async function () {
+            const code = document.getElementById('linkingCode').textContent.trim();
+            try { await navigator.clipboard.writeText(code); this.innerHTML = '<i class="bi bi-check2 me-1"></i>Đã sao chép'; }
+            catch { alert('Mã liên kết của bạn là: ' + code); }
+        });
+    </script>
+}

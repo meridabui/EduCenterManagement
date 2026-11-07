@@ -47,6 +47,10 @@ builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherSlideSer
 builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherCommentRepository, EduCenterManagement.Repositories.Teacher.TeacherCommentRepository>();
 builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherCommentService, EduCenterManagement.Services.Teacher.TeacherCommentService>();
 
+// Dữ liệu học tập chỉ đọc dành cho phụ huynh.
+builder.Services.AddScoped<EduCenterManagement.Repositories.Parent.IParentAcademicRepository, EduCenterManagement.Repositories.Parent.ParentAcademicRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Parent.IParentAcademicService, EduCenterManagement.Services.Parent.ParentAcademicService>();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
