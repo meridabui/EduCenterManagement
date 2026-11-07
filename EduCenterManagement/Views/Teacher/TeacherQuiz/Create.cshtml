@@ -38,7 +38,7 @@
                                     Gắn vào buổi học <span class="text-muted small fw-normal">(Không bắt buộc)</span>
                                 </label>
                                 <select asp-for="SessionId" asp-items="Model.Sessions" class="form-select" id="sessionSelect">
-                                    <option value="">-- Không gắn vào buổi học (Quiz chung của cả lớp) --</option>
+                                    
                                 </select>
                                 <span asp-validation-for="SessionId" class="text-danger small"></span>
                             </div>
@@ -76,6 +76,9 @@
                                 <input asp-for="AvailableFrom" class="form-control" type="datetime-local"
                                        value="@Model.AvailableFrom.ToString("yyyy-MM-ddTHH:mm")" />
                                 <span asp-validation-for="AvailableFrom" class="text-danger small"></span>
+                                <div class="form-text text-muted small">
+                                    <i class="bi bi-info-circle me-1"></i>Lưu ý: Nếu Xuất bản, thời gian mở phải từ ngày lớp bắt đầu học trở đi.
+                                </div>
                             </div>
 
                             <div class="col-md-6">

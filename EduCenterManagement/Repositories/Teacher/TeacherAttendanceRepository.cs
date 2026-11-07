@@ -25,7 +25,7 @@ namespace EduCenterManagement.Repositories.Teacher
         {
             return await _context.Classes
                 .AsNoTracking()
-                .Where(c => c.TeacherId == teacherId && c.Status != ClassStatus.Cancelled)
+                .Where(c => c.TeacherId == teacherId && c.Status == ClassStatus.InProgress)
                 .Include(c => c.Subject)
                 .OrderBy(c => c.Name)
                 .ToListAsync();

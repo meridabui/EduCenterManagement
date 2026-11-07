@@ -96,7 +96,7 @@ namespace EduCenterManagement.Services.Teacher
                 Classes = classes.Select(c => new SelectListItem
                 {
                     Value = c.Id.ToString(),
-                    Text = c.Name
+                    Text = $"{c.Name} (Khai giảng: {c.StartDate:dd/MM/yyyy})"
                 }).ToList()
             };
 
@@ -154,6 +154,11 @@ namespace EduCenterManagement.Services.Teacher
             if (classItem == null)
             {
                 return (false, "Lớp học không tồn tại hoặc bạn không phụ trách lớp này.", 0);
+            }
+
+            if (model.Status == QuizStatus.Published && DateOnly.FromDateTime(model.AvailableFrom) < classItem.StartDate)
+            {
+                return (false, $"Không thể xuất bản: Thời gian mở bài Quiz ({model.AvailableFrom:dd/MM/yyyy HH:mm}) không được diễn ra trước ngày lớp học bắt đầu ({classItem.StartDate:dd/MM/yyyy}).", 0);
             }
 
             if (model.SessionId.HasValue && model.SessionId.Value > 0)
@@ -435,6 +440,20 @@ namespace EduCenterManagement.Services.Teacher
         {
             var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
             if (teacher == null) return (false, "Không tìm thấy hồ sơ giáo viên.");
+
+            var quiz = await _repo.GetQuizWithDetailsByIdAsync(quizId);
+            if (quiz == null || quiz.CreatedByTeacherId != teacher.Id)
+            {
+                return (false, "Bài Quiz không tồn tại hoặc bạn không có quyền cập nhật.");
+            }
+
+            if (status == QuizStatus.Published && quiz.Class != null)
+            {
+                if (DateOnly.FromDateTime(quiz.AvailableFrom) < quiz.Class.StartDate)
+                {
+                    return (false, $"Không thể xuất bản: Thời gian mở bài Quiz ({quiz.AvailableFrom:dd/MM/yyyy HH:mm}) diễn ra trước ngày lớp học bắt đầu ({quiz.Class.StartDate:dd/MM/yyyy}). Vui lòng điều chỉnh lại thời gian mở thi trước khi xuất bản.");
+                }
+            }
 
             bool updated = await _repo.UpdateQuizStatusAsync(quizId, teacher.Id, status);
             if (!updated) return (false, "Không có quyền cập nhật bài Quiz này.");
