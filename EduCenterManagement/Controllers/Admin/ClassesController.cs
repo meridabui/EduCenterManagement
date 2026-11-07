@@ -59,12 +59,7 @@ namespace EduCenterManagement.Controllers.Admin
 
             ValidateSchedules(model);
 
-            if (model.EndDate < model.StartDate)
-            {
-                ModelState.AddModelError(
-                    nameof(model.EndDate),
-                    "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.");
-            }
+            ValidateClassDates(model);
 
             if (!ModelState.IsValid)
                 return await ReturnCreateErrorAsync();
@@ -287,7 +282,7 @@ namespace EduCenterManagement.Controllers.Admin
             {
                 if (!startDate.HasValue ||
                     !endDate.HasValue ||
-                    endDate.Value < startDate.Value)
+                    endDate.Value <= startDate.Value)
                 {
                     return BadRequest(new
                     {
@@ -711,12 +706,7 @@ namespace EduCenterManagement.Controllers.Admin
 
             ValidateSchedules(model);
 
-            if (model.EndDate < model.StartDate)
-            {
-                ModelState.AddModelError(
-                    nameof(model.EndDate),
-                    "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.");
-            }
+            ValidateClassDates(model);
 
             if (!ModelState.IsValid)
                 return Back();
@@ -1064,6 +1054,17 @@ namespace EduCenterManagement.Controllers.Admin
                     Text = $"{t.Name} " +
                            $"({t.StartTime:HH\\:mm} - {t.EndTime:HH\\:mm})"
                 }).ToList();
+        }
+
+        private void ValidateClassDates(ClassViewModel model)
+        {
+            if (model.StartDate < DateOnly.FromDateTime(DateTime.Today))
+                ModelState.AddModelError(nameof(model.StartDate),
+                    "Ngày bắt đầu không được là ngày trong quá khứ.");
+
+            if (model.EndDate <= model.StartDate)
+                ModelState.AddModelError(nameof(model.EndDate),
+                    "Ngày kết thúc phải sau ngày bắt đầu.");
         }
 
         private void ValidateSchedules(ClassViewModel model)
