@@ -1,0 +1,95 @@
+@model EduCenterManagement.ViewModels.Registration.EnrollmentClassDetailsViewModel
+
+@{
+    ViewData["Title"] = $"Chi tiết lớp {Model.Class.ClassName}";
+    var classItem = Model.Class;
+}
+
+<div class="container-fluid px-0" style="max-width: 1100px;">
+    <a asp-action="Index" asp-route-studentId="@Model.SelectedStudentId" asp-route-subjectId="@classItem.SubjectId" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left me-1"></i>Quay lại các lớp</a>
+
+    @if (TempData["Error"] is string errorMessage)
+    {
+        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i>@errorMessage</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm overflow-hidden mb-4">
+                <div class="p-4 p-lg-5 border-bottom" style="background:linear-gradient(135deg,#eef2ff,#f8fafc)">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                        <div><span class="badge bg-primary-subtle text-primary border mb-3">@classItem.SubjectName</span><h1 class="fw-bold mb-2">@classItem.ClassName</h1><p class="text-muted mb-0"><i class="bi bi-person-video3 me-1"></i>Giáo viên: @(classItem.TeacherName ?? "Chưa phân công")</p></div>
+                        @if (classItem.AlreadyRegistered) { <span class="badge bg-info text-dark px-3 py-2">Đã đăng ký</span> }
+                        else if (classItem.SeatsLeft <= 0) { <span class="badge bg-secondary px-3 py-2">Hết chỗ</span> }
+                        else { <span class="badge bg-success px-3 py-2">Đang mở đăng ký</span> }
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Thông tin lớp học</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6"><div class="border rounded-3 p-3 h-100"><div class="text-muted small">Thời gian khóa học</div><strong>@classItem.StartDate.ToString("dd/MM/yyyy") - @classItem.EndDate.ToString("dd/MM/yyyy")</strong></div></div>
+                        <div class="col-sm-6"><div class="border rounded-3 p-3 h-100"><div class="text-muted small">Sĩ số</div><strong>Còn @classItem.SeatsLeft/@classItem.MaxStudents chỗ</strong></div></div>
+                    </div>
+                    <h5 class="fw-bold mb-3">Lịch học hàng tuần</h5>
+                    @if (classItem.Schedules.Count == 0)
+                    {
+                        <div class="alert alert-warning">Lớp chưa có lịch học.</div>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush border rounded-3">
+                            @foreach (var schedule in classItem.Schedules)
+                            {
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div><i class="bi bi-calendar3 text-primary me-2"></i><strong>@(schedule.DayOfWeek == 8 ? "Chủ nhật" : $"Thứ {schedule.DayOfWeek}")</strong></div>
+                                    <div class="text-end"><div>@schedule.StartTime.ToString("HH:mm") - @schedule.EndTime.ToString("HH:mm")</div><div class="small text-muted">@schedule.TimeSlotName</div></div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <aside class="card border-0 shadow-sm sticky-lg-top" style="top:90px">
+                <div class="card-body p-4">
+                    <div class="text-muted small">Học phí toàn khóa</div>
+                    <div class="display-6 fw-bold text-primary mb-4">@classItem.Fee.ToString("N0") đ</div>
+                    <form method="get" asp-action="Details" asp-route-id="@classItem.ClassId" class="mb-3">
+                        <label for="studentId" class="form-label fw-semibold">Đăng ký cho</label>
+                        <select id="studentId" name="studentId" class="form-select" onchange="this.form.submit()">
+                            @if (!Model.SelectedStudentId.HasValue) { <option value="" selected>-- Chọn học sinh --</option> }
+                            @foreach (var student in Model.Students)
+                            {
+                                <option value="@student.Id" selected="@(Model.SelectedStudentId == student.Id)">@student.FullName</option>
+                            }
+                        </select>
+                    </form>
+
+                    @if (classItem.AlreadyRegistered)
+                    {
+                        <button class="btn btn-info w-100" disabled>Học sinh đã đăng ký lớp này</button>
+                    }
+                    else if (classItem.SeatsLeft <= 0)
+                    {
+                        <button class="btn btn-secondary w-100" disabled>Lớp đã hết chỗ</button>
+                    }
+                    else if (!Model.SelectedStudentId.HasValue)
+                    {
+                        <button class="btn btn-primary w-100" disabled>Chọn học sinh để đăng ký</button>
+                    }
+                    else
+                    {
+                        <form asp-action="Register" method="post" onsubmit="return confirm('Đăng ký lớp này? Chỗ sẽ được giữ trong 15 phút.');">
+                            <input type="hidden" name="studentId" value="@Model.SelectedStudentId" />
+                            <input type="hidden" name="classId" value="@classItem.ClassId" />
+                            <button type="submit" class="btn btn-primary btn-lg w-100"><i class="bi bi-check2-circle me-1"></i>Đăng ký lớp</button>
+                        </form>
+                    }
+                    <div class="small text-muted mt-3"><i class="bi bi-shield-check me-1"></i>Nghiệp vụ kiểm tra trùng lịch, điều kiện và chỗ trống được thực hiện khi đăng ký.</div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>

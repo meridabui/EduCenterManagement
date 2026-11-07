@@ -1,0 +1,43 @@
+@model EduCenterManagement.ViewModels.Parent.ParentChildNavigationViewModel
+
+<style>
+    .child-academic-nav { min-height: 108px; }
+    .child-academic-tabs { display: grid; grid-template-columns: repeat(4, 138px); gap: .5rem; }
+    .child-academic-tabs .nav-link { display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+
+    @@media (max-width: 767.98px) {
+        .child-academic-nav { min-height: 0; }
+        .child-academic-header { align-items: stretch !important; }
+        .child-academic-tabs { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+</style>
+
+<div class="child-academic-nav mb-4">
+    <a asp-controller="ParentDashboard" asp-action="AcademicTracking" class="btn btn-outline-secondary btn-sm mb-3">
+        <i class="bi bi-arrow-left me-1"></i>Trở về
+    </a>
+    <div class="child-academic-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="text-muted small">Thông tin học tập của</div>
+            <h3 class="mb-0">@Model.StudentName</h3>
+        </div>
+        <div class="child-academic-tabs nav nav-pills">
+            <a asp-controller="ParentAcademic" asp-action="Comments" asp-route-studentId="@Model.StudentId"
+               class="nav-link @(Model.ActiveTab == "comments" ? "active" : "")">
+                <i class="bi bi-chat-left-text me-1"></i>Nhận xét
+            </a>
+            <a asp-controller="ParentAcademic" asp-action="Timetable" asp-route-studentId="@Model.StudentId"
+               class="nav-link @(Model.ActiveTab == "timetable" ? "active" : "")">
+                <i class="bi bi-calendar3 me-1"></i>Thời khóa biểu
+            </a>
+            <a asp-controller="ParentAcademic" asp-action="Attendance" asp-route-studentId="@Model.StudentId"
+               class="nav-link @(Model.ActiveTab == "attendance" ? "active" : "")">
+                <i class="bi bi-person-check me-1"></i>Điểm danh
+            </a>
+            <a asp-controller="ParentAcademic" asp-action="QuizResults" asp-route-studentId="@Model.StudentId"
+               class="nav-link @(Model.ActiveTab == "quiz" ? "active" : "")">
+                <i class="bi bi-bar-chart me-1"></i>Điểm Quiz
+            </a>
+        </div>
+    </div>
+</div>

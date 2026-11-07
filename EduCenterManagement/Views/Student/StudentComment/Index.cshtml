@@ -1,0 +1,85 @@
+@using EduCenterManagement.ViewModels.Student
+@model StudentCommentListViewModel
+
+@{
+    ViewData["Title"] = "Nhận xét của giáo viên";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 1050px;">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-chat-left-text me-2 text-primary"></i>Nhận xét của giáo viên</h3>
+            <div class="text-muted small">Những nhận xét giáo viên dành cho bạn trong các lớp học.</div>
+        </div>
+    </div>
+
+    @if (Model.Classes.Any())
+    {
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a asp-action="Index" class="btn btn-sm @(Model.SelectedClassId == null ? "btn-primary" : "btn-outline-primary")">
+                Tất cả <span class="badge bg-light text-dark ms-1">@Model.Classes.Sum(c => c.CommentCount)</span>
+            </a>
+            @foreach (var cls in Model.Classes)
+            {
+                <a asp-action="Index" asp-route-classId="@cls.ClassId"
+                   class="btn btn-sm @(Model.SelectedClassId == cls.ClassId ? "btn-primary" : "btn-outline-primary")">
+                    @cls.ClassName <span class="badge bg-light text-dark ms-1">@cls.CommentCount</span>
+                </a>
+            }
+        </div>
+    }
+
+    @if (!Model.Comments.Any())
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                Bạn chưa có nhận xét nào từ giáo viên.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3">
+            @foreach (var c in Model.Comments)
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                            <div>
+                                <div class="fw-semibold"><i class="bi bi-person-badge me-1 text-primary"></i>@c.TeacherName</div>
+                                <div class="text-muted small">
+                                    <i class="bi bi-people me-1"></i>@c.ClassName
+                                    @if (!string.IsNullOrEmpty(c.SubjectName))
+                                    {
+                                        <span> · @c.SubjectName</span>
+                                    }
+                                    @if (c.SessionNumber.HasValue)
+                                    {
+                                        <span> · Buổi @c.SessionNumber</span>
+                                        @if (c.SessionDate.HasValue)
+                                        {
+                                            <span> (@c.SessionDate.Value.ToString("dd/MM/yyyy"))</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span> · Nhận xét chung</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="text-muted small text-end">
+                                <i class="bi bi-clock me-1"></i>@c.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                @if (c.IsEdited)
+                                {
+                                    <div class="fst-italic">Đã chỉnh sửa @c.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                }
+                            </div>
+                        </div>
+                        <div class="bg-light rounded p-3" style="white-space: pre-line;">@c.Content</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

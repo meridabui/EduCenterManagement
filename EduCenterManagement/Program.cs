@@ -32,6 +32,8 @@ builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentTime
 builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentTimetableService, EduCenterManagement.Services.Student.StudentTimetableService>();
 builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentQuizRepository, EduCenterManagement.Repositories.Student.StudentQuizRepository>();
 builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentQuizService, EduCenterManagement.Services.Student.StudentQuizService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentCommentRepository, EduCenterManagement.Repositories.Student.StudentCommentRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentCommentService, EduCenterManagement.Services.Student.StudentCommentService>();
 
 // Đăng ký Repository & Service cho phân hệ Teacher
 builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherRepository, EduCenterManagement.Repositories.Teacher.TeacherRepository>();
@@ -44,6 +46,10 @@ builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherSlid
 builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherSlideService, EduCenterManagement.Services.Teacher.TeacherSlideService>();
 builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherCommentRepository, EduCenterManagement.Repositories.Teacher.TeacherCommentRepository>();
 builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherCommentService, EduCenterManagement.Services.Teacher.TeacherCommentService>();
+
+// Dữ liệu học tập chỉ đọc dành cho phụ huynh.
+builder.Services.AddScoped<EduCenterManagement.Repositories.Parent.IParentAcademicRepository, EduCenterManagement.Repositories.Parent.ParentAcademicRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Parent.IParentAcademicService, EduCenterManagement.Services.Parent.ParentAcademicService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(

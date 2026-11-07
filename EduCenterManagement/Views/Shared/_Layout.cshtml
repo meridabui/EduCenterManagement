@@ -40,8 +40,21 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="StudentComment" asp-action="Index">
+                                    <i class="bi bi-chat-left-text me-1"></i>Nhận xét
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="StudentDashboard" asp-action="Index">
                                     <i class="bi bi-person-badge me-1"></i>Liên kết phụ huynh
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Parent"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark fw-semibold" asp-area="" asp-controller="ParentDashboard" asp-action="Index">
+                                    <i class="bi bi-people me-1"></i>Trang phụ huynh
                                 </a>
                             </li>
                         }

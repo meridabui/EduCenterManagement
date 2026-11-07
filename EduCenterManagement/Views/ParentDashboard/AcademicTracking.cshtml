@@ -1,0 +1,38 @@
+@model EduCenterManagement.ViewModels.Dashboard.ParentDashboardViewModel
+
+@{
+    ViewData["Title"] = "Theo dõi học tập";
+}
+
+<div class="container-fluid px-0" style="max-width: 1150px;">
+    <div class="mb-4"><span class="badge bg-primary-subtle text-primary border mb-2">Học tập của con</span><h1 class="fw-bold mb-1">Theo dõi học tập</h1><p class="text-muted mb-0">Chọn một học sinh để xem nhận xét, lịch học, điểm danh hoặc kết quả Quiz.</p></div>
+
+    @if (!Model.LinkedStudents.Any())
+    {
+        <div class="alert alert-info">Chưa có học sinh nào được liên kết. Hãy vào mục <a asp-action="Links">Liên kết học sinh</a> để thiết lập.</div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var student in Model.LinkedStudents)
+            {
+                <div class="col-md-6">
+                    <article class="card border-0 shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center gap-3 mb-4">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:52px;height:52px"><i class="bi bi-person-fill fs-4"></i></div>
+                                <div><h4 class="fw-bold mb-1">@student.FullName</h4><div class="text-muted small">@student.Email</div><div class="text-muted small">Liên kết từ @(student.RespondedAt?.ToLocalTime().ToString("dd/MM/yyyy"))</div></div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6"><a asp-controller="ParentAcademic" asp-action="Comments" asp-route-studentId="@student.StudentId" class="btn btn-outline-primary w-100"><i class="bi bi-chat-left-text me-1"></i>Nhận xét</a></div>
+                                <div class="col-6"><a asp-controller="ParentAcademic" asp-action="Timetable" asp-route-studentId="@student.StudentId" class="btn btn-outline-success w-100"><i class="bi bi-calendar3 me-1"></i>Lịch học</a></div>
+                                <div class="col-6"><a asp-controller="ParentAcademic" asp-action="Attendance" asp-route-studentId="@student.StudentId" class="btn btn-outline-info w-100"><i class="bi bi-person-check me-1"></i>Điểm danh</a></div>
+                                <div class="col-6"><a asp-controller="ParentAcademic" asp-action="QuizResults" asp-route-studentId="@student.StudentId" class="btn btn-outline-warning w-100"><i class="bi bi-bar-chart me-1"></i>Điểm Quiz</a></div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+    }
+</div>
