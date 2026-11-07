@@ -24,7 +24,7 @@ namespace EduCenterManagement.Controllers.Student
             var model = await _quizService.GetQuizListAsync(userId);
             if (model == null) return Forbid();
 
-            return View("~/Views/StudentQuiz/Index.cshtml", model);
+            return View("~/Views/Student/StudentQuiz/Index.cshtml", model);
         }
 
         // POST: /StudentQuiz/Start/{id}
@@ -61,7 +61,7 @@ namespace EduCenterManagement.Controllers.Student
                 return RedirectToAction(nameof(Index));
             }
 
-            return View("~/Views/StudentQuiz/Take.cshtml", model);
+            return View("~/Views/Student/StudentQuiz/Take.cshtml", model);
         }
 
         // POST: /StudentQuiz/Submit/{attemptId}
@@ -95,7 +95,7 @@ namespace EduCenterManagement.Controllers.Student
                 return RedirectToAction(nameof(Index));
             }
 
-            return View("~/Views/StudentQuiz/Result.cshtml", model);
+            return View("~/Views/Student/StudentQuiz/Result.cshtml", model);
         }
 
         private bool TryGetUserId(out int userId)

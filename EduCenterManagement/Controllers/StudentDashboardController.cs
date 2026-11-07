@@ -62,7 +62,7 @@ namespace EduCenterManagement.Controllers
                 })
                 .ToListAsync();
 
-            return View("~/Views/StudentDashboard/Index.cshtml", new StudentDashboardViewModel
+            return View("~/Views/Student/StudentDashboard/Index.cshtml", new StudentDashboardViewModel
             {
                 FullName = student.FullName,
                 Links = links,
