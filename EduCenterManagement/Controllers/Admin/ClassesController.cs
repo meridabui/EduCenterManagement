@@ -30,9 +30,9 @@ namespace EduCenterManagement.Controllers.Admin
         // =========================================================
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? subjectId = null, int? teacherId = null)
         {
-            var classes = await BuildIndexAsync();
+            var classes = await BuildIndexAsync(subjectId, teacherId);
 
             return View("~/Views/Admin/Classes/Index.cshtml", classes);
         }
@@ -983,11 +983,26 @@ namespace EduCenterManagement.Controllers.Admin
         // HELPERS
         // =========================================================
 
-        private async Task<List<Class>> BuildIndexAsync()
+        private async Task<List<Class>> BuildIndexAsync(int? subjectId = null, int? teacherId = null)
         {
             await LoadFormDataAsync();
 
-            return await _context.Classes
+            // Filters include inactive records so historical classes remain searchable.
+            ViewBag.FilterSubjects = new SelectList(await _context.Subjects.AsNoTracking()
+                .OrderBy(s => s.Name).ToListAsync(), nameof(Subject.Id), nameof(Subject.Name), subjectId);
+            ViewBag.FilterTeachers = new SelectList(await _context.TeacherProfiles.AsNoTracking()
+                .OrderBy(t => t.FullName).ToListAsync(), nameof(TeacherProfile.Id), nameof(TeacherProfile.FullName), teacherId);
+            ViewBag.HasClassFilters = subjectId.HasValue || teacherId.HasValue;
+
+            var query = _context.Classes
+                .AsNoTracking()
+                .AsQueryable();
+            if (subjectId.HasValue)
+                query = query.Where(c => c.SubjectId == subjectId.Value);
+            if (teacherId.HasValue)
+                query = query.Where(c => c.TeacherId == teacherId.Value);
+
+            return await query
                 .AsNoTracking()
                 .Include(c => c.Subject)
                 .Include(c => c.Teacher)
