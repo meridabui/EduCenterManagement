@@ -1,0 +1,278 @@
+﻿@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Teacher.Quiz.TeacherQuizListViewModel
+
+@{
+    ViewData["Title"] = "Ngân hàng & Quản lý bài Quiz";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-question-circle-fill text-primary me-2"></i>Quản lý đề thi & Quiz
+            </h2>
+            <p class="text-muted mb-0">
+                Giáo viên: <strong>@Model.CurrentTeacherName</strong> | Ngân hàng đề thi trắc nghiệm trung tâm
+            </p>
+        </div>
+        <div>
+            <a asp-controller="TeacherQuiz" asp-action="Create" class="btn btn-primary px-3 shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Tạo bài Quiz mới
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- Tabs phân loại Quiz -->
+    <ul class="nav nav-pills mb-3 border-bottom pb-2">
+        <li class="nav-item">
+            <a class="nav-link @(Model.CurrentFilter == "my" ? "active" : "")"
+               asp-controller="TeacherQuiz" asp-action="QuizList"
+               asp-route-filter="my" asp-route-subjectId="@Model.SelectedSubjectId" asp-route-search="@Model.SearchQuery">
+                <i class="bi bi-person-check me-1"></i> Quiz của tôi
+                <span class="badge @(Model.CurrentFilter == "my" ? "bg-light text-primary" : "bg-primary-subtle text-primary") ms-1">
+                    @Model.TotalMyQuizzes
+                </span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(Model.CurrentFilter == "others" ? "active" : "")"
+               asp-controller="TeacherQuiz" asp-action="QuizList"
+               asp-route-filter="others" asp-route-subjectId="@Model.SelectedSubjectId" asp-route-search="@Model.SearchQuery">
+                <i class="bi bi-people me-1"></i> Đề của đồng nghiệp
+                <span class="badge @(Model.CurrentFilter == "others" ? "bg-light text-primary" : "bg-secondary-subtle text-secondary") ms-1">
+                    @Model.TotalOtherQuizzes
+                </span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(Model.CurrentFilter == "all" ? "active" : "")"
+               asp-controller="TeacherQuiz" asp-action="QuizList"
+               asp-route-filter="all" asp-route-subjectId="@Model.SelectedSubjectId" asp-route-search="@Model.SearchQuery">
+                <i class="bi bi-collection me-1"></i> Tất cả bài Quiz
+                <span class="badge @(Model.CurrentFilter == "all" ? "bg-light text-primary" : "bg-secondary-subtle text-secondary") ms-1">
+                    @Model.TotalAllQuizzes
+                </span>
+            </a>
+        </li>
+    </ul>
+
+    <!-- Thanh công cụ tìm kiếm & bộ lọc -->
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="get" asp-controller="TeacherQuiz" asp-action="QuizList" class="row g-2 align-items-center">
+                <input type="hidden" name="filter" value="@Model.CurrentFilter" />
+
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" value="@Model.SearchQuery" class="form-control border-start-0"
+                               placeholder="Tìm kiếm theo tiêu đề Quiz, lớp học hoặc tên giáo viên..." />
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <select name="subjectId" class="form-select">
+                        <option value="">-- Tất cả môn học --</option>
+                        @foreach (var sub in Model.Subjects)
+                        {
+                            <option value="@sub.Value" selected="@(sub.Selected ? "selected" : null)">@sub.Text</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-funnel"></i> Lọc
+                    </button>
+                    @if (Model.SelectedSubjectId.HasValue || !string.IsNullOrWhiteSpace(Model.SearchQuery))
+                    {
+                        <a asp-controller="TeacherQuiz" asp-action="QuizList" asp-route-filter="@Model.CurrentFilter" class="btn btn-light" title="Bỏ lọc">
+                            <i class="bi bi-x-circle"></i>
+                        </a>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách Quiz -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 28%;">Tiêu đề Quiz</th>
+                            <th style="width: 18%;">Môn & Lớp học</th>
+                            <th style="width: 15%;">Người ra đề</th>
+                            <th style="width: 14%;">Thời lượng & Hạn nộp</th>
+                            <th style="width: 10%;">Trạng thái</th>
+                            <th class="pe-3 text-end" style="width: 15%;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Quizzes.Any())
+                        {
+                            foreach (var item in Model.Quizzes)
+                            {
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary-subtle text-primary rounded p-2 me-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                                <i class="bi bi-file-earmark-text fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <a asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@item.Id"
+                                                   class="fw-bold text-decoration-none text-dark hover-primary fs-6">
+                                                    @item.Title
+                                                </a>
+                                                <div class="small text-muted">
+                                                    📝 @item.QuestionCount câu hỏi (@item.TotalPoints.ToString("0.##") điểm) | 
+                                                    👥 @item.SubmittedAttemptsCount lượt nộp
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-primary">@item.SubjectName</div>
+                                        <div class="small text-muted">
+                                            Lớp: <strong>@item.ClassName</strong>
+                                            @if (item.SessionNumber.HasValue)
+                                            {
+                                                <span class="text-secondary">(Buổi @item.SessionNumber.Value)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-secondary border ms-1">Quiz chung</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (item.IsMine)
+                                        {
+                                            <span class="badge bg-primary px-2 py-1">
+                                                <i class="bi bi-person-check-fill me-1"></i>Tôi (Chính tôi)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <div class="fw-semibold text-dark">
+                                                <i class="bi bi-person-badge text-secondary me-1"></i>@item.CreatedByTeacherName
+                                            </div>
+                                            <span class="badge bg-light text-secondary border">Đồng nghiệp</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            ⏰ <strong>@item.DurationMinutes phút</strong> (@item.MaxAttempts lần làm)
+                                        </div>
+                                        <div class="small text-muted">
+                                            Hạn: @item.AvailableUntil.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @switch (item.Status)
+                                        {
+                                            case QuizStatus.Published:
+                                                @if (item.IsActiveNow)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                                                        <i class="bi bi-play-circle me-1"></i>Đang mở thi
+                                                    </span>
+                                                }
+                                                else if (DateTime.UtcNow < item.AvailableFrom)
+                                                {
+                                                    <span class="badge bg-info-subtle text-info border border-info px-2 py-1">
+                                                        <i class="bi bi-clock me-1"></i>Chưa tới giờ
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+                                                        <i class="bi bi-calendar-x me-1"></i>Hết hạn
+                                                    </span>
+                                                }
+                                                break;
+                                            case QuizStatus.Closed:
+                                                <span class="badge bg-dark-subtle text-dark border px-2 py-1">
+                                                    <i class="bi bi-lock me-1"></i>Đã đóng
+                                                </span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-1">
+                                                    <i class="bi bi-pencil me-1"></i>Bản nháp
+                                                </span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td class="pe-3 text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@item.Id"
+                                               class="btn btn-outline-primary" title="Xem đề thi & đáp án">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+
+                                            @if (item.IsMine)
+                                            {
+                                                <a asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@item.Id" asp-route-tab="results"
+                                                   class="btn btn-outline-success" title="Xem điểm học sinh">
+                                                    <i class="bi bi-trophy"></i>
+                                                </a>
+                                                <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi và lượt nộp sẽ bị xóa.');">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-outline-danger" title="Xóa Quiz">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <a asp-controller="TeacherQuiz" asp-action="Clone" asp-route-id="@item.Id"
+                                                   class="btn btn-outline-secondary" title="Nhân bản đề thi này sang lớp của tôi">
+                                                    <i class="bi bi-copy"></i> Copy
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                                        <p class="fs-6 mb-1">Chưa có bài Quiz nào phù hợp với bộ lọc hiện tại.</p>
+                                        <a asp-controller="TeacherQuiz" asp-action="Create" class="btn btn-sm btn-primary mt-2">
+                                            Tạo bài Quiz đầu tiên
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

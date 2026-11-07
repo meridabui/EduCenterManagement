@@ -1,0 +1,296 @@
+@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Student.WeeklyTimetableViewModel
+
+@{
+    ViewData["Title"] = "Thời khóa biểu của tôi";
+    int currentOffset = (int)(ViewBag.WeekOffset ?? 0);
+    string[] dayNames = new string[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật" };
+    var today = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<style>
+    .timetable-table {
+        table-layout: fixed;
+        width: 100%;
+        background-color: #fff;
+    }
+    .timetable-table th, .timetable-table td {
+        vertical-align: top;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+    }
+    .slot-column {
+        width: 120px;
+        background-color: #f8f9fa;
+        text-align: center;
+        vertical-align: middle !important;
+    }
+    .day-column {
+        min-width: 155px;
+    }
+    .today-header {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+    .today-cell {
+        background-color: #f0f7ff;
+    }
+    .session-card {
+        border-radius: 6px;
+        border-left: 4px solid #0d6efd;
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        padding: 8px;
+        margin-bottom: 6px;
+        transition: transform 0.1s ease;
+    }
+    .session-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.12);
+    }
+    .empty-slot {
+        color: #adb5bd;
+        font-size: 0.85rem;
+        text-align: center;
+        padding-top: 25px;
+        font-style: italic;
+    }
+</style>
+
+<div class="container-fluid mt-3 px-4">
+    <!-- Top Bar theo mẫu: [Logo ECM] THỜI KHÓA BIỂU CỦA TÔI  [Nhập mã PH] [Thông báo] [Học sinh: Nam] -->
+    <div class="card shadow-sm border-0 mb-3 bg-white">
+        <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary fs-5 px-3 py-2 fw-bold rounded-3">ECM</span>
+                <h4 class="h5 fw-bold text-dark mb-0 ms-2 text-uppercase">
+                    <i class="bi bi-calendar3 me-1 text-primary"></i> Thời Khóa Biểu Của Tôi
+                </h4>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a asp-controller="StudentDashboard" asp-action="Index" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-key me-1"></i> Nhập mã PH
+                </a>
+
+                <a asp-controller="StudentDashboard" asp-action="Index" class="btn btn-outline-secondary btn-sm position-relative">
+                    <i class="bi bi-bell"></i> Thông báo
+                    @if (Model.UnreadNotificationCount > 0)
+                    {
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            @Model.UnreadNotificationCount
+                        </span>
+                    }
+                </a>
+
+                <div class="border-start ps-3 ms-2 d-flex align-items-center">
+                    <div class="bg-primary-subtle text-primary rounded-circle p-2 me-2 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div>
+                        <span class="small text-muted d-block" style="line-height: 1;">Học sinh</span>
+                        <strong class="text-dark small">@Model.StudentName</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh điều hướng tuần theo mẫu: < Tuần trước   Tuần: 19/10/2026 - 25/10/2026   Tuần sau >   [Hôm nay] -->
+    <div class="card shadow-sm border-0 mb-3 bg-light">
+        <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <a asp-action="Index" asp-route-weekOffset="@(currentOffset - 1)" class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-chevron-left"></i> Tuần trước
+                </a>
+                <span class="fw-bold text-dark mx-2 fs-6">
+                    Tuần: @Model.WeekStartDate.ToString("dd/MM/yyyy") - @Model.WeekEndDate.ToString("dd/MM/yyyy")
+                </span>
+                <a asp-action="Index" asp-route-weekOffset="@(currentOffset + 1)" class="btn btn-sm btn-outline-dark">
+                    Tuần sau <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
+                <a asp-action="Index" asp-route-weekOffset="0" class="btn btn-sm @(currentOffset == 0 ? "btn-primary" : "btn-outline-primary")">
+                    <i class="bi bi-calendar-event me-1"></i> Hôm nay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] is string successMessage)
+    {
+        <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@successMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] is string errorMessage)
+    {
+        <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Ma Trận Thời Khóa Biểu (Slot x Ngày trong tuần) -->
+    <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="timetable-table table-bordered mb-0">
+                <thead>
+                    <tr class="text-center align-middle">
+                        <th class="slot-column bg-light py-2">
+                            <span class="fw-bold text-dark">Ca học</span>
+                        </th>
+                        @for (int i = 0; i < 7; i++)
+                        {
+                            var date = Model.DaysOfWeek[i];
+                            var isToday = date == today;
+                            <th class="day-column py-2 @(isToday ? "today-header" : "bg-light")">
+                                <div class="fw-bold">@dayNames[i]</div>
+                                <div class="small @(isToday ? "text-light" : "text-muted")">(@date.ToString("dd/MM"))</div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.TimeSlots.Any())
+                    {
+                        <!-- Fallback nếu trung tâm chưa cấu hình bảng TimeSlot -->
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                Hệ thống chưa cấu hình ca học (TimeSlots).
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var slot in Model.TimeSlots)
+                        {
+                            <tr>
+                                <!-- Cột Ca học -->
+                                <td class="slot-column">
+                                    <div class="fw-bold text-primary">@slot.Name</div>
+                                    <div class="text-muted small">@slot.StartTime.ToString("HH:mm") - @slot.EndTime.ToString("HH:mm")</div>
+                                </td>
+
+                                <!-- 7 Cột từ Thứ 2 đến Chủ Nhật -->
+                                @for (int i = 0; i < 7; i++)
+                                {
+                                    var date = Model.DaysOfWeek[i];
+                                    var isToday = date == today;
+                                    var cellSessions = Model.Sessions.Where(s =>
+                                        s.SessionDate == date &&
+                                        (s.MatchedTimeSlotId == slot.SlotId ||
+                                         (s.StartsAt >= slot.StartTime && s.StartsAt < slot.EndTime))
+                                    ).ToList();
+
+                                    <td class="@(isToday ? "today-cell" : "")" style="min-height: 120px;">
+                                        @if (!cellSessions.Any())
+                                        {
+                                            <div class="empty-slot">(Trống)</div>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var s in cellSessions)
+                                            {
+                                                <div class="session-card">
+                                                    <!-- Môn học & Tên lớp -->
+                                                    <div class="fw-bold text-primary text-truncate" title="@s.ClassName">
+                                                        [@s.SubjectName - @s.ClassName]
+                                                    </div>
+
+                                                    <!-- Giáo viên -->
+                                                    <div class="small text-dark mb-1">
+                                                        <strong>GV:</strong> @s.TeacherName
+                                                    </div>
+
+                                                    <!-- Điểm danh -->
+                                                    <div class="small mb-2">
+                                                        <strong>Điểm danh:</strong>
+                                                        @if (s.AttendanceStatus == AttendanceStatus.Present)
+                                                        {
+                                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                                <i class="bi bi-check-circle"></i> Có mặt
+                                                            </span>
+                                                        }
+                                                        else if (s.AttendanceStatus == AttendanceStatus.Absent)
+                                                        {
+                                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                                <i class="bi bi-x-circle"></i> Vắng mặt
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            @if (s.HasTakenPlace)
+                                                            {
+                                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-dark">
+                                                                    Chưa điểm danh
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                                                    Chưa diễn ra
+                                                                </span>
+                                                            }
+                                                        }
+                                                    </div>
+
+                                                    <!-- Nút hành động: [Tải Slide] [Quiz] -->
+                                                    <div class="d-flex flex-wrap gap-1 pt-1 border-top">
+                                                        @if (s.SlideCount > 0)
+                                                        {
+                                                            if (s.FirstSlideId.HasValue)
+                                                            {
+                                                                <a asp-action="DownloadSlide" asp-route-slideId="@s.FirstSlideId.Value" class="btn btn-xs btn-outline-success py-0 px-2" style="font-size: 0.75rem;" title="Tải Slide bài giảng">
+                                                                    <i class="bi bi-cloud-arrow-down"></i> Tải Slide
+                                                                </a>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <a asp-action="ClassDetail" asp-route-id="@s.ClassId" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" title="Xem chi tiết lớp">
+                                                                Chi tiết
+                                                            </a>
+                                                        }
+
+                                                        @if (s.QuizCount > 0)
+                                                        {
+                                                            if (s.HasTakenPlace)
+                                                            {
+                                                                if (s.IsQuizTaken)
+                                                                {
+                                                                    <span class="badge bg-light text-muted border py-1" style="font-size: 0.7rem;">
+                                                                        Đã làm Quiz
+                                                                    </span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <a href="javascript:void(0)" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 0.75rem;" title="Làm bài kiểm tra">
+                                                                        <i class="bi bi-pencil-square"></i> Quiz
+                                                                    </a>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-light text-muted border py-1" style="font-size: 0.7rem;" title="Quiz chỉ mở sau khi buổi học kết thúc (BR26)">
+                                                                    Quiz (Khóa)
+                                                                </span>
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

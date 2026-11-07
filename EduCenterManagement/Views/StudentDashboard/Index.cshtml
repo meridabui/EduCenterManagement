@@ -1,4 +1,4 @@
-﻿@using EduCenterManagement.Enums
+@using EduCenterManagement.Enums
 @model EduCenterManagement.ViewModels.Dashboard.StudentDashboardViewModel
 
 @{
@@ -6,8 +6,15 @@
 }
 
 <div class="container mt-4" style="max-width: 900px;">
-    <h2 class="mb-1">Xin chào, @Model.FullName</h2>
-    <p class="text-muted">Liên kết với phụ huynh để được đăng ký lớp học.</p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Xin chào, @Model.FullName</h2>
+            <p class="text-muted mb-0">Liên kết với phụ huynh để được đăng ký lớp học.</p>
+        </div>
+        <a asp-controller="StudentTimetable" asp-action="Index" class="btn btn-outline-primary">
+            <i class="bi bi-calendar3 me-1"></i> Xem Thời Khóa Biểu Tuần
+        </a>
+    </div>
 
 @if (TempData["Success"] is string successMessage)
 {

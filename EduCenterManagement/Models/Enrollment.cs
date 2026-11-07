@@ -20,7 +20,7 @@ namespace EduCenterManagement.Models
         [Required]
         public int RegisteredByParentId { get; set; }
 
-        public EnrollmentStatus Status { get; set; } = EnrollmentStatus.Pending;
+        public EnrollmentStatus Status { get; set; } = EnrollmentStatus.PendingPayment;
         public DateTime? ReservedUntil { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

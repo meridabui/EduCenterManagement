@@ -1,0 +1,289 @@
+@model EduCenterManagement.ViewModels.Teacher.Slide.SessionSlideListViewModel
+
+@{
+    ViewData["Title"] = $"Tài liệu Buổi {Model.SessionNumber} - {Model.ClassName}";
+}
+
+<div class="container-fluid py-2">
+    <!-- Breadcrumb & Back buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a asp-action="ClassSessionPickerView" asp-route-classId="@Model.ClassId" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="bi bi-arrow-left me-1"></i>Chọn buổi học khác
+            </a>
+            <a asp-controller="Teacher" asp-action="Sessions" asp-route-id="@Model.ClassId" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-calendar-event me-1"></i>Lộ trình lớp @Model.ClassName
+            </a>
+        </div>
+        <div>
+            <a asp-controller="TeacherAttendance" asp-action="Sheet" asp-route-sessionId="@Model.SessionId" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-check2-square me-1"></i>Sang điểm danh buổi này
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- Session Info Card -->
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <span class="badge bg-primary px-3 py-2 mb-2 fs-6">
+                        Buổi @Model.SessionNumber
+                    </span>
+                    <h3 class="fw-bold mb-1">Buổi học số @Model.SessionNumber</h3>
+                    <div class="text-muted d-flex flex-wrap gap-3 mt-2">
+                        <span><i class="bi bi-door-open me-1 text-primary"></i>Lớp: <strong>@Model.ClassName</strong></span>
+                        <span><i class="bi bi-book me-1 text-info"></i>Môn: <strong>@Model.SubjectName</strong></span>
+                        <span><i class="bi bi-calendar3 me-1 text-success"></i>Ngày: <strong>@Model.SessionDate.ToString("dd/MM/yyyy")</strong></span>
+                        <span><i class="bi bi-clock me-1 text-warning"></i>Thời gian: <strong>@Model.TimeRange</strong></span>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="p-3 bg-light rounded border text-center d-inline-block">
+                        <div class="text-muted small">Tổng tài liệu đã tải lên</div>
+                        <div class="h3 fw-bold text-primary mb-0">@Model.Slides.Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Cột bên trái: Danh sách Slide & Tài liệu -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 bg-white h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-files text-primary me-2"></i>Danh sách Tài liệu bài giảng
+                    </h5>
+                    <span class="badge bg-secondary">@Model.Slides.Count tệp tin</span>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.Slides == null || !Model.Slides.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-folder-x text-muted" style="font-size: 3.5rem;"></i>
+                            <h5 class="text-muted mt-3">Chưa có tài liệu hoặc slide nào được tải lên</h5>
+                            <p class="text-muted small mb-0">Hãy sử dụng biểu mẫu bên phải để thêm tài liệu cho buổi học này.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;" class="text-center">#</th>
+                                        <th>Tài liệu</th>
+                                        <th>Kích thước</th>
+                                        <th>Ngày tải</th>
+                                        <th style="width: 130px;" class="text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{ int idx = 1; }
+                                    @foreach (var slide in Model.Slides)
+                                    {
+                                        <tr>
+                                            <td class="text-center text-muted fw-bold">@(idx++)</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-3 fs-3">
+                                                        @switch (slide.FileExtension)
+                                                        {
+                                                            case "pdf":
+                                                                <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                                                break;
+                                                            case "ppt":
+                                                            case "pptx":
+                                                                <i class="bi bi-file-earmark-ppt text-warning"></i>
+                                                                break;
+                                                            case "doc":
+                                                            case "docx":
+                                                                <i class="bi bi-file-earmark-word text-primary"></i>
+                                                                break;
+                                                            case "xls":
+                                                            case "xlsx":
+                                                                <i class="bi bi-file-earmark-excel text-success"></i>
+                                                                break;
+                                                            case "zip":
+                                                            case "rar":
+                                                            case "7z":
+                                                                <i class="bi bi-file-earmark-zip text-secondary"></i>
+                                                                break;
+                                                            default:
+                                                                <i class="bi bi-file-earmark-text text-info"></i>
+                                                                break;
+                                                        }
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark">@slide.Title</div>
+                                                        <small class="text-muted text-break">@slide.OriginalFileName</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border">
+                                                    @slide.FormattedFileSize
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    @slide.UploadedAt.ToString("dd/MM/yyyy HH:mm")
+                                                </small>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="d-flex justify-content-center gap-1">
+                                                    <!-- Nút Tải về -->
+                                                    <a asp-action="Download" asp-route-id="@slide.Id" class="btn btn-sm btn-outline-primary" title="Tải xuống tài liệu">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                    <!-- Nút Xóa -->
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Xóa tài liệu"
+                                                            data-bs-toggle="modal" data-bs-target="#deleteModal-@slide.Id">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+
+                                                <!-- Modal Xác nhận xóa -->
+                                                <div class="modal fade" id="deleteModal-@slide.Id" tabindex="-1" aria-labelledby="modalLabel-@slide.Id" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="modalLabel-@slide.Id">
+                                                                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Xác nhận xóa tài liệu
+                                                                </h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                                            </div>
+                                                            <div class="modal-body text-start">
+                                                                Bạn có chắc chắn muốn xóa tài liệu <strong>@slide.Title</strong> (@slide.OriginalFileName)?
+                                                                <p class="text-danger small mt-2 mb-0">Hành động này sẽ xóa vĩnh viễn tệp tin khỏi hệ thống và không thể khôi phục.</p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                                <form asp-action="Delete" asp-route-id="@slide.Id" method="post" class="d-inline">
+                                                                    <input type="hidden" name="sessionId" value="@Model.SessionId" />
+                                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                                        <i class="bi bi-trash me-1"></i>Xác nhận Xóa
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột bên phải: Biểu mẫu Upload Slide mới -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 bg-white">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-cloud-arrow-up text-success me-2"></i>Tải lên tài liệu mới
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="SessionId" value="@Model.SessionId" />
+
+                        <!-- Tiêu đề Slide -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Tiêu đề tài liệu <span class="text-danger">*</span>
+                            </label>
+                            <input name="Title" id="uploadTitleInput" class="form-control" placeholder="Ví dụ: Slide bài 1 - Tổng quan môn học..." required maxlength="200" />
+                        </div>
+
+                        <!-- Chọn file -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Chọn tệp tin <span class="text-danger">*</span>
+                            </label>
+                            <input name="File" type="file" class="form-control" 
+                                   accept=".pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls,.zip,.rar,.7z" required id="fileUploadInput" />
+                            <div class="form-text small mt-1">
+                                <i class="bi bi-info-circle me-1"></i>Hỗ trợ: PDF, PowerPoint (.pptx, .ppt), Word (.docx, .doc), Excel (.xlsx), Nén (.zip, .rar). Tối đa: <strong>50MB</strong>.
+                            </div>
+                        </div>
+
+                        <!-- Preview file size -->
+                        <div id="fileInfoPreview" class="alert alert-light border d-none py-2 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-file-check fs-4 text-success me-2"></i>
+                                <div class="small">
+                                    <div class="fw-semibold" id="fileNamePreview"></div>
+                                    <div class="text-muted" id="fileSizePreview"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nút Upload -->
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-success btn-lg shadow-sm" id="btnSubmitUpload">
+                                <i class="bi bi-upload me-2"></i>Bắt đầu Tải lên
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Hiển thị preview tên và kích thước file khi người dùng chọn file
+        document.getElementById('fileUploadInput').addEventListener('change', function(e) {
+            var file = this.files[0];
+            var previewBox = document.getElementById('fileInfoPreview');
+            var nameEl = document.getElementById('fileNamePreview');
+            var sizeEl = document.getElementById('fileSizePreview');
+
+            if (file) {
+                previewBox.classList.remove('d-none');
+                nameEl.textContent = file.name;
+                var sizeStr = '';
+                if (file.size >= 1024 * 1024) {
+                    sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+                } else {
+                    sizeStr = (file.size / 1024).toFixed(2) + ' KB';
+                }
+                sizeEl.textContent = 'Dung lượng: ' + sizeStr;
+
+                // Tự động điền tiêu đề nếu ô tiêu đề còn trống
+                var titleInput = document.getElementById('uploadTitleInput');
+                if (titleInput && !titleInput.value.trim()) {
+                    var baseName = file.name.replace(/\.[^/.]+$/, "");
+                    titleInput.value = baseName;
+                }
+            } else {
+                previewBox.classList.add('d-none');
+            }
+        });
+    </script>
+}

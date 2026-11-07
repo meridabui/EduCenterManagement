@@ -15,6 +15,21 @@ builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
 
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddHostedService<EnrollmentExpiryWorker>();
+// Đăng ký Repository & Service cho phân hệ Student
+builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentTimetableRepository, EduCenterManagement.Repositories.Student.StudentTimetableRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentTimetableService, EduCenterManagement.Services.Student.StudentTimetableService>();
+
+// Đăng ký Repository & Service cho phân hệ Teacher
+builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherRepository, EduCenterManagement.Repositories.Teacher.TeacherRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherService, EduCenterManagement.Services.Teacher.TeacherService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherQuizRepository, EduCenterManagement.Repositories.Teacher.TeacherQuizRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherQuizService, EduCenterManagement.Services.Teacher.TeacherQuizService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherAttendanceRepository, EduCenterManagement.Repositories.Teacher.TeacherAttendanceRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherAttendanceService, EduCenterManagement.Services.Teacher.TeacherAttendanceService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherSlideRepository, EduCenterManagement.Repositories.Teacher.TeacherSlideRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherSlideService, EduCenterManagement.Services.Teacher.TeacherSlideService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherCommentRepository, EduCenterManagement.Repositories.Teacher.TeacherCommentRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherCommentService, EduCenterManagement.Services.Teacher.TeacherCommentService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(

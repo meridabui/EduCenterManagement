@@ -13,7 +13,7 @@
             Chỗ của học sinh đã được giữ. Vui lòng hoàn tất thanh toán trước khi hết thời gian giữ chỗ.
         </div>
     }
-    else if (Model.Status == EnrollmentStatus.Paid)
+    else if (Model.Status == EnrollmentStatus.Confirm)
     {
         <div class="alert alert-success">
             <h4 class="alert-heading">Đã thanh toán</h4>
@@ -47,13 +47,13 @@
                 <dd class="col-sm-8">
                     @switch (Model.Status)
                     {
-                        case EnrollmentStatus.Pending:
+                        case EnrollmentStatus.PendingPayment:
                             <span class="badge bg-warning text-dark">Chờ thanh toán</span>
                             break;
-                        case EnrollmentStatus.Paid:
+                        case EnrollmentStatus.Confirm:
                             <span class="badge bg-success">Đã thanh toán</span>
                             break;
-                        case EnrollmentStatus.Failed:
+                        case EnrollmentStatus.PaymentFailed:
                             <span class="badge bg-danger">Thanh toán thất bại</span>
                             break;
                         default:

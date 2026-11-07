@@ -1,4 +1,4 @@
-﻿
+
 using EduCenterManagement.Data;
 using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
@@ -335,6 +335,81 @@ namespace EduCenterManagement.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: /TimeSlots/GenerateDefaultSlots
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateDefaultSlots()
+        {
+            var defaultSlots = new List<(string Name, TimeOnly StartTime, TimeOnly EndTime)>
+            {
+                ("Slot 1", new TimeOnly(7, 0), new TimeOnly(9, 0)),
+                ("Slot 2", new TimeOnly(9, 0), new TimeOnly(11, 0)),
+                ("Slot 3", new TimeOnly(13, 0), new TimeOnly(15, 0)),
+                ("Slot 4", new TimeOnly(15, 0), new TimeOnly(17, 0)),
+                ("Slot 5", new TimeOnly(17, 0), new TimeOnly(19, 0)),
+                ("Slot 6", new TimeOnly(19, 0), new TimeOnly(21, 0))
+            };
+
+            var existingSlots = await _context.TimeSlots.ToListAsync();
+            var now = DateTime.UtcNow;
+            var addedSlots = new List<TimeSlot>();
+            var skippedNames = new List<string>();
+
+            foreach (var slot in defaultSlots)
+            {
+                // Kiểm tra nếu tên khung giờ đã tồn tại
+                bool nameExists = existingSlots.Any(e =>
+                    string.Equals(e.Name, slot.Name, StringComparison.OrdinalIgnoreCase));
+
+                // Kiểm tra nếu thời gian bị trùng hoặc chồng lấn với khung giờ đang active
+                bool overlaps = existingSlots.Any(e =>
+                    e.Status == TimeSlotStatus.Active &&
+                    slot.StartTime < e.EndTime &&
+                    slot.EndTime > e.StartTime);
+
+                if (nameExists || overlaps)
+                {
+                    skippedNames.Add(slot.Name);
+                    continue;
+                }
+
+                var newSlot = new TimeSlot
+                {
+                    Name = slot.Name,
+                    StartTime = slot.StartTime,
+                    EndTime = slot.EndTime,
+                    Status = TimeSlotStatus.Active,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                addedSlots.Add(newSlot);
+                existingSlots.Add(newSlot);
+            }
+
+            if (addedSlots.Count == 0)
+            {
+                TempData["ErrorMessage"] =
+                    "Tất cả 6 khung giờ mặc định (Slot 1 - Slot 6) đã tồn tại hoặc bị trùng lặp thời gian.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            _context.TimeSlots.AddRange(addedSlots);
+            await _context.SaveChangesAsync();
+
+            if (skippedNames.Count > 0)
+            {
+                TempData["SuccessMessage"] =
+                    $"Đã khởi tạo thành công {addedSlots.Count} khung giờ mặc định. (Bỏ qua: {string.Join(", ", skippedNames)} do đã tồn tại hoặc trùng lấn).";
+            }
+            else
+            {
+                TempData["SuccessMessage"] =
+                    $"Đã tự động khởi tạo thành công tất cả 6 khung giờ mặc định (Slot 1 đến Slot 6).";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
 
     }
 }

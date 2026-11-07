@@ -91,8 +91,8 @@ namespace EduCenterManagement.Controllers
             var heldByClass = await _context.Enrollments
                 .AsNoTracking()
                 .Where(e => classIds.Contains(e.ClassId) &&
-                            (e.Status == EnrollmentStatus.Paid ||
-                             (e.Status == EnrollmentStatus.Pending && e.ReservedUntil > now)))
+                            (e.Status == EnrollmentStatus.Confirm ||
+                             (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now)))
                 .GroupBy(e => e.ClassId)
                 .Select(g => new { ClassId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.ClassId, x => x.Count);
@@ -105,8 +105,8 @@ namespace EduCenterManagement.Controllers
                     .AsNoTracking()
                     .Where(e => e.StudentId == studentId.Value &&
                                 classIds.Contains(e.ClassId) &&
-                                (e.Status == EnrollmentStatus.Paid ||
-                                 (e.Status == EnrollmentStatus.Pending && e.ReservedUntil > now)))
+                                (e.Status == EnrollmentStatus.Confirm ||
+                                 (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now)))
                     .Select(e => e.ClassId)
                     .ToListAsync();
 
@@ -223,7 +223,7 @@ namespace EduCenterManagement.Controllers
                 Fee = enrollment.Class.Fee,
                 Status = enrollment.Status,
                 ReservedUntil = reservedUntil,
-                IsHoldActive = enrollment.Status == EnrollmentStatus.Pending &&
+                IsHoldActive = enrollment.Status == EnrollmentStatus.PendingPayment &&
                                reservedUntil.HasValue &&
                                reservedUntil.Value > DateTime.UtcNow
             });

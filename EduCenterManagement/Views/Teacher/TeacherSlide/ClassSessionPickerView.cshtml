@@ -1,0 +1,107 @@
+@model EduCenterManagement.ViewModels.Teacher.Slide.ClassSessionSlidePickerViewModel
+
+@{
+    ViewData["Title"] = "Chọn lớp & Buổi học để quản lý Slide / Tài liệu";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <!-- Header -->
+            <div class="mb-4">
+                <a asp-controller="Teacher" asp-action="AssignedClasses" class="btn btn-outline-secondary btn-sm mb-3">
+                    <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách lớp
+                </a>
+                <h2 class="mb-1">
+                    <i class="bi bi-file-earmark-slides text-primary me-2"></i>Quản lý Slide & Tài liệu buổi học
+                </h2>
+                <p class="text-muted">
+                    Giáo viên: <strong>@Model.TeacherName</strong> | Chọn lớp học và buổi học để tải lên hoặc xem danh sách tài liệu.
+                </p>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                </div>
+            }
+
+            <div class="card shadow-sm border-0 bg-white">
+                <div class="card-body p-4">
+                    <form method="get" id="pickerForm">
+                        <!-- Chọn Lớp học -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">1. Chọn Lớp học phụ trách <span class="text-danger">*</span></label>
+                            <select asp-for="SelectedClassId" asp-items="Model.Classes" class="form-select form-select-lg" id="classSelect">
+                                <option value="">-- Chọn lớp học --</option>
+                            </select>
+                        </div>
+
+                        <!-- Chọn Buổi học -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">2. Chọn Buổi học cần quản lý Slide <span class="text-danger">*</span></label>
+                            <select asp-for="SelectedSessionId" asp-items="Model.Sessions" class="form-select form-select-lg" id="sessionSelect">
+                                <option value="">-- Chọn buổi học --</option>
+                            </select>
+                        </div>
+
+                        <!-- Nút xem Slide -->
+                        <div class="d-grid gap-2 pt-2 border-top">
+                            <button type="button" id="btnGoToSlides" class="btn btn-primary btn-lg shadow-sm">
+                                <i class="bi bi-folder2-open me-2"></i>Xem & Tải lên tài liệu buổi học
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('classSelect').addEventListener('change', function() {
+            var classId = this.value;
+            var sessionSelect = document.getElementById('sessionSelect');
+            sessionSelect.innerHTML = '<option value="">-- Đang tải danh sách buổi học... --</option>';
+
+            if (!classId) {
+                sessionSelect.innerHTML = '<option value="">-- Chọn buổi học --</option>';
+                return;
+            }
+
+            fetch('/Teacher/TeacherSlide/GetSessionsByClass?classId=' + classId)
+                .then(response => response.json())
+                .then(data => {
+                    sessionSelect.innerHTML = '';
+                    if (!data || data.length === 0) {
+                        sessionSelect.innerHTML = '<option value="">-- Lớp chưa có lịch buổi học nào --</option>';
+                        return;
+                    }
+
+                    sessionSelect.innerHTML = '<option value="">-- Chọn buổi học --</option>';
+                    data.forEach(function(s) {
+                        var opt = document.createElement('option');
+                        opt.value = s.value || s.id;
+                        opt.textContent = s.text;
+                        sessionSelect.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    sessionSelect.innerHTML = '<option value="">-- Lỗi tải buổi học --</option>';
+                });
+        });
+
+        document.getElementById('btnGoToSlides').addEventListener('click', function() {
+            var sessionId = document.getElementById('sessionSelect').value;
+            if (!sessionId) {
+                alert('Vui lòng chọn buổi học trước khi tiếp tục.');
+                return;
+            }
+            window.location.href = '/Teacher/TeacherSlide/SessionSlides/' + sessionId;
+        });
+    </script>
+}
+

@@ -1,0 +1,142 @@
+@using EduCenterManagement.Enums
+@model EduCenterManagement.ViewModels.Teacher.Quiz.CreateQuizViewModel
+
+@{
+    ViewData["Title"] = "Tạo bài Quiz mới";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <a asp-controller="TeacherQuiz" asp-action="QuizList" class="btn btn-outline-secondary btn-sm mb-3">
+                    ⬅ Quay lại Ngân hàng Quiz
+                </a>
+                <h2 class="mb-1">Tạo bài Quiz mới</h2>
+                <p class="text-muted">Điền thông tin cơ bản của bài kiểm tra. Sau khi lưu, bạn có thể thêm danh sách câu hỏi trắc nghiệm.</p>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form asp-controller="TeacherQuiz" asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Chọn lớp học & buổi học -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="ClassId" class="form-label fw-semibold">Lớp học phụ trách <span class="text-danger">*</span></label>
+                                <select asp-for="ClassId" asp-items="Model.Classes" class="form-select" id="classSelect">
+                                    <option value="">-- Chọn lớp học --</option>
+                                </select>
+                                <span asp-validation-for="ClassId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="SessionId" class="form-label fw-semibold">
+                                    Gắn vào buổi học <span class="text-muted small fw-normal">(Không bắt buộc)</span>
+                                </label>
+                                <select asp-for="SessionId" asp-items="Model.Sessions" class="form-select" id="sessionSelect">
+                                    <option value="">-- Không gắn vào buổi học (Quiz chung của cả lớp) --</option>
+                                </select>
+                                <span asp-validation-for="SessionId" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Tiêu đề Quiz -->
+                        <div class="mb-3">
+                            <label asp-for="Title" class="form-label fw-semibold">Tiêu đề bài Quiz <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="Ví dụ: Quiz 15 phút - Cấu trúc điều khiển if/else" />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Thời lượng & Số lần làm -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="DurationMinutes" class="form-label fw-semibold">Thời lượng làm bài (Phút) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="1440" />
+                                    <span class="input-group-text">phút</span>
+                                </div>
+                                <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="MaxAttempts" class="form-label fw-semibold">Số lần làm tối đa <span class="text-danger">*</span></label>
+                                <input asp-for="MaxAttempts" class="form-control" type="number" min="1" max="100" />
+                                <span asp-validation-for="MaxAttempts" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Thời gian mở & đóng -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="AvailableFrom" class="form-label fw-semibold">Bắt đầu mở lúc <span class="text-danger">*</span></label>
+                                <input asp-for="AvailableFrom" class="form-control" type="datetime-local"
+                                       value="@Model.AvailableFrom.ToString("yyyy-MM-ddTHH:mm")" />
+                                <span asp-validation-for="AvailableFrom" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="AvailableUntil" class="form-label fw-semibold">Hết hạn đóng lúc <span class="text-danger">*</span></label>
+                                <input asp-for="AvailableUntil" class="form-control" type="datetime-local"
+                                       value="@Model.AvailableUntil.ToString("yyyy-MM-ddTHH:mm")" />
+                                <span asp-validation-for="AvailableUntil" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Trạng thái xuất bản -->
+                        <div class="mb-4">
+                            <label asp-for="Status" class="form-label fw-semibold">Trạng thái phát hành</label>
+                            <select asp-for="Status" class="form-select">
+                                <option value="@QuizStatus.Draft">Bản nháp (Chưa cho học sinh thấy)</option>
+                                <option value="@QuizStatus.Published">Xuất bản (Học sinh được phép làm trong khung giờ)</option>
+                            </select>
+                            <div class="form-text">Bạn có thể để dạng Bản nháp và sau khi thêm câu hỏi xong mới Xuất bản.</div>
+                        </div>
+
+                        <!-- Nút lưu -->
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a asp-controller="TeacherQuiz" asp-action="QuizList" class="btn btn-light">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-arrow-right-circle me-1"></i> Lưu & Tiếp tục soạn câu hỏi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('classSelect').addEventListener('change', function() {
+            var classId = this.value;
+            var sessionSelect = document.getElementById('sessionSelect');
+            sessionSelect.innerHTML = '<option value="">-- Đang tải buổi học... --</option>';
+
+            if (!classId) {
+                sessionSelect.innerHTML = '<option value="">-- Không gắn vào buổi học (Quiz chung của cả lớp) --</option>';
+                return;
+            }
+
+            fetch('/Teacher/TeacherQuiz/GetSessionsByClass?classId=' + classId)
+                .then(response => response.json())
+                .then(data => {
+                    sessionSelect.innerHTML = '';
+                    data.forEach(function(s) {
+                        var opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.text;
+                        sessionSelect.appendChild(opt);
+                    });
+                })
+                .catch(error => {
+                    sessionSelect.innerHTML = '<option value="">-- Lỗi tải danh sách --</option>';
+                });
+        });
+    </script>
+}

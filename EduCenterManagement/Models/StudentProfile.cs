@@ -1,4 +1,4 @@
-﻿
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -16,6 +16,8 @@ namespace EduCenterManagement.Models
         [Required]
         [MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
+
+        public DateOnly? DateOfBirth { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

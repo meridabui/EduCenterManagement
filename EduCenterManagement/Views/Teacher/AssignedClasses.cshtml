@@ -1,0 +1,147 @@
+@model EduCenterManagement.ViewModels.Teacher.AssignedClassesViewModel
+
+@{
+    ViewData["Title"] = "Lớp học được phân công";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Lớp học được phân công</h2>
+            <p class="text-muted mb-0">Giáo viên phụ trách: <strong>@Model.TeacherName</strong></p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Tên lớp</th>
+                            <th>Môn học</th>
+                            <th>Lịch học tuần</th>
+                            <th>Thời gian khóa học</th>
+                            <th>Sĩ số</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center pe-3">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Classes.Any())
+                        {
+                            foreach (var item in Model.Classes)
+                            {
+                                <tr>
+                                    <td class="ps-3">
+                                        <a asp-controller="Teacher"
+                                           asp-action="StudentList"
+                                           asp-route-classId="@item.ClassId"
+                                           class="fw-bold text-decoration-none text-primary fs-6">
+                                            @item.ClassName
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @item.SubjectName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (item.Schedules.Any())
+                                        {
+                                            foreach (var schedule in item.Schedules)
+                                            {
+                                                <div class="small text-secondary mb-1">
+                                                    📅 @schedule
+                                                </div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Chưa xếp lịch</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            @item.StartDate.ToString("dd/MM/yyyy") - @item.EndDate.ToString("dd/MM/yyyy")
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(item.CurrentStudents >= item.MaxStudents ? "bg-danger" : "bg-info text-dark")">
+                                            @item.CurrentStudents / @item.MaxStudents
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @switch (item.Status)
+                                        {
+                                            case EduCenterManagement.Enums.ClassStatus.Open:
+                                                <span class="badge bg-success">Mở đăng ký</span>
+                                                break;
+                                            case EduCenterManagement.Enums.ClassStatus.InProgress:
+                                                <span class="badge bg-primary">Đang học</span>
+                                                break;
+                                            case EduCenterManagement.Enums.ClassStatus.Draft:
+                                                <span class="badge bg-secondary">Bản nháp</span>
+                                                break;
+                                            case EduCenterManagement.Enums.ClassStatus.Completed:
+                                                <span class="badge bg-dark">Đã hoàn thành</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">@item.Status</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a asp-controller="Teacher"
+                                               asp-action="Sessions"
+                                               asp-route-classId="@item.ClassId"
+                                               class="btn btn-sm btn-outline-success"
+                                               title="Xem lộ trình các buổi học của lớp">
+                                                📅 Buổi học
+                                            </a>
+                                            <a asp-controller="Teacher"
+                                               asp-action="StudentList"
+                                               asp-route-classId="@item.ClassId"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Xem danh sách học sinh">
+                                                👥 Học sinh
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <p class="fs-5 mb-1">Hiện tại bạn chưa được phân công phụ trách lớp học nào.</p>
+                                        <small>Vui lòng liên hệ Admin nếu bạn cần kiểm tra lại lịch phân công.</small>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
