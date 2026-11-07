@@ -17,10 +17,24 @@ var active = string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(
 <a asp-controller="@item.Item1" asp-action="Index" class="admin-nav-link @(active ? "active" : "")" aria-current="@(active ? "page" : null)">@item.Item2</a>
 }
 </nav>
-<div class="admin-sidebar-note">EduCenter Management<br /><small>Quản lý vận hành trung tâm</small></div>
+<div class="admin-sidebar-note">
+    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="mb-3">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-outline-secondary w-100">Đăng xuất</button>
+    </form>
+    EduCenter Management<br /><small>Quản lý vận hành trung tâm</small>
+</div>
 </aside>
 <div class="admin-shell">
-<header class="admin-topbar"><button class="btn btn-outline-secondary admin-menu" type="button" aria-controls="admin-sidebar" aria-expanded="false">Menu</button><span>Không gian quản trị</span><span class="admin-role">Quản trị viên</span></header>
+<header class="admin-topbar">
+<button class="btn btn-outline-secondary admin-menu" type="button" aria-controls="admin-sidebar" aria-expanded="false">Menu</button>
+<span>Không gian quản trị</span>
+<span class="admin-role text-nowrap">Quản trị viên</span>
+<form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="m-0 flex-shrink-0">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">Đăng xuất</button>
+</form>
+</header>
 <main id="main-content" class="admin-content" tabindex="-1">@RenderBody()</main>
 <footer class="admin-footer">© 2026 EduCenter Management</footer>
 </div>
