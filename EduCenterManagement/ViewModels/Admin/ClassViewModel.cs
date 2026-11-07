@@ -32,7 +32,7 @@ namespace EduCenterManagement.ViewModels.Admin
         [Required(ErrorMessage = "Vui lòng chọn ngày kết thúc.")]
         [Display(Name = "Ngày kết thúc")]
         public DateOnly EndDate { get; set; }
-            = DateOnly.FromDateTime(DateTime.Today);
+            = DateOnly.FromDateTime(DateTime.Today).AddDays(1);
 
         [Range(1, 1000,
             ErrorMessage = "Sĩ số tối đa phải từ 1 đến 1000.")]
@@ -54,10 +54,17 @@ namespace EduCenterManagement.ViewModels.Admin
         public IEnumerable<ValidationResult> Validate(
             ValidationContext validationContext)
         {
-            if (EndDate < StartDate)
+            if (StartDate < DateOnly.FromDateTime(DateTime.Today))
             {
                 yield return new ValidationResult(
-                    "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.",
+                    "Ngày bắt đầu không được là ngày trong quá khứ.",
+                    new[] { nameof(StartDate) });
+            }
+
+            if (EndDate <= StartDate)
+            {
+                yield return new ValidationResult(
+                    "Ngày kết thúc phải sau ngày bắt đầu.",
                     new[] { nameof(EndDate) });
             }
 

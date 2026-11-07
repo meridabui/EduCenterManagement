@@ -284,7 +284,7 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
-            <form asp-controller="Classes" asp-action="Create" method="post" id="createClassForm">
+            <form asp-controller="Classes" asp-action="Create" method="post" id="createClassForm" data-class-dates>
                 @Html.AntiForgeryToken()
                 <div class="modal-body">
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" id="createValidationSummary"></div>
@@ -307,12 +307,13 @@
                         </div>
                         <div class="col-md-6">
                             <label for="StartDate" class="form-label fw-semibold">Ngày bắt đầu (*)</label>
-                            <input id="StartDate" name="StartDate" type="date" class="form-control form-control-lg fs-6" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <input id="StartDate" name="StartDate" type="date" class="form-control form-control-lg fs-6" value="@DateTime.Today.ToString("yyyy-MM-dd")" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <span class="text-danger small" data-valmsg-for="StartDate" aria-live="polite"></span>
                         </div>
                         <div class="col-md-6">
                             <label for="EndDate" class="form-label fw-semibold">Ngày kết thúc (*)</label>
-                            <input id="EndDate" name="EndDate" type="date" class="form-control form-control-lg fs-6" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
-                            <span class="text-danger small" data-valmsg-for="EndDate"></span>
+                            <input id="EndDate" name="EndDate" type="date" class="form-control form-control-lg fs-6" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
+                            <span class="text-danger small" data-valmsg-for="EndDate" aria-live="polite"></span>
                         </div>
                         <div class="col-md-6">
                             <label for="MaxStudents" class="form-label fw-semibold">Sĩ số tối đa (*)</label>
@@ -454,6 +455,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/class-dates.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const createForm = document.getElementById("createClassForm");
@@ -602,9 +604,9 @@
                     showScheduleError("Mỗi thứ chỉ được chọn một ca học.");
                     return;
                 }
-                if (endDate.value && startDate.value && endDate.value < startDate.value) {
+                if (endDate.value && startDate.value && endDate.value <= startDate.value) {
                     event.preventDefault();
-                    showScheduleError("Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.");
+                    showScheduleError("Ngày kết thúc phải sau ngày bắt đầu.");
                 }
             });
 
