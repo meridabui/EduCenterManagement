@@ -37,6 +37,8 @@ namespace EduCenterManagement.Repositories.Teacher
                 .AsNoTracking()
                 .Where(s => classIds.Contains(s.ClassId))
                 .Include(s => s.TimeSlot)
+                .Include(s => s.Class)
+                    .ThenInclude(c => c.Subject)
                 .OrderBy(s => s.DayOfWeek)
                 .ThenBy(s => s.TimeSlot.StartTime)
                 .ToListAsync();

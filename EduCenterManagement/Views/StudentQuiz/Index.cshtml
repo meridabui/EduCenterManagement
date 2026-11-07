@@ -1,0 +1,109 @@
+@using EduCenterManagement.ViewModels.Student
+@model StudentQuizListViewModel
+
+@{
+    ViewData["Title"] = "Bài Quiz của tôi";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 1050px;">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-ui-checks me-2 text-primary"></i>Bài Quiz của tôi</h3>
+            <div class="text-muted small">Các bài kiểm tra trắc nghiệm từ những lớp bạn đã thanh toán.</div>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]</div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>@TempData["Success"]</div>
+    }
+
+    @if (!Model.Quizzes.Any())
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                Hiện chưa có bài quiz nào cho các lớp của bạn.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var q in Model.Quizzes)
+            {
+                var (badgeClass, badgeText) = q.State switch
+                {
+                    StudentQuizState.InProgress => ("bg-warning-subtle text-warning-emphasis", "Đang làm dở"),
+                    StudentQuizState.Available => ("bg-success-subtle text-success-emphasis", "Đang mở"),
+                    StudentQuizState.Upcoming => ("bg-info-subtle text-info-emphasis", "Sắp mở"),
+                    StudentQuizState.Completed => ("bg-primary-subtle text-primary-emphasis", "Đã hết lượt"),
+                    _ => ("bg-secondary-subtle text-secondary-emphasis", "Đã kết thúc")
+                };
+
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <h5 class="fw-semibold mb-0">@q.Title</h5>
+                                <span class="badge @badgeClass border">@badgeText</span>
+                            </div>
+                            <div class="text-muted small mb-3">
+                                <i class="bi bi-people me-1"></i>@q.ClassName
+                                @if (!string.IsNullOrEmpty(q.SubjectName))
+                                {
+                                    <span> · @q.SubjectName</span>
+                                }
+                                @if (q.SessionNumber.HasValue)
+                                {
+                                    <span> · Buổi @q.SessionNumber</span>
+                                }
+                            </div>
+
+                            <ul class="list-unstyled small mb-3">
+                                <li><i class="bi bi-question-circle me-1"></i>@q.QuestionCount câu hỏi · @q.TotalPoints.ToString("0.##") điểm</li>
+                                <li><i class="bi bi-stopwatch me-1"></i>Thời gian làm: @q.DurationMinutes phút</li>
+                                <li><i class="bi bi-calendar-event me-1"></i>@q.AvailableFrom.ToString("dd/MM/yyyy HH:mm") – @q.AvailableUntil.ToString("dd/MM/yyyy HH:mm")</li>
+                                <li><i class="bi bi-arrow-repeat me-1"></i>Lượt làm: @q.AttemptsUsed / @q.MaxAttempts</li>
+                                @if (q.BestScore.HasValue)
+                                {
+                                    <li class="fw-semibold text-primary"><i class="bi bi-trophy me-1"></i>Điểm cao nhất: @q.BestScore.Value.ToString("0.##") / @q.TotalPoints.ToString("0.##")</li>
+                                }
+                            </ul>
+
+                            <div class="mt-auto d-flex gap-2 flex-wrap">
+                                @if (q.State == StudentQuizState.InProgress && q.InProgressAttemptId.HasValue)
+                                {
+                                    <a asp-action="Take" asp-route-id="@q.InProgressAttemptId" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-play-fill me-1"></i>Tiếp tục làm bài
+                                    </a>
+                                }
+                                else if (q.State == StudentQuizState.Available)
+                                {
+                                    <form asp-action="Start" asp-route-id="@q.QuizId" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bắt đầu làm bài? Thời gian @q.DurationMinutes phút sẽ được tính ngay.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-pencil-square me-1"></i>@(q.AttemptsUsed > 0 ? "Làm lại" : "Làm bài")
+                                        </button>
+                                    </form>
+                                }
+
+                                @if (q.LatestFinishedAttemptId.HasValue)
+                                {
+                                    <a asp-action="Result" asp-route-id="@q.LatestFinishedAttemptId" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-bar-chart me-1"></i>Xem kết quả
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
