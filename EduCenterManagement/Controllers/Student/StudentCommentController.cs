@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EduCenterManagement.Services.Student;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +25,7 @@ namespace EduCenterManagement.Controllers.Student
             var model = await _commentService.GetCommentsAsync(userId, classId);
             if (model == null) return Forbid();
 
-            return View("~/Views/Student/StudentComment/Index.cshtml", model);
+            return View("~/Views/StudentComment/Index.cshtml", model);
         }
     }
 }
