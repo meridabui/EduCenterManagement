@@ -22,6 +22,8 @@ builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentTime
 builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentTimetableService, EduCenterManagement.Services.Student.StudentTimetableService>();
 builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentQuizRepository, EduCenterManagement.Repositories.Student.StudentQuizRepository>();
 builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentQuizService, EduCenterManagement.Services.Student.StudentQuizService>();
+builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentCommentRepository, EduCenterManagement.Repositories.Student.StudentCommentRepository>();
+builder.Services.AddScoped<EduCenterManagement.Services.Student.IStudentCommentService, EduCenterManagement.Services.Student.StudentCommentService>();
 
 // Đăng ký Repository & Service cho phân hệ Teacher
 builder.Services.AddScoped<EduCenterManagement.Repositories.Teacher.ITeacherRepository, EduCenterManagement.Repositories.Teacher.TeacherRepository>();

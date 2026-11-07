@@ -41,7 +41,7 @@ namespace EduCenterManagement.Controllers.Student
             }
 
             ViewBag.WeekOffset = offset;
-            return View("~/Views/StudentDashboard/WeeklyTimetable.cshtml", viewModel);
+            return View("~/Views/Student/StudentDashboard/WeeklyTimetable.cshtml", viewModel);
         }
 
         // GET: /StudentTimetable/ClassDetail/{id}
@@ -60,7 +60,7 @@ namespace EduCenterManagement.Controllers.Student
                 return RedirectToAction(nameof(Index));
             }
 
-            return View("~/Views/StudentDashboard/ClassDetail.cshtml", viewModel);
+            return View("~/Views/Student/StudentDashboard/ClassDetail.cshtml", viewModel);
         }
 
         // GET: /StudentTimetable/DownloadSlide/{slideId}
