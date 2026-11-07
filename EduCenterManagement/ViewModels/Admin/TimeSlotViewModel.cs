@@ -19,5 +19,6 @@ namespace EduCenterManagement.ViewModels.Admin
         [Required(ErrorMessage = "Vui lòng nhập giờ kết thúc.")]
         [Display(Name = "Giờ kết thúc")]
         public TimeOnly EndTime { get; set; }
+        //
     }
 }

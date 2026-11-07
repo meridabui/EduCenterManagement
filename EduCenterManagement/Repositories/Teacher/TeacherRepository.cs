@@ -116,28 +116,6 @@ namespace EduCenterManagement.Repositories.Teacher
                 .ToListAsync();
         }
 
-        public async Task<List<ClassSchedule>> GetSchedulesByClassIdAsync(int classId)
-        {
-            return await _context.ClassSchedules
-                .AsNoTracking()
-                .Where(cs => cs.ClassId == classId)
-                .Include(cs => cs.TimeSlot)
-                .Include(cs => cs.Class)
-                    .ThenInclude(c => c.Subject)
-                .ToListAsync();
-        }
-
-        public async Task<bool> HasSessionsAsync(int classId)
-        {
-            return await _context.ClassSessions.AnyAsync(s => s.ClassId == classId);
-        }
-
-        public async Task AddSessionsRangeAsync(List<ClassSession> sessions)
-        {
-            _context.ClassSessions.AddRange(sessions);
-            await _context.SaveChangesAsync();
-        }
-
         public async Task<ClassSession?> GetSessionByIdAndTeacherAsync(int sessionId, int teacherId)
         {
             return await _context.ClassSessions

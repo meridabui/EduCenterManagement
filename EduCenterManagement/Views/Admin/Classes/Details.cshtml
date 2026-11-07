@@ -2,10 +2,19 @@
 
 @{
     ViewData["Title"] = "Chi tiết lớp học";
+    var sessionCount = ViewBag.SessionCount is int count ? count : 0;
 }
 
 <div class="mx-auto" style="max-width: 850px;">
     <h1 class="h3 fw-bold mb-4">Chi tiết lớp học</h1>
+
+    @foreach (var key in new[] { "SuccessMessage", "ErrorMessage" })
+    {
+        if (TempData[key] != null)
+        {
+            <div class="alert @(key == "SuccessMessage" ? "alert-success" : "alert-danger")" role="alert">@TempData[key]</div>
+        }
+    }
 
     <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-header bg-white border-bottom p-4 fw-bold">
@@ -72,6 +81,9 @@
                     }
                 </dd>
 
+                <dt class="col-sm-4">Số buổi học</dt>
+                <dd class="col-sm-8">@sessionCount buổi</dd>
+
                 <dt class="col-sm-4">Ngày tạo</dt>
                 <dd class="col-sm-8">
                     @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
@@ -85,6 +97,15 @@
         </div>
 
         <div class="card-footer bg-white border-top p-4 d-flex flex-wrap gap-2">
+            @if (sessionCount == 0 && Model.ClassSchedules.Any()
+                && Model.Status != EduCenterManagement.Enums.ClassStatus.Cancelled
+                && Model.Status != EduCenterManagement.Enums.ClassStatus.Completed)
+            {
+                <form asp-controller="Classes" asp-action="GenerateSessions" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-primary">Tạo buổi học</button>
+                </form>
+            }
             <a asp-controller="Classes"
                asp-action="Edit"
                asp-route-id="@Model.Id"

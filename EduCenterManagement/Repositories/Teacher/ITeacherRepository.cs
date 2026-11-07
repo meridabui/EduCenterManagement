@@ -25,12 +25,6 @@ namespace EduCenterManagement.Repositories.Teacher
 
         Task<List<ClassSession>> GetSessionsByClassIdAsync(int classId);
 
-        Task<List<ClassSchedule>> GetSchedulesByClassIdAsync(int classId);
-
-        Task<bool> HasSessionsAsync(int classId);
-
-        Task AddSessionsRangeAsync(List<ClassSession> sessions);
-
         Task<ClassSession?> GetSessionByIdAndTeacherAsync(int sessionId, int teacherId);
 
         Task<bool> UpdateSessionStatusAsync(int sessionId, int teacherId, ClassSessionStatus status);

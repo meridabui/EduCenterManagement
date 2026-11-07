@@ -1,5 +1,4 @@
-﻿
-namespace EduCenterManagement.Enums
+﻿namespace EduCenterManagement.Enums
 {
     public enum ClassStatus : byte
     {

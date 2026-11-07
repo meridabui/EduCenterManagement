@@ -205,9 +205,6 @@ namespace EduCenterManagement.Services.Teacher
             var classItem = await _repo.GetClassByIdAndTeacherAsync(classId, teacher.Id);
             if (classItem == null) return null;
 
-            // Tự động sinh buổi học nếu chưa có
-            await AutoGenerateSessionsIfNeededAsync(classItem);
-
             var rawSessions = await _repo.GetSessionsByClassIdAsync(classId);
 
             var today = DateOnly.FromDateTime(DateTime.Today);
@@ -279,50 +276,6 @@ namespace EduCenterManagement.Services.Teacher
             };
 
             return (true, msg, session.SessionNumber);
-        }
-
-        private async Task AutoGenerateSessionsIfNeededAsync(Class classItem)
-        {
-            bool hasSessions = await _repo.HasSessionsAsync(classItem.Id);
-            if (hasSessions) return;
-
-            var schedules = await _repo.GetSchedulesByClassIdAsync(classItem.Id);
-            if (!schedules.Any() || classItem.StartDate > classItem.EndDate) return;
-
-            var newSessions = new List<ClassSession>();
-            int sessionNumber = 1;
-            var now = DateTime.UtcNow;
-
-            for (var date = classItem.StartDate; date <= classItem.EndDate; date = date.AddDays(1))
-            {
-                int dbDayOfWeek = date.DayOfWeek == System.DayOfWeek.Sunday ? 8 : (int)date.DayOfWeek + 1;
-
-                var matchingSchedules = schedules
-                    .Where(s => s.DayOfWeek == dbDayOfWeek)
-                    .OrderBy(s => s.TimeSlot.StartTime)
-                    .ToList();
-
-                foreach (var sch in matchingSchedules)
-                {
-                    newSessions.Add(new ClassSession
-                    {
-                        ClassId = classItem.Id,
-                        ClassScheduleId = sch.Id,
-                        SessionDate = date,
-                        StartsAt = sch.TimeSlot.StartTime,
-                        EndsAt = sch.TimeSlot.EndTime,
-                        SessionNumber = sessionNumber++,
-                        Status = ClassSessionStatus.Scheduled,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    });
-                }
-            }
-
-            if (newSessions.Any())
-            {
-                await _repo.AddSessionsRangeAsync(newSessions);
-            }
         }
 
         private static string GetDayOfWeekName(int day) => day switch

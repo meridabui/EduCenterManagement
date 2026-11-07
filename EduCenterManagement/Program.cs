@@ -14,6 +14,8 @@ builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"
 builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
 
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<ClassSessionService>();
 builder.Services.AddHostedService<EnrollmentExpiryWorker>();
 // Đăng ký Repository & Service cho phân hệ Student
 builder.Services.AddScoped<EduCenterManagement.Repositories.Student.IStudentTimetableRepository, EduCenterManagement.Repositories.Student.StudentTimetableRepository>();

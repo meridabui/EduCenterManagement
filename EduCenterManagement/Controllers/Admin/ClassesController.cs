@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EduCenterManagement.Data;
 using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
+using EduCenterManagement.Services;
 using EduCenterManagement.ViewModels.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,12 @@ namespace EduCenterManagement.Controllers.Admin
     public class ClassesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ClassSessionService _sessions;
 
-        public ClassesController(ApplicationDbContext context)
+        public ClassesController(ApplicationDbContext context, ClassSessionService sessions)
         {
             _context = context;
+            _sessions = sessions;
         }
 
         // =========================================================
@@ -169,7 +172,7 @@ namespace EduCenterManagement.Controllers.Admin
             };
 
             await using var transaction =
-                await _context.Database.BeginTransactionAsync();
+                await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
             try
             {
@@ -189,11 +192,17 @@ namespace EduCenterManagement.Controllers.Admin
                 _context.ClassSchedules.AddRange(schedules);
                 await _context.SaveChangesAsync();
 
+                var slots = await _context.TimeSlots.Where(t => slotIds.Contains(t.Id))
+                    .ToDictionaryAsync(t => t.Id);
+                foreach (var schedule in schedules)
+                    schedule.TimeSlot = slots[schedule.TimeSlotId];
+                var sessionResult = await _sessions.SynchronizeAsync(classItem, schedules);
+
                 await transaction.CommitAsync();
 
                 TempData["SuccessMessage"] =
                     $"Đã tạo lớp {classItem.Name} với " +
-                    $"{schedules.Count} lịch học.";
+                    $"{schedules.Count} lịch học và {sessionResult.Added} buổi học.";
 
                 if (!model.TeacherId.HasValue)
                 {
@@ -571,7 +580,50 @@ namespace EduCenterManagement.Controllers.Admin
             if (classItem == null)
                 return NotFound();
 
+            ViewBag.SessionCount = await _context.ClassSessions.CountAsync(s => s.ClassId == classItem.Id);
             return View("~/Views/Admin/Classes/Details.cshtml", classItem);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateSessions(int id)
+        {
+            await using var transaction = await _context.Database
+                .BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var classItem = await _context.Classes.Include(c => c.ClassSchedules)
+                .ThenInclude(s => s.TimeSlot).FirstOrDefaultAsync(c => c.Id == id);
+            if (classItem == null)
+                return NotFound();
+
+            if (classItem.Status is ClassStatus.Cancelled or ClassStatus.Completed)
+            {
+                TempData["ErrorMessage"] = "Không thể tạo buổi cho lớp đã hủy hoặc hoàn thành.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            if (!classItem.ClassSchedules.Any() || classItem.StartDate > classItem.EndDate)
+            {
+                TempData["ErrorMessage"] = "Vui lòng thiết lập lịch học và khoảng ngày hợp lệ trước khi tạo buổi.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            try
+            {
+                var result = await _sessions.SynchronizeAsync(classItem,
+                    classItem.ClassSchedules.ToList(), onlyIfEmpty: true);
+                await transaction.CommitAsync();
+                TempData["SuccessMessage"] = result.Added > 0
+                    ? $"Đã tạo {result.Added} buổi học theo lịch của lớp."
+                    : result.Total > 0 ? "Lớp đã có buổi học; không tạo trùng."
+                    : "Không có ngày học phù hợp trong khoảng thời gian của lớp.";
+            }
+            catch (DbUpdateException)
+            {
+                await transaction.RollbackAsync();
+                TempData["ErrorMessage"] = "Không thể tạo buổi học. Vui lòng thử lại.";
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         // =========================================================
@@ -784,7 +836,7 @@ namespace EduCenterManagement.Controllers.Admin
             var now = DateTime.UtcNow;
 
             await using var transaction =
-                await _context.Database.BeginTransactionAsync();
+                await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
             try
             {
@@ -798,11 +850,12 @@ namespace EduCenterManagement.Controllers.Admin
                 classItem.Status = model.Status;
                 classItem.UpdatedAt = now;
 
-                _context.ClassSchedules.RemoveRange(
-                    classItem.ClassSchedules);
-
+                var oldSchedules = classItem.ClassSchedules.ToList();
+                var slots = await _context.TimeSlots.Where(t => slotIds.Contains(t.Id))
+                    .ToDictionaryAsync(t => t.Id);
                 var newSchedules = model.Schedules.Select(s =>
-                    new ClassSchedule
+                    oldSchedules.FirstOrDefault(old => old.DayOfWeek == s.DayOfWeek
+                        && old.TimeSlotId == s.TimeSlotId) ?? new ClassSchedule
                     {
                         ClassId = classItem.Id,
                         DayOfWeek = s.DayOfWeek,
@@ -811,14 +864,22 @@ namespace EduCenterManagement.Controllers.Admin
                         UpdatedAt = now
                     }).ToList();
 
-                _context.ClassSchedules.AddRange(newSchedules);
-
+                foreach (var schedule in newSchedules)
+                {
+                    schedule.TimeSlot = slots[schedule.TimeSlotId];
+                    if (schedule.Id == 0)
+                        _context.ClassSchedules.Add(schedule);
+                }
+                await _context.SaveChangesAsync();
+                var sessionResult = await _sessions.SynchronizeAsync(classItem, newSchedules);
+                _context.ClassSchedules.RemoveRange(oldSchedules.Except(newSchedules));
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 TempData["SuccessMessage"] =
                     $"Đã cập nhật lớp {classItem.Name} và " +
-                    $"{newSchedules.Count} lịch học.";
+                    $"{newSchedules.Count} lịch học. Đã thêm {sessionResult.Added}, " +
+                    $"gỡ {sessionResult.Removed} buổi chưa học; giữ nguyên các buổi đã có dữ liệu.";
 
                 return RedirectToAction(nameof(Index));
             }
