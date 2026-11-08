@@ -1,11 +1,11 @@
 using EduCenterManagement.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using EduCenterManagement.Models;
 using EduCenterManagement.Services;
 using EduCenterManagement.Services.Email;
 using EduCenterManagement.Services.Reminders;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +16,9 @@ builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"
 builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
 
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.Configure<VnPaySettings>(builder.Configuration.GetSection(VnPaySettings.SectionName));
+builder.Services.AddScoped<IVnPayService, VnPayService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ClassSessionService>();
 builder.Services.AddScoped<ClassLifecycleService>();

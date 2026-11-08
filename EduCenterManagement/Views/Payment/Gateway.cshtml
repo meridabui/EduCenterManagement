@@ -1,0 +1,63 @@
+﻿@model EduCenterManagement.ViewModels.Payments.PaymentGatewayViewModel
+
+@{
+    ViewData["Title"] = "Cổng thanh toán";
+}
+
+<div class="container mt-4" style="max-width: 560px;">
+    <div class="card">
+        <div class="card-header bg-dark text-white">Cổng thanh toán giả lập (MockPay)</div>
+        <div class="card-body">
+            <dl class="row mb-3">
+                <dt class="col-sm-5">Mã giao dịch</dt>
+                <dd class="col-sm-7">@Model.PaymentReference</dd>
+
+                <dt class="col-sm-5">Học sinh</dt>
+                <dd class="col-sm-7">@Model.StudentName</dd>
+
+                <dt class="col-sm-5">Lớp</dt>
+                <dd class="col-sm-7">@Model.ClassName</dd>
+
+                <dt class="col-sm-5">Số tiền</dt>
+                <dd class="col-sm-7 fw-bold">@Model.Amount.ToString("N0") @Model.Currency</dd>
+
+                <dt class="col-sm-5">Giữ chỗ còn</dt>
+                <dd class="col-sm-7">
+                    <span class="text-danger fw-semibold" id="countdown"
+                          data-until="@Model.ExpiresAt.ToString("o")"></span>
+                </dd>
+            </dl>
+
+            <div class="d-flex gap-2">
+                <form asp-action="Result" asp-route-id="@Model.PaymentId" method="post">
+                    <input type="hidden" name="succeeded" value="true" />
+                    <button type="submit" class="btn btn-success">Thanh toán thành công</button>
+                </form>
+                <form asp-action="Result" asp-route-id="@Model.PaymentId" method="post">
+                    <input type="hidden" name="succeeded" value="false" />
+                    <button type="submit" class="btn btn-danger">Thanh toán thất bại</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const countdown = document.getElementById("countdown");
+        const until = new Date(countdown.dataset.until).getTime();
+        const tick = () => {
+            const left = Math.floor((until - Date.now()) / 1000);
+            if (left <= 0) {
+                countdown.textContent = "đã hết hạn";
+                clearInterval(timer);
+                return;
+            }
+            const m = String(Math.floor(left / 60)).padStart(2, "0");
+            const s = String(left % 60).padStart(2, "0");
+            countdown.textContent = m + ":" + s;
+        };
+        const timer = setInterval(tick, 1000);
+        tick();
+    </script>
+}

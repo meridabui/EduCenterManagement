@@ -225,7 +225,7 @@ namespace EduCenterManagement.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<TeacherSubject>()
-                .HasOne(x => x.Subject)
+                .HasOne(x => x.Subject) 
                 .WithMany(x => x.TeacherSubjects)
                 .HasForeignKey(x => x.SubjectId)
                 .OnDelete(DeleteBehavior.Restrict);

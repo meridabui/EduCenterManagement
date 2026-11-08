@@ -1,0 +1,119 @@
+﻿@using EduCenterManagement.Enums
+@model List<EduCenterManagement.ViewModels.Payments.PaymentHistoryItemViewModel>
+
+@{
+    ViewData["Title"] = "Lịch sử đăng ký & thanh toán";
+    var now = DateTime.UtcNow;
+}
+
+<div class="container mt-4">
+    <h2>Lịch sử đăng ký &amp; thanh toán</h2>
+
+    @if (TempData["Error"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">Bạn chưa có đăng ký lớp nào.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã</th>
+                        <th>Học sinh</th>
+                        <th>Lớp</th>
+                        <th>Học phí</th>
+                        <th>Đăng ký</th>
+                        <th>Giao dịch</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var holdActive = item.Status == EnrollmentStatus.PendingPayment
+                        && item.ReservedUntil > now;
+
+                        <tr>
+                            <td>
+                                #@item.EnrollmentId
+                                <div class="small text-muted">@item.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</div>
+                            </td>
+                            <td>@item.StudentName</td>
+                            <td>@item.ClassName</td>
+                            <td>@item.Fee.ToString("N0") đ</td>
+                            <td>
+                                @if (holdActive)
+                                {
+                                    <span class="badge bg-warning text-dark">Chờ thanh toán</span>
+                                }
+                                else if (item.Status == EnrollmentStatus.Confirm)
+                                {
+                                    <span class="badge bg-success">Đã thanh toán</span>
+                                }
+                                else if (item.Status == EnrollmentStatus.PaymentFailed)
+                                {
+                                    <span class="badge bg-danger">Thanh toán thất bại</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Đã hủy / hết hạn</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!item.Payments.Any())
+                                {
+                                    <span class="text-muted">Chưa có</span>
+                                }
+                                @foreach (var p in item.Payments)
+                                {
+                                    <div class="mb-1">
+                                        @switch (p.Status)
+                                        {
+                                            case PaymentStatus.Paid:
+                                                <span class="badge bg-success">Paid</span>
+                                                break;
+                                            case PaymentStatus.Failed:
+                                                <span class="badge bg-danger">Failed</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                                break;
+                                        }
+                                        @p.Amount.ToString("N0") đ
+                                        <div class="small text-muted">
+                                            @p.PaymentReference
+                                            @if (p.PaidAt.HasValue)
+                                            {
+                                                <span> · @p.PaidAt.Value.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(p.FailureReason))
+                                            {
+                                                <span> · @p.FailureReason</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (holdActive)
+                                {
+                                    <a asp-controller="Enrollment" asp-action="Confirmation"
+                                       asp-route-id="@item.EnrollmentId"
+                                       class="btn btn-sm btn-success">Thanh toán</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <a asp-controller="ParentDashboard" asp-action="Index" class="btn btn-outline-secondary">Về trang phụ huynh</a>
+</div>

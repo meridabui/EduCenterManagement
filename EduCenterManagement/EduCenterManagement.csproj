@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <Folder Include="Repositories\" />
-    <Folder Include="Services\" />
     <Folder Include="Controllers\Teacher\" />
     <Folder Include="Controllers\Student\" />
     <Folder Include="Repositories\Student\" />
