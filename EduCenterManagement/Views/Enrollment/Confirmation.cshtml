@@ -1,4 +1,4 @@
-﻿@using EduCenterManagement.Enums
+﻿@using EduCenterManagement.Enums    
 @model EduCenterManagement.ViewModels.Registration.EnrollmentConfirmationViewModel
 
 @{
@@ -75,7 +75,21 @@
         </div>
     </div>
 
-    <a asp-action="Index" asp-route-studentId="@Model.StudentId" class="btn btn-outline-primary">Đăng ký lớp khác</a>
+    <a asp-action="Index" class="btn btn-outline-primary">Đăng ký lớp khác</a>
+    @if (TempData["Error"] is string payError)
+    {
+        <div class="alert alert-danger">@payError</div>
+    }
+
+    @if (Model.IsHoldActive)
+    {
+        <form asp-controller="Payment" asp-action="Checkout" method="post" class="mb-3">
+            <input type="hidden" name="enrollmentId" value="@Model.EnrollmentId" />
+            <button type="submit" class="btn btn-success">
+                Thanh toán @Model.Fee.ToString("N0") đ
+            </button>
+        </form>
+    }
     <a asp-controller="ParentDashboard" asp-action="Index" class="btn btn-outline-secondary">Về trang phụ huynh</a>
 </div>
 

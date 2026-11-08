@@ -47,7 +47,11 @@ namespace EduCenterManagement.Services
         Task<PaymentResult> StartCheckoutAsync(int parentId, int enrollmentId);
 
         // Xử lý kết quả từ cổng: Paid -> xác nhận Enrollment; Failed/quá hạn -> hủy và nhả chỗ.
-        Task<PaymentResult> CompleteAsync(int parentId, int paymentId, bool succeeded);
+        Task<PaymentResult> CompleteAsync(
+    int parentId, int paymentId, bool succeeded,
+    string? gatewayTransactionId = null,
+    string? gatewayMessage = null,
+    decimal? paidAmount = null);
     }
 
     public class PaymentService : IPaymentService
@@ -127,7 +131,7 @@ namespace EduCenterManagement.Services
             return PaymentResult.Ok(payment.Id, enrollmentId);
         }
 
-        public async Task<PaymentResult> CompleteAsync(int parentId, int paymentId, bool succeeded)
+        public async Task<PaymentResult> CompleteAsync(int parentId, int paymentId, bool succeeded, string? gatewayTransactionId = null, string? gatewayMessage = null,decimal? paidAmount = null)
         {
             var now = DateTime.UtcNow;
             DateTime? nowValue = now;
@@ -171,6 +175,13 @@ namespace EduCenterManagement.Services
             var paid = false;
             string? failureReason = null;
 
+            // Cổng thật: số tiền cổng đã thu phải khớp học phí.
+            if (succeeded && paidAmount.HasValue && paidAmount.Value != payment.Amount)
+            {
+                succeeded = false;
+                failureReason = "Số tiền thanh toán không khớp với học phí.";
+            }
+
             if (succeeded)
             {
                 // Chỉ xác nhận khi Enrollment vẫn Pending và còn hạn giữ chỗ.
@@ -194,7 +205,7 @@ namespace EduCenterManagement.Services
             }
             else
             {
-                failureReason = "Thanh toán không thành công.";
+                failureReason ??= gatewayMessage ?? "Thanh toán không thành công.";
             }
 
             if (!paid)
@@ -216,7 +227,7 @@ namespace EduCenterManagement.Services
             if (paid)
             {
                 payment.PaidAt = now;
-                payment.GatewayTransactionId = $"MOCK-{Guid.NewGuid():N}";
+                payment.GatewayTransactionId = gatewayTransactionId ?? $"MOCK-{Guid.NewGuid():N}";
             }
             else
             {
