@@ -19,7 +19,8 @@
             <div class="col-lg-7">
                 <span class="badge rounded-pill bg-primary-subtle text-primary border mb-3 px-3 py-2">Khám phá khóa học</span>
                 <h1 class="display-6 fw-bold mb-2">Đăng ký lớp học cho con</h1>
-                <p class="text-muted mb-0">Chọn môn học, xem lớp phù hợp và kiểm tra đầy đủ lịch học trước khi đăng ký.</p>
+                <p class="text-muted mb-1">Chọn môn học, xem lớp phù hợp và kiểm tra đầy đủ lịch học trước khi đăng ký.</p>
+                <p class="small text-muted mb-0">Các lớp đã đăng ký không hiển thị ở đây — xem tại <a asp-action="History" asp-route-studentId="@Model.SelectedStudentId">Lịch sử đăng ký</a>.</p>
             </div>
             <div class="col-lg-5">
                 <label for="courseSearch" class="form-label fw-semibold">Tìm môn học</label>
