@@ -27,12 +27,10 @@ namespace EduCenterManagement.ViewModels.Admin
         [Required(ErrorMessage = "Vui lòng chọn ngày bắt đầu.")]
         [Display(Name = "Ngày bắt đầu")]
         public DateOnly StartDate { get; set; }
-            = DateOnly.FromDateTime(DateTime.Today);
 
         [Required(ErrorMessage = "Vui lòng chọn ngày kết thúc.")]
         [Display(Name = "Ngày kết thúc")]
         public DateOnly EndDate { get; set; }
-            = DateOnly.FromDateTime(DateTime.Today).AddDays(1);
 
         [Range(1, 1000,
             ErrorMessage = "Sĩ số tối đa phải từ 1 đến 1000.")]
@@ -54,7 +52,14 @@ namespace EduCenterManagement.ViewModels.Admin
         public IEnumerable<ValidationResult> Validate(
             ValidationContext validationContext)
         {
-            // The controller checks past start dates against the persisted class date.
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+            if (StartDate <= today)
+            {
+                yield return new ValidationResult(
+                    "Ngày bắt đầu phải sau hôm nay (giờ Việt Nam).",
+                    new[] { nameof(StartDate) });
+            }
+
             if (EndDate <= StartDate)
             {
                 yield return new ValidationResult(
@@ -101,6 +106,30 @@ namespace EduCenterManagement.ViewModels.Admin
                 yield return new ValidationResult(
                     "Mỗi thứ trong tuần chỉ được cấu hình một lần.",
                     new[] { nameof(Schedules) });
+            }
+
+            if (EndDate > StartDate)
+            {
+                bool hasLesson = false;
+                // Lịch lặp theo tuần nên chỉ cần kiểm tra tối đa 7 ngày.
+                int daysToCheck = Math.Min(7, EndDate.DayNumber - StartDate.DayNumber + 1);
+                for (int i = 0; i < daysToCheck; i++)
+                {
+                    var date = StartDate.AddDays(i);
+                    int weekday = date.DayOfWeek == DayOfWeek.Sunday ? 8 : (int)date.DayOfWeek + 1;
+                    if (Schedules.Any(s => s.DayOfWeek == weekday))
+                    {
+                        hasLesson = true;
+                        break;
+                    }
+                }
+
+                if (!hasLesson)
+                {
+                    yield return new ValidationResult(
+                        "Lịch học phải có ít nhất một buổi trong khoảng ngày của lớp.",
+                        new[] { nameof(Schedules) });
+                }
             }
         }
     }

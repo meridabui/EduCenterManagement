@@ -2,8 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("form[data-class-dates]").forEach(form => {
         const start = form.querySelector('[name="StartDate"]');
         const end = form.querySelector('[name="EndDate"]');
-        const today = form.dataset.today || start.min;
-        const originalStart = form.dataset.originalStart;
+        const minStart = form.dataset.minStart || start.min;
 
         function showError(input, message) {
             input.setCustomValidity(message);
@@ -13,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         function validateDates() {
-            let minEnd = today;
+            let minEnd = minStart;
             if (start.value) {
                 // Work in UTC to add a calendar day without timezone/DST shifts.
                 const next = new Date(`${start.value}T00:00:00Z`);
@@ -21,10 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!Number.isNaN(next.getTime())) minEnd = next.toISOString().slice(0, 10);
             }
             end.min = minEnd;
-            const unchanged = Boolean(originalStart) && start.value === originalStart;
-            start.min = unchanged && originalStart < today ? originalStart : today;
-            const startError = start.value && start.value < today && !unchanged
-                ? "Ngày bắt đầu không được là ngày trong quá khứ." : "";
+            start.min = minStart;
+            const startError = start.value && start.value < minStart
+                ? "Ngày bắt đầu phải sau hôm nay (giờ Việt Nam)." : "";
             const endError = start.value && end.value && end.value <= start.value
                 ? "Ngày kết thúc phải sau ngày bắt đầu." : "";
             showError(start, startError);

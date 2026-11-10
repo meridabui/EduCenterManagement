@@ -3,7 +3,7 @@
 
 @{
     ViewData["Title"] = "Sửa lớp học";
-    var originalStartDate = ViewBag.OriginalStartDate is DateOnly savedDate ? savedDate : Model.StartDate;
+    var minStartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).AddDays(1);
     var slots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var schedules = Model.Schedules ?? new List<EduCenterManagement.ViewModels.Admin.ClassScheduleInputViewModel>();
     if (schedules.Count == 0)
@@ -17,7 +17,7 @@
 
     <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-body p-4">
-            <form asp-controller="Classes" asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editClassForm" data-class-dates data-original-start="@originalStartDate.ToString("yyyy-MM-dd")" data-today="@DateTime.Today.ToString("yyyy-MM-dd")">
+            <form asp-controller="Classes" asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editClassForm" data-class-dates data-min-start="@minStartDate.ToString("yyyy-MM-dd")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
 
@@ -39,12 +39,12 @@
                     </div>
                     <div class="col-md-6">
                         <label asp-for="StartDate" class="form-label fw-semibold"></label>
-                        <input asp-for="StartDate" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
+                        <input asp-for="StartDate" type="date" min="@minStartDate.ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
                         <span asp-validation-for="StartDate" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
                         <label asp-for="EndDate" class="form-label fw-semibold"></label>
-                        <input asp-for="EndDate" type="date" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
+                        <input asp-for="EndDate" type="date" min="@minStartDate.AddDays(1).ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
                         <span asp-validation-for="EndDate" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">

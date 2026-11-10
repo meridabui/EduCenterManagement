@@ -4,6 +4,7 @@
 
 @{
     ViewData["Title"] = "Thêm lớp học";
+    var minStartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).AddDays(1);
 
     var days = ViewBag.DaysOfWeek as IEnumerable<SelectListItem>
         ?? Enumerable.Empty<SelectListItem>();
@@ -68,7 +69,7 @@
                         <label asp-for="StartDate" class="form-label fw-semibold"></label>
                         <input asp-for="StartDate"
                                type="date"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" required
+                               min="@minStartDate.ToString("yyyy-MM-dd")" required
                                class="form-control form-control-lg fs-6" />
                         <span asp-validation-for="StartDate"
                               class="text-danger"></span>
@@ -78,7 +79,7 @@
                         <label asp-for="EndDate" class="form-label fw-semibold"></label>
                         <input asp-for="EndDate"
                                type="date"
-                               min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required
+                               min="@minStartDate.AddDays(1).ToString("yyyy-MM-dd")" required
                                class="form-control form-control-lg fs-6" />
                         <span asp-validation-for="EndDate"
                               class="text-danger"></span>

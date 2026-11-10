@@ -4,6 +4,7 @@
 
 @{
     ViewData["Title"] = "Quản lý lớp học";
+    var minStartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).AddDays(1);
     var pagination = (EduCenterManagement.ViewModels.Admin.PaginationViewModel)ViewBag.Pagination;
     var rowNumber = pagination.Offset;
     var subjects = ViewBag.Subjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
@@ -145,7 +146,9 @@
         <div class="row g-3 align-items-end">
             <div class="col-12 col-md-6 col-xl-3">
                 <label for="filterSubjectId" class="form-label fw-semibold">Môn học</label>
-                <select id="filterSubjectId" name="subjectId" asp-items="filterSubjects" class="form-select">
+                <select id="filterSubjectId" name="subjectId" asp-items="filterSubjects" class="form-select"
+                        onchange="document.getElementById('filterTeacherId').value = ''; this.form.requestSubmit();"
+                        aria-describedby="filterSubjectHelp">
                     <option value="">Tất cả môn học</option>
                 </select>
             </div>
@@ -217,7 +220,7 @@
                                 <td>
                                     @if (item.Teacher == null)
                                     {
-                                        @if (item.Status == ClassStatus.Draft)
+                                        @if (item.Status == ClassStatus.Draft || item.Status == ClassStatus.Open)
                                         {
                                         <button type="button" class="btn btn-sm btn-outline-danger quick-assign-btn" data-class-id="@item.Id">
                                             Chưa phân công · Gán ngay
@@ -231,7 +234,7 @@
                                     else
                                     {
                                         <div class="fw-semibold">@item.Teacher.FullName</div>
-                                        @if (item.Status == ClassStatus.Draft)
+                                        @if (item.Status == ClassStatus.Draft || item.Status == ClassStatus.Open)
                                         {
                                             <button type="button" class="btn btn-sm btn-link p-0 quick-assign-btn" data-class-id="@item.Id">Đổi giáo viên</button>
                                         }
@@ -328,12 +331,12 @@
                         </div>
                         <div class="col-md-6">
                             <label for="StartDate" class="form-label fw-semibold">Ngày bắt đầu (*)</label>
-                            <input id="StartDate" name="StartDate" type="date" class="form-control form-control-lg fs-6" value="@DateTime.Today.ToString("yyyy-MM-dd")" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <input id="StartDate" name="StartDate" type="date" class="form-control form-control-lg fs-6" value="@minStartDate.ToString("yyyy-MM-dd")" min="@minStartDate.ToString("yyyy-MM-dd")" required />
                             <span class="text-danger small" data-valmsg-for="StartDate" aria-live="polite"></span>
                         </div>
                         <div class="col-md-6">
                             <label for="EndDate" class="form-label fw-semibold">Ngày kết thúc (*)</label>
-                            <input id="EndDate" name="EndDate" type="date" class="form-control form-control-lg fs-6" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
+                            <input id="EndDate" name="EndDate" type="date" class="form-control form-control-lg fs-6" min="@minStartDate.AddDays(1).ToString("yyyy-MM-dd")" required />
                             <span class="text-danger small" data-valmsg-for="EndDate" aria-live="polite"></span>
                         </div>
                         <div class="col-md-6">
@@ -639,34 +642,46 @@
             const assignError = document.getElementById("assignConflict");
             const assignSubmit = document.getElementById("assignTeacherSubmit");
 
-            document.querySelectorAll(".quick-assign-btn").forEach(button => {
-                button.addEventListener("click", async () => {
-                    const id = button.dataset.classId;
-                    document.getElementById("assignClassId").value = id;
-                    document.getElementById("assignClassSchedule").textContent = "Đang tải lịch học...";
-                    assignTeacherSelect.innerHTML = '<option value="">-- Chọn giáo viên --</option>';
-                    assignError.style.display = "none";
+            async function openAssignment(id) {
+                document.getElementById("assignClassId").value = id;
+                document.getElementById("assignClassSchedule").textContent = "Đang tải lịch học...";
+                assignTeacherSelect.innerHTML = '<option value="">-- Chọn giáo viên --</option>';
+                assignError.style.display = "none";
+                assignSubmit.disabled = true;
+                assignModal.show();
+                try {
+                    const response = await fetch(`@Url.Action("AssignInfo", "Classes")?id=${encodeURIComponent(id)}`);
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || "Không tải được thông tin lớp.");
+                    document.getElementById("assignTeacherTitle").textContent = `Phân công giáo viên – ${data.className}`;
+                    document.getElementById("assignClassSchedule").textContent = data.schedules.length
+                        ? data.schedules.map(s => `${s.dayLabel}: ${s.slotName} (${s.startTime}–${s.endTime})`).join("; ")
+                        : "Chưa có lịch";
+                    data.teachers.forEach(t => {
+                        const option = document.createElement("option");
+                        option.value = t.id;
+                        option.textContent = t.fullName;
+                        if (String(t.id) === String(data.currentTeacherId)) option.selected = true;
+                        assignTeacherSelect.appendChild(option);
+                    });
                     assignSubmit.disabled = false;
-                    assignModal.show();
-                    try {
-                        const response = await fetch(`@Url.Action("AssignInfo", "Classes")?id=${encodeURIComponent(id)}`);
-                        if (!response.ok) throw new Error("Không tải được thông tin lớp.");
-                        const data = await response.json();
-                        document.getElementById("assignTeacherTitle").textContent = `Phân công giáo viên – ${data.className}`;
-                        document.getElementById("assignClassSchedule").textContent = `${(data.days || []).join(", ")} · ${data.slot || "Chưa có lịch"}`;
-                        data.teachers.forEach(t => {
-                            const option = document.createElement("option");
-                            option.value = t.id;
-                            option.textContent = t.fullName;
-                            if (String(t.id) === String(data.currentTeacherId)) option.selected = true;
-                            assignTeacherSelect.appendChild(option);
-                        });
-                    } catch (error) {
-                        assignError.textContent = error.message;
-                        assignError.style.display = "block";
-                    }
-                });
+                } catch (error) {
+                    assignError.textContent = error.message;
+                    assignError.style.display = "block";
+                }
+            }
+
+            document.querySelectorAll(".quick-assign-btn").forEach(button => {
+                button.addEventListener("click", () => openAssignment(button.dataset.classId));
             });
+
+            const requestedClassId = new URLSearchParams(window.location.search).get("classId");
+            if (requestedClassId && /^[1-9]\d*$/.test(requestedClassId)) {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("classId");
+                window.history.replaceState(null, "", url);
+                openAssignment(requestedClassId);
+            }
 
             assignForm.addEventListener("submit", async event => {
                 event.preventDefault();

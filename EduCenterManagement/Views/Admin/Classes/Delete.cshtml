@@ -1,16 +1,16 @@
 @model EduCenterManagement.Models.Class
+@using EduCenterManagement.Enums
 
 @{
-    ViewData["Title"] = "Ngừng sử dụng lớp học";
+    ViewData["Title"] = "Hủy lớp học";
 }
 
 <div class="mx-auto" style="max-width: 850px;">
-    <h1 class="h3 fw-bold mb-4">Ngừng sử dụng lớp học</h1>
+    <h1 class="h3 fw-bold mb-4">Hủy lớp học</h1>
 
     <div class="alert alert-warning">
-        Bạn có chắc chắn muốn ngừng sử dụng lớp học này không?
-        Lớp sẽ chuyển sang trạng thái Cancelled. Các dữ liệu đăng ký,
-        thanh toán, điểm danh và kết quả học tập vẫn được giữ nguyên.
+        Bạn có chắc chắn muốn hủy lớp học này không?
+        Lớp sẽ chuyển sang trạng thái Cancelled
     </div>
 
     <div class="card border-0 dashboard-panel p-0 overflow-hidden">
@@ -53,8 +53,7 @@
         </div>
 
         <div class="card-footer bg-white border-top p-4 d-flex flex-wrap gap-2">
-            @if (Model.Status !=
-                EduCenterManagement.Enums.ClassStatus.Cancelled)
+            @if (Model.Status == ClassStatus.Draft || Model.Status == ClassStatus.Open)
             {
                 <form asp-controller="Classes"
                       asp-action="Delete"
@@ -64,7 +63,7 @@
                     @Html.AntiForgeryToken()
 
                     <button type="submit" class="btn btn-danger">
-                        Xác nhận ngừng sử dụng
+                        Xác nhận hủy lớp
                     </button>
                 </form>
             }
