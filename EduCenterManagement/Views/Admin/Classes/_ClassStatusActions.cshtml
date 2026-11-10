@@ -20,7 +20,7 @@
 @if (target.HasValue)
 {
     <form asp-controller="Classes" asp-action="ChangeStatus" asp-route-id="@Model.Id" method="post"
-          onsubmit="return confirm('Xác nhận chuyển trạng thái lớp? Sau khi mở đăng ký, chỉ được đổi giáo viên; khi đang học, thông tin lớp sẽ bị khóa.');">
+          data-confirm="Xác nhận chuyển trạng thái lớp? Sau khi mở đăng ký, chỉ được đổi giáo viên; khi đang học, thông tin lớp sẽ bị khóa.">
         @Html.AntiForgeryToken()
         <input type="hidden" name="targetStatus" value="@target.Value" />
         <button type="submit" class="btn btn-success" disabled="@(!canOpen)">@label</button>

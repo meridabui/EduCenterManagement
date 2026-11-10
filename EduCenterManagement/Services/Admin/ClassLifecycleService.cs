@@ -66,12 +66,8 @@ public sealed class ClassLifecycleService(ApplicationDbContext context, ClassSes
         }
         else if (target == ClassStatus.InProgress)
         {
-            if (today < cls.StartDate || today > cls.EndDate)
-                return new(false, "Chỉ bắt đầu lớp từ ngày khai giảng đến hết ngày kết thúc.");
             if (!await context.Enrollments.AnyAsync(e => e.ClassId == id && e.Status == EnrollmentStatus.Confirm))
                 return new(false, "Lớp phải có ít nhất một đăng ký đã thanh toán trước khi bắt đầu.");
-            if (!await context.ClassSessions.AnyAsync(s => s.ClassId == id))
-                return new(false, "Lớp chưa có buổi học. Vui lòng tạo buổi học trước khi bắt đầu.");
         }
         else if (target == ClassStatus.Completed)
         {

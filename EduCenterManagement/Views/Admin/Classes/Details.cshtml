@@ -1,11 +1,12 @@
 @model EduCenterManagement.Models.Class
 
+
 @{
     ViewData["Title"] = "Chi tiết lớp học";
     var sessionCount = ViewBag.SessionCount is int count ? count : 0;
 }
 
-<div class="mx-auto" style="max-width: 850px;">
+<div class="mx-auto adminclassdetails-container">
     <h1 class="h3 fw-bold mb-4">Chi tiết lớp học</h1>
     @if (Model.Status == EduCenterManagement.Enums.ClassStatus.Open)
     {
