@@ -29,6 +29,9 @@ builder.Services.Configure<ClassReminderSettings>(
     builder.Configuration.GetSection(ClassReminderSettings.SectionName));
 builder.Services.AddScoped<ClassReminderPlannerService>();
 builder.Services.AddScoped<EmailOutboxProcessor>();
+builder.Services.AddSingleton(new EnrollmentConfirmationEmailRuntime(DateTime.UtcNow));
+builder.Services.AddScoped<EnrollmentConfirmationPlannerService>();
+builder.Services.AddScoped<EnrollmentConfirmationEmailProcessor>();
 builder.Services.AddHostedService<ClassReminderPlannerWorker>();
 builder.Services.AddHostedService<EmailOutboxWorker>();
 // Đăng ký Repository & Service cho phân hệ Student

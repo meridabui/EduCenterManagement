@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = $"Chi tiết lớp {Model.Class.ClassName}";
     var classItem = Model.Class;
+    var selectedStudent = Model.Students.First(student => student.Id == Model.SelectedStudentId);
 }
 
 <div class="container-fluid px-0" style="max-width: 1100px;">
@@ -19,7 +20,8 @@
                 <div class="p-4 p-lg-5 border-bottom" style="background:linear-gradient(135deg,#eef2ff,#f8fafc)">
                     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
                         <div><span class="badge bg-primary-subtle text-primary border mb-3">@classItem.SubjectName</span><h1 class="fw-bold mb-2">@classItem.ClassName</h1><p class="text-muted mb-0"><i class="bi bi-person-video3 me-1"></i>Giáo viên: @(classItem.TeacherName ?? "Chưa phân công")</p></div>
-                        @if (classItem.AlreadyRegistered) { <span class="badge bg-info text-dark px-3 py-2">Đã đăng ký</span> }
+                        @if (classItem.HasPendingEnrollment) { <span class="badge bg-warning text-dark px-3 py-2">Chờ thanh toán</span> }
+                        else if (classItem.AlreadyRegistered) { <span class="badge bg-info text-dark px-3 py-2">Đã đăng ký</span> }
                         else if (classItem.SeatsLeft <= 0) { <span class="badge bg-secondary px-3 py-2">Hết chỗ</span> }
                         else { <span class="badge bg-success px-3 py-2">Đang mở đăng ký</span> }
                     </div>
@@ -56,28 +58,25 @@
                 <div class="card-body p-4">
                     <div class="text-muted small">Học phí toàn khóa</div>
                     <div class="display-6 fw-bold text-primary mb-4">@classItem.Fee.ToString("N0") đ</div>
-                    <form method="get" asp-action="Details" asp-route-id="@classItem.ClassId" class="mb-3">
-                        <label for="studentId" class="form-label fw-semibold">Đăng ký cho</label>
-                        <select id="studentId" name="studentId" class="form-select" onchange="this.form.submit()">
-                            @if (!Model.SelectedStudentId.HasValue) { <option value="" selected>-- Chọn học sinh --</option> }
-                            @foreach (var student in Model.Students)
-                            {
-                                <option value="@student.Id" selected="@(Model.SelectedStudentId == student.Id)">@student.FullName</option>
-                            }
-                        </select>
-                    </form>
+                    <div class="mb-3">
+                        <div class="form-label fw-semibold">Đăng ký cho</div>
+                        <div class="border rounded-3 bg-light px-3 py-2">
+                            <i class="bi bi-person-check text-primary me-2"></i>
+                            <strong>@selectedStudent.FullName</strong>
+                        </div>
+                    </div>
 
-                    @if (classItem.AlreadyRegistered)
+                    @if (classItem.HasPendingEnrollment && classItem.ActiveEnrollmentId.HasValue)
+                    {
+                        <a asp-action="Confirmation" asp-route-id="@classItem.ActiveEnrollmentId" class="btn btn-warning w-100">Tiếp tục đăng ký</a>
+                    }
+                    else if (classItem.AlreadyRegistered)
                     {
                         <button class="btn btn-info w-100" disabled>Học sinh đã đăng ký lớp này</button>
                     }
                     else if (classItem.SeatsLeft <= 0)
                     {
                         <button class="btn btn-secondary w-100" disabled>Lớp đã hết chỗ</button>
-                    }
-                    else if (!Model.SelectedStudentId.HasValue)
-                    {
-                        <button class="btn btn-primary w-100" disabled>Chọn học sinh để đăng ký</button>
                     }
                     else
                     {

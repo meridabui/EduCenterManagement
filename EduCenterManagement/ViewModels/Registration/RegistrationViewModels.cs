@@ -34,6 +34,12 @@ namespace EduCenterManagement.ViewModels.Registration
 
         // Học sinh đang chọn đã có đăng ký còn hiệu lực với lớp này.
         public bool AlreadyRegistered { get; set; }
+        public int? ActiveEnrollmentId { get; set; }
+        public EnrollmentStatus? ActiveEnrollmentStatus { get; set; }
+        public bool HasPendingEnrollment =>
+            ActiveEnrollmentStatus == EnrollmentStatus.PendingPayment;
+        public bool AlreadyConfirmed =>
+            ActiveEnrollmentStatus == EnrollmentStatus.Confirm;
 
         public List<ClassScheduleItemViewModel> Schedules { get; set; } = new();
     }
@@ -83,4 +89,27 @@ namespace EduCenterManagement.ViewModels.Registration
         // Pending và còn trong thời gian giữ chỗ.
         public bool IsHoldActive { get; set; }
     }
+
+    public class EnrollmentHistoryItemViewModel
+    {
+        public int EnrollmentId { get; set; }
+        public int StudentId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
+        public string ClassName { get; set; } = string.Empty;
+        public string SubjectName { get; set; } = string.Empty;
+        public decimal Fee { get; set; }
+        public EnrollmentStatus Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ReservedUntil { get; set; }
+        public DateTime? ConfirmedAt { get; set; }
+    }
+
+    public class EnrollmentHistoryViewModel
+    {
+        public List<StudentOptionViewModel> Students { get; set; } = new();
+        public int? SelectedStudentId { get; set; }
+        public EnrollmentStatus? SelectedStatus { get; set; }
+        public List<EnrollmentHistoryItemViewModel> Items { get; set; } = new();
+    }
+
 }
