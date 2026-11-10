@@ -65,16 +65,6 @@ namespace EduCenterManagement.Controllers
                 .Include(c => c.Teacher)
                 .OrderBy(c => c.StartDate)
                 .ToListAsync();
-
-            // Ẩn các lớp đã đăng ký (Confirm / đang giữ chỗ) khỏi danh sách chọn.
-            // Chưa chọn học sinh: chỉ ẩn lớp mà TẤT CẢ học sinh liên kết đều đã đăng ký.
-            var registeredClassIds = await GetActiveRegisteredClassIdsAsync(
-                classes.Select(c => c.Id).ToList(),
-                studentId.HasValue
-                    ? new List<int> { studentId.Value }
-                    : students.Select(s => s.Id).ToList());
-            classes = classes.Where(c => !registeredClassIds.Contains(c.Id)).ToList();
-
             var classOptions = await BuildClassOptionsAsync(classes, studentId);
             var validSubjectIds = classes.Select(c => c.SubjectId).ToHashSet();
             if (subjectId.HasValue && !validSubjectIds.Contains(subjectId.Value))
@@ -112,110 +102,6 @@ namespace EduCenterManagement.Controllers
             };
 
             return View(model);
-        }
-
-        // GET: /Enrollment/History?studentId=1&status=2
-        [HttpGet]
-        public async Task<IActionResult> History(int? studentId, EnrollmentStatus? status)
-        {
-            var parent = await GetCurrentParentAsync();
-            if (parent == null)
-                return Forbid();
-
-            var students = await GetLinkedStudentsAsync(parent.Id);
-            if (studentId.HasValue && students.All(s => s.Id != studentId.Value))
-                studentId = null;
-
-            var now = DateTime.UtcNow;
-            var today = DateOnly.FromDateTime(DateTime.Now);
-
-            var query = _context.Enrollments
-                .AsNoTracking()
-                .Where(e => e.RegisteredByParentId == parent.Id);
-
-            if (studentId.HasValue)
-                query = query.Where(e => e.StudentId == studentId.Value);
-
-            var rows = await query
-                .OrderByDescending(e => e.CreatedAt)
-                .Select(e => new
-                {
-                    e.Id,
-                    e.StudentId,
-                    StudentName = e.Student.FullName,
-                    e.ClassId,
-                    ClassName = e.Class.Name,
-                    SubjectName = e.Class.Subject.Name,
-                    e.Class.Fee,
-                    e.Class.StartDate,
-                    e.Class.EndDate,
-                    ClassStatus = e.Class.Status,
-                    e.Status,
-                    e.ReservedUntil,
-                    e.CreatedAt,
-                    e.UpdatedAt,
-                    e.ConfirmedAt,
-                    e.CancelledAt
-                })
-                .ToListAsync();
-
-            // Cặp (học sinh, lớp) đang có đăng ký còn hiệu lực -> không đề xuất "đăng ký lại".
-            var activePairs = rows
-                .Where(r => r.Status == EnrollmentStatus.Confirm ||
-                            (r.Status == EnrollmentStatus.PendingPayment && r.ReservedUntil > now))
-                .Select(r => (r.StudentId, r.ClassId))
-                .ToHashSet();
-
-            var items = rows.Select(r =>
-            {
-                var reservedUntil = r.ReservedUntil.HasValue
-                    ? DateTime.SpecifyKind(r.ReservedUntil.Value, DateTimeKind.Utc)
-                    : (DateTime?)null;
-
-                var holdActive = r.Status == EnrollmentStatus.PendingPayment &&
-                                 reservedUntil.HasValue && reservedUntil.Value > now;
-
-                var effectiveStatus = r.Status == EnrollmentStatus.PendingPayment && !holdActive
-                    ? EnrollmentStatus.Expried
-                    : r.Status;
-
-                var inactive = effectiveStatus != EnrollmentStatus.Confirm && !holdActive;
-
-                return new EnrollmentHistoryItemViewModel
-                {
-                    EnrollmentId = r.Id,
-                    StudentId = r.StudentId,
-                    StudentName = r.StudentName,
-                    ClassId = r.ClassId,
-                    ClassName = r.ClassName,
-                    SubjectName = r.SubjectName,
-                    Fee = r.Fee,
-                    StartDate = r.StartDate,
-                    EndDate = r.EndDate,
-                    Status = effectiveStatus,
-                    ReservedUntil = reservedUntil,
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt,
-                    ConfirmedAt = r.ConfirmedAt,
-                    CancelledAt = r.CancelledAt,
-                    IsHoldActive = holdActive,
-                    CanReRegister = inactive &&
-                                    r.ClassStatus == ClassStatus.Open &&
-                                    r.StartDate > today &&
-                                    !activePairs.Contains((r.StudentId, r.ClassId))
-                };
-            }).ToList();
-
-            if (status.HasValue)
-                items = items.Where(i => i.Status == status.Value).ToList();
-
-            return View(new EnrollmentHistoryViewModel
-            {
-                Students = students,
-                SelectedStudentId = studentId,
-                SelectedStatus = status,
-                Items = items
-            });
         }
 
         // GET: /Enrollment/Details/5?studentId=1
@@ -345,33 +231,6 @@ namespace EduCenterManagement.Controllers
                     FullName = link.Student.FullName
                 })
                 .ToListAsync();
-        }
-
-        // Lớp mà mọi học sinh trong studentIds đều đang có đăng ký còn hiệu lực
-        // (Confirm, hoặc PendingPayment còn trong thời gian giữ chỗ).
-        private async Task<HashSet<int>> GetActiveRegisteredClassIdsAsync(
-            IReadOnlyCollection<int> classIds,
-            IReadOnlyCollection<int> studentIds)
-        {
-            if (classIds.Count == 0 || studentIds.Count == 0)
-                return new HashSet<int>();
-
-            var now = DateTime.UtcNow;
-            var pairs = await _context.Enrollments
-                .AsNoTracking()
-                .Where(e => studentIds.Contains(e.StudentId) &&
-                            classIds.Contains(e.ClassId) &&
-                            (e.Status == EnrollmentStatus.Confirm ||
-                             (e.Status == EnrollmentStatus.PendingPayment && e.ReservedUntil > now)))
-                .Select(e => new { e.StudentId, e.ClassId })
-                .Distinct()
-                .ToListAsync();
-
-            return pairs
-                .GroupBy(p => p.ClassId)
-                .Where(g => g.Count() == studentIds.Count)
-                .Select(g => g.Key)
-                .ToHashSet();
         }
 
         private async Task<List<ClassOptionViewModel>> BuildClassOptionsAsync(
