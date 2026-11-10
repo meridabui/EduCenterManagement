@@ -83,43 +83,4 @@ namespace EduCenterManagement.ViewModels.Registration
         // Pending và còn trong thời gian giữ chỗ.
         public bool IsHoldActive { get; set; }
     }
-
-    // Một dòng trong lịch sử đăng ký của Parent.
-    public class EnrollmentHistoryItemViewModel
-    {
-        public int EnrollmentId { get; set; }
-        public int StudentId { get; set; }
-        public string StudentName { get; set; } = string.Empty;
-        public int ClassId { get; set; }
-        public string ClassName { get; set; } = string.Empty;
-        public string SubjectName { get; set; } = string.Empty;
-        public decimal Fee { get; set; }
-        public DateOnly StartDate { get; set; }
-        public DateOnly EndDate { get; set; }
-
-        // Trạng thái hiệu lực: PendingPayment đã quá hạn giữ chỗ được tính là Expried
-        // (worker có thể chưa kịp cập nhật DB).
-        public EnrollmentStatus Status { get; set; }
-
-        // Giờ UTC (Kind = Utc) để JavaScript đếm ngược chính xác.
-        public DateTime? ReservedUntil { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public DateTime? ConfirmedAt { get; set; }
-        public DateTime? CancelledAt { get; set; }
-
-        // Pending và còn trong thời gian giữ chỗ -> có thể thanh toán.
-        public bool IsHoldActive { get; set; }
-
-        // Đăng ký không còn hiệu lực nhưng lớp vẫn đang mở -> cho đăng ký lại.
-        public bool CanReRegister { get; set; }
-    }
-
-    public class EnrollmentHistoryViewModel
-    {
-        public List<StudentOptionViewModel> Students { get; set; } = new();
-        public int? SelectedStudentId { get; set; }
-        public EnrollmentStatus? SelectedStatus { get; set; }
-        public List<EnrollmentHistoryItemViewModel> Items { get; set; } = new();
-    }
 }
