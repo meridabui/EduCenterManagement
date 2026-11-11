@@ -14,6 +14,7 @@ namespace EduCenterManagement.ViewModels.Admin
         public int ClassesWithoutTeacher { get; set; }
 
         public int OpenClasses { get; set; }
+        public int InProgressClasses { get; set; }
         public int CancelledClasses { get; set; }
 
         public int TotalTimeSlots { get; set; }

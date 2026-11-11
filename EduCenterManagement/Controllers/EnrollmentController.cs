@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EduCenterManagement.Data;
 using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
@@ -17,18 +16,15 @@ namespace EduCenterManagement.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IEnrollmentService _enrollmentService;
-        private readonly IAppEmailSender _emailSender;
         private readonly ILogger<EnrollmentController> _logger;
 
         public EnrollmentController(
             ApplicationDbContext context,
             IEnrollmentService enrollmentService,
-            IAppEmailSender emailSender,
             ILogger<EnrollmentController> logger)
         {
             _context = context;
             _enrollmentService = enrollmentService;
-            _emailSender = emailSender;
             _logger = logger;
         }
 
@@ -56,19 +52,39 @@ namespace EduCenterManagement.Controllers
                 studentId = students[0].Id;
             }
 
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var classes = new List<Class>();
+            var classOptions = new List<ClassOptionViewModel>();
 
-            var classes = await _context.Classes
-                .AsNoTracking()
-                .Where(c => c.Status == ClassStatus.Open && c.StartDate > today)
-                .Include(c => c.Subject)
-                .Include(c => c.Teacher)
-                .OrderBy(c => c.StartDate)
-                .ToListAsync();
-            var classOptions = await BuildClassOptionsAsync(classes, studentId);
-            var validSubjectIds = classes.Select(c => c.SubjectId).ToHashSet();
-            if (subjectId.HasValue && !validSubjectIds.Contains(subjectId.Value))
+            if (studentId.HasValue)
+            {
+                var today = DateOnly.FromDateTime(DateTime.Now);
+                classes = await _context.Classes
+                    .AsNoTracking()
+                    .Where(c => c.Status == ClassStatus.Open && c.StartDate > today)
+                    .Include(c => c.Subject)
+                    .Include(c => c.Teacher)
+                    .OrderBy(c => c.StartDate)
+                    .ToListAsync();
+
+                classOptions = (await BuildClassOptionsAsync(classes, studentId))
+                    .Where(option => !option.AlreadyConfirmed)
+                    .ToList();
+
+                var availableClassIds = classOptions
+                    .Select(option => option.ClassId)
+                    .ToHashSet();
+                classes = classes
+                    .Where(classItem => availableClassIds.Contains(classItem.Id))
+                    .ToList();
+
+                var validSubjectIds = classes.Select(c => c.SubjectId).ToHashSet();
+                if (subjectId.HasValue && !validSubjectIds.Contains(subjectId.Value))
+                    subjectId = null;
+            }
+            else
+            {
                 subjectId = null;
+            }
 
             var model = new EnrollmentIndexViewModel
             {
@@ -117,6 +133,8 @@ namespace EduCenterManagement.Controllers
                 studentId = null;
             if (!studentId.HasValue && students.Count == 1)
                 studentId = students[0].Id;
+            if (!studentId.HasValue)
+                return RedirectToAction(nameof(Index));
 
             var today = DateOnly.FromDateTime(DateTime.Now);
             var classItem = await _context.Classes
@@ -169,9 +187,64 @@ namespace EduCenterManagement.Controllers
                 return RedirectToAction(nameof(Details), new { id = classId, studentId });
             }
 
-            await TrySendReservationEmailAsync(result);
-
             return RedirectToAction(nameof(Confirmation), new { id = result.Enrollment!.Id });
+        }
+
+        // GET: /Enrollment/History
+        [HttpGet]
+        public async Task<IActionResult> History(
+            int? studentId,
+            EnrollmentStatus? status)
+        {
+            var parent = await GetCurrentParentAsync();
+            if (parent == null)
+                return Forbid();
+
+            var students = await GetLinkedStudentsAsync(parent.Id);
+            if (studentId.HasValue && students.All(student => student.Id != studentId.Value))
+                studentId = null;
+
+            if (status.HasValue && !Enum.IsDefined(status.Value))
+                status = null;
+
+            var query = _context.Enrollments
+                .AsNoTracking()
+                .Where(enrollment => enrollment.RegisteredByParentId == parent.Id)
+                .Include(enrollment => enrollment.Student)
+                .Include(enrollment => enrollment.Class)
+                    .ThenInclude(classItem => classItem.Subject)
+                .AsQueryable();
+
+            if (studentId.HasValue)
+                query = query.Where(enrollment => enrollment.StudentId == studentId.Value);
+
+            if (status.HasValue)
+                query = query.Where(enrollment => enrollment.Status == status.Value);
+
+            var items = await query
+                .OrderByDescending(enrollment => enrollment.CreatedAt)
+                .Select(enrollment => new EnrollmentHistoryItemViewModel
+                {
+                    EnrollmentId = enrollment.Id,
+                    StudentId = enrollment.StudentId,
+                    StudentName = enrollment.Student.FullName,
+                    ClassName = enrollment.Class.Name,
+                    SubjectName = enrollment.Class.Subject.Name,
+                    Fee = enrollment.Class.Fee,
+                    Status = enrollment.Status,
+                    CreatedAt = enrollment.CreatedAt,
+                    ReservedUntil = enrollment.ReservedUntil,
+                    ConfirmedAt = enrollment.ConfirmedAt
+                })
+                .ToListAsync();
+
+            return View(new EnrollmentHistoryViewModel
+            {
+                Students = students,
+                SelectedStudentId = studentId,
+                SelectedStatus = status,
+                Items = items
+            });
         }
 
         // GET: /Enrollment/Confirmation/5
@@ -259,22 +332,42 @@ namespace EduCenterManagement.Controllers
                 .Select(group => new { ClassId = group.Key, Count = group.Count() })
                 .ToDictionaryAsync(item => item.ClassId, item => item.Count);
 
-            var registeredClassIds = new HashSet<int>();
+            var activeEnrollmentsByClass = new Dictionary<int, (int Id, EnrollmentStatus Status)>();
             if (studentId.HasValue)
             {
-                registeredClassIds = (await _context.Enrollments
+                var activeEnrollments = await _context.Enrollments
                     .AsNoTracking()
                     .Where(enrollment => enrollment.StudentId == studentId.Value &&
                         classIds.Contains(enrollment.ClassId) &&
                         (enrollment.Status == EnrollmentStatus.Confirm ||
                          (enrollment.Status == EnrollmentStatus.PendingPayment && enrollment.ReservedUntil > now)))
-                    .Select(enrollment => enrollment.ClassId)
-                    .ToListAsync()).ToHashSet();
+                    .OrderByDescending(enrollment => enrollment.CreatedAt)
+                    .Select(enrollment => new
+                    {
+                        enrollment.Id,
+                        enrollment.ClassId,
+                        enrollment.Status
+                    })
+                    .ToListAsync();
+
+                activeEnrollmentsByClass = activeEnrollments
+                    .GroupBy(enrollment => enrollment.ClassId)
+                    .ToDictionary(
+                        group => group.Key,
+                        group =>
+                        {
+                            var enrollment = group.First();
+                            return (enrollment.Id, enrollment.Status);
+                        });
             }
 
             return classes.Select(classItem =>
             {
                 heldByClass.TryGetValue(classItem.Id, out var held);
+                activeEnrollmentsByClass.TryGetValue(
+                    classItem.Id,
+                    out var activeEnrollment);
+                var hasActiveEnrollment = activeEnrollment.Id > 0;
                 return new ClassOptionViewModel
                 {
                     ClassId = classItem.Id,
@@ -287,7 +380,13 @@ namespace EduCenterManagement.Controllers
                     Fee = classItem.Fee,
                     MaxStudents = classItem.MaxStudents,
                     SeatsLeft = Math.Max(0, classItem.MaxStudents - held),
-                    AlreadyRegistered = registeredClassIds.Contains(classItem.Id),
+                    AlreadyRegistered = hasActiveEnrollment,
+                    ActiveEnrollmentId = hasActiveEnrollment
+                        ? activeEnrollment.Id
+                        : null,
+                    ActiveEnrollmentStatus = hasActiveEnrollment
+                        ? activeEnrollment.Status
+                        : null,
                     Schedules = schedules
                         .Where(schedule => schedule.ClassId == classItem.Id)
                         .Select(schedule => new ClassScheduleItemViewModel
@@ -315,39 +414,5 @@ namespace EduCenterManagement.Controllers
                 .SingleOrDefaultAsync(p => p.UserId == userId);
         }
 
-        // Email xác nhận giữ chỗ gửi cho Parent. Lỗi gửi email không làm hỏng đăng ký.
-        private async Task TrySendReservationEmailAsync(EnrollmentResult result)
-        {
-            try
-            {
-                var toEmail = User.FindFirstValue(ClaimTypes.Email);
-
-                if (string.IsNullOrWhiteSpace(toEmail) || result.Enrollment == null)
-                {
-                    return;
-                }
-
-                var until = result.Enrollment.ReservedUntil!.Value
-                    .ToLocalTime()
-                    .ToString("HH:mm dd/MM/yyyy");
-
-                var body =
-                    "<p>Đăng ký lớp học đã được tạo thành công.</p>" +
-                    $"<p>Học sinh: <strong>{WebUtility.HtmlEncode(result.StudentName)}</strong><br/>" +
-                    $"Lớp: <strong>{WebUtility.HtmlEncode(result.ClassName)}</strong></p>" +
-                    $"<p>Chỗ của học sinh được giữ đến <strong>{until}</strong> " +
-                    $"({EnrollmentService.HoldMinutes} phút). Nếu chưa thanh toán trước thời điểm này, " +
-                    "chỗ sẽ được nhả và đăng ký tự động bị hủy.</p>";
-
-                await _emailSender.SendAsync(
-                    toEmail,
-                    "Xác nhận giữ chỗ lớp học - EduCenter",
-                    body);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send reservation email.");
-            }
-        }
     }
 }

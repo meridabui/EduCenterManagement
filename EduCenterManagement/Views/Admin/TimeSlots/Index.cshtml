@@ -1,5 +1,6 @@
 @model IEnumerable<EduCenterManagement.Models.TimeSlot>
 
+
 @{
     ViewData["Title"] = "Quản lý khung giờ";
 }
@@ -13,7 +14,7 @@
                   asp-action="GenerateDefaultSlots"
                   method="post"
                   class="d-inline"
-                  onsubmit="return confirm('Bạn có chắc chắn muốn tự động tạo 6 khung giờ mặc định (Slot 1 đến Slot 6)?');">
+                  data-confirm="Bạn có chắc chắn muốn tự động tạo 6 khung giờ mặc định (Slot 1 đến Slot 6)?">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-outline-primary">
                      Khởi tạo khung giờ mặc định
@@ -61,7 +62,7 @@
                             <th>Giờ bắt đầu</th>
                             <th>Giờ kết thúc</th>
                             <th>Trạng thái</th>
-                            <th style="min-width: 270px;">Thao tác</th>
+                            <th class="admintimeslotindex-column">Thao tác</th>
                         </tr>
                     </thead>
 
@@ -146,7 +147,7 @@
                                           asp-action="GenerateDefaultSlots"
                                           method="post"
                                           class="d-inline me-2"
-                                          onsubmit="return confirm('Bạn có chắc chắn muốn tự động tạo 6 khung giờ mặc định (Slot 1 đến Slot 6)?');">
+                                          data-confirm="Bạn có chắc chắn muốn tự động tạo 6 khung giờ mặc định (Slot 1 đến Slot 6)?">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-success">
                                              Khởi tạo 6 khung giờ mặc định (Slot 1 - 6)

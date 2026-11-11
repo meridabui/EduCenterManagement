@@ -101,6 +101,8 @@ namespace EduCenterManagement.Services.Teacher
 
             var session = await _repo.GetSessionWithClassByIdAsync(model.SessionId, teacher.Id);
             if (session == null) return (false, "Không tìm thấy buổi học hoặc bạn không phụ trách lớp này.");
+            if (session.Class.Status != ClassStatus.InProgress)
+                return (false, "Chỉ được điểm danh khi lớp đang ở trạng thái Đang học.");
 
             var records = model.Students.Select(s => (s.StudentId, s.Status, s.Note)).ToList();
 

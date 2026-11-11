@@ -1,0 +1,53 @@
+@model EduCenterManagement.ViewModels.Admin.PaginationViewModel
+@{
+    // Carry the current query (including filters) into every navigation link.
+    Dictionary<string, string> Routes(int page)
+    {
+        var routes = Context.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString());
+        routes["page"] = page.ToString();
+        return routes;
+    }
+    var firstPage = Math.Max(1, Model.Page - 2);
+    var lastPage = Math.Min(Model.TotalPages, Model.Page + 2);
+}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 my-3">
+    <p class="text-muted small mb-0">Hiển thị @Model.FirstRow–@Model.LastRow / @Model.TotalCount dòng</p>
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Phân trang danh sách">
+            <ul class="pagination pagination-sm mb-0 flex-wrap">
+                @if (Model.Page > 1)
+                {
+                    <li class="page-item"><a class="page-link" asp-action="Index" asp-all-route-data="Routes(1)" aria-label="Trang đầu">Đầu</a></li>
+                    <li class="page-item"><a class="page-link" asp-action="Index" asp-all-route-data="Routes(Model.Page - 1)" rel="prev">Trước</a></li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Đầu</span></li>
+                    <li class="page-item disabled"><span class="page-link">Trước</span></li>
+                }
+                @for (var pageNumber = firstPage; pageNumber <= lastPage; pageNumber++)
+                {
+                    if (pageNumber == Model.Page)
+                    {
+                        <li class="page-item active"><span class="page-link" aria-current="page">@pageNumber</span></li>
+                    }
+                    else
+                    {
+                        <li class="page-item"><a class="page-link" asp-action="Index" asp-all-route-data="Routes(pageNumber)" aria-label="Trang @pageNumber">@pageNumber</a></li>
+                    }
+                }
+                @if (Model.Page < Model.TotalPages)
+                {
+                    <li class="page-item"><a class="page-link" asp-action="Index" asp-all-route-data="Routes(Model.Page + 1)" rel="next">Sau</a></li>
+                    <li class="page-item"><a class="page-link" asp-action="Index" asp-all-route-data="Routes(Model.TotalPages)" aria-label="Trang cuối">Cuối</a></li>
+                }
+                else
+                {
+                    <li class="page-item disabled"><span class="page-link">Sau</span></li>
+                    <li class="page-item disabled"><span class="page-link">Cuối</span></li>
+                }
+            </ul>
+        </nav>
+    }
+</div>

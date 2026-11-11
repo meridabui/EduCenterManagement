@@ -49,9 +49,30 @@
     }
     else
     {
-        @if (!Model.Subjects.Any())
+        <form method="get" asp-action="Index" class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-3 p-md-4">
+                <label for="studentId" class="form-label fw-semibold">Đăng ký lớp cho học sinh</label>
+                <select id="studentId" name="studentId" class="form-select" onchange="this.form.submit()">
+                    @if (!Model.SelectedStudentId.HasValue)
+                    {
+                        <option value="" selected>-- Chọn học sinh --</option>
+                    }
+                    @foreach (var student in Model.Students)
+                    {
+                        <option value="@student.Id" selected="@(Model.SelectedStudentId == student.Id)">@student.FullName</option>
+                    }
+                </select>
+                <div class="form-text">Danh sách lớp sẽ được lọc riêng theo các đăng ký còn hiệu lực của học sinh.</div>
+            </div>
+        </form>
+
+        @if (!Model.SelectedStudentId.HasValue)
         {
-            <div class="alert alert-info">Hiện chưa có môn học nào có lớp đang mở đăng ký.</div>
+            <div class="alert alert-info"><i class="bi bi-person-check me-1"></i>Vui lòng chọn học sinh để xem các lớp có thể đăng ký.</div>
+        }
+        else if (!Model.Subjects.Any())
+        {
+            <div class="alert alert-info">Hiện không còn lớp phù hợp để đăng ký cho học sinh này.</div>
         }
         else if (!Model.SelectedSubjectId.HasValue)
         {
@@ -111,7 +132,8 @@
                                 <div class="class-heading p-4 border-bottom">
                                     <div class="d-flex justify-content-between align-items-start gap-2">
                                         <span class="text-primary fw-semibold small">@classItem.SubjectName</span>
-                                        @if (classItem.AlreadyRegistered) { <span class="badge bg-info text-dark">Đã đăng ký</span> }
+                                        @if (classItem.HasPendingEnrollment) { <span class="badge bg-warning text-dark">Chờ thanh toán</span> }
+                                        else if (classItem.AlreadyRegistered) { <span class="badge bg-info text-dark">Đã đăng ký</span> }
                                         else if (classItem.SeatsLeft <= 0) { <span class="badge bg-secondary">Hết chỗ</span> }
                                         else { <span class="badge bg-success">Đang mở</span> }
                                     </div>
@@ -125,7 +147,14 @@
                                     <div class="small text-muted">@classItem.Schedules.Count lịch học mỗi tuần</div>
                                 </div>
                                 <div class="card-footer bg-white border-0 p-4 pt-0">
-                                    <a asp-action="Details" asp-route-id="@classItem.ClassId" asp-route-studentId="@Model.SelectedStudentId" class="btn btn-primary w-100">Xem chi tiết lớp</a>
+                                    @if (classItem.HasPendingEnrollment && classItem.ActiveEnrollmentId.HasValue)
+                                    {
+                                        <a asp-action="Confirmation" asp-route-id="@classItem.ActiveEnrollmentId" class="btn btn-warning w-100">Tiếp tục đăng ký</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Details" asp-route-id="@classItem.ClassId" asp-route-studentId="@Model.SelectedStudentId" class="btn btn-primary w-100">Xem chi tiết lớp</a>
+                                    }
                                 </div>
                             </article>
                         </div>

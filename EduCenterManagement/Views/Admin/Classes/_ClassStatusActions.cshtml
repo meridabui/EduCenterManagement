@@ -1,0 +1,43 @@
+@model EduCenterManagement.Models.Class
+@using EduCenterManagement.Enums
+@{
+    var target = Model.Status switch
+    {
+        ClassStatus.Draft => ClassStatus.Open,
+        ClassStatus.Open => ClassStatus.InProgress,
+        ClassStatus.InProgress => ClassStatus.Completed,
+        _ => (ClassStatus?)null
+    };
+    var label = Model.Status switch
+    {
+        ClassStatus.Draft => "Mở đăng ký",
+        ClassStatus.Open => "Bắt đầu lớp học",
+        _ => "Hoàn thành lớp học"
+    };
+    var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+    var canOpen = Model.Status != ClassStatus.Draft || Model.StartDate > today;
+}
+@if (target.HasValue)
+{
+    <form asp-controller="Classes" asp-action="ChangeStatus" asp-route-id="@Model.Id" method="post"
+          data-confirm="Xác nhận chuyển trạng thái lớp? Sau khi mở đăng ký, chỉ được đổi giáo viên; khi đang học, thông tin lớp sẽ bị khóa.">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="targetStatus" value="@target.Value" />
+        <button type="submit" class="btn btn-success" disabled="@(!canOpen)">@label</button>
+        @if (!canOpen)
+        {
+            <span class="text-danger small">Cần sửa ngày bắt đầu sau hôm nay trước khi mở đăng ký.</span>
+        }
+    </form>
+}
+@if (Model.Status == ClassStatus.Draft || Model.Status == ClassStatus.Open)
+{
+    @if (ViewBag.HasPaidEnrollments is true)
+    {
+        <span class="text-danger small">Không thể hủy lớp có đăng ký đã thanh toán.</span>
+    }
+    else
+    {
+        <a asp-controller="Classes" asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">Hủy lớp học</a>
+    }
+}

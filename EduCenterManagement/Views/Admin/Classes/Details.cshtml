@@ -1,12 +1,21 @@
 @model EduCenterManagement.Models.Class
 
+
 @{
     ViewData["Title"] = "Chi tiết lớp học";
     var sessionCount = ViewBag.SessionCount is int count ? count : 0;
 }
 
-<div class="mx-auto" style="max-width: 850px;">
+<div class="mx-auto adminclassdetails-container">
     <h1 class="h3 fw-bold mb-4">Chi tiết lớp học</h1>
+    @if (Model.Status == EduCenterManagement.Enums.ClassStatus.Open)
+    {
+        <div class="alert alert-info">Chỉ được đổi giáo viên. Lịch học, môn học, học phí, sĩ số và ngày học đã khóa.</div>
+    }
+    else if (Model.Status != EduCenterManagement.Enums.ClassStatus.Draft)
+    {
+        <div class="alert alert-info">Thông tin lớp đã khóa.</div>
+    }
 
     @foreach (var key in new[] { "SuccessMessage", "ErrorMessage" })
     {
@@ -94,24 +103,56 @@
                     @Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
                 </dd>
             </dl>
+            <h2 class="h5 fw-bold mt-4">Lịch học trong tuần</h2>
+            @if (Model.ClassSchedules.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead><tr><th>Thứ học</th><th>Ca học</th><th>Bắt đầu</th><th>Kết thúc</th></tr></thead>
+                        <tbody>
+                            @foreach (var schedule in Model.ClassSchedules.OrderBy(s => s.DayOfWeek).ThenBy(s => s.TimeSlot.StartTime))
+                            {
+                                <tr>
+                                    <td>@(schedule.DayOfWeek == 8 ? "Chủ nhật" : $"Thứ {schedule.DayOfWeek}")</td>
+                                    <td>@(schedule.TimeSlot?.Name ?? "Không xác định")</td>
+                                    <td>@(schedule.TimeSlot?.StartTime.ToString("HH:mm") ?? "—")</td>
+                                    <td>@(schedule.TimeSlot?.EndTime.ToString("HH:mm") ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">Chưa thiết lập lịch học.</p>
+            }
         </div>
 
         <div class="card-footer bg-white border-top p-4 d-flex flex-wrap gap-2">
             @if (sessionCount == 0 && Model.ClassSchedules.Any()
-                && Model.Status != EduCenterManagement.Enums.ClassStatus.Cancelled
-                && Model.Status != EduCenterManagement.Enums.ClassStatus.Completed)
+                && Model.Status == EduCenterManagement.Enums.ClassStatus.Draft)
             {
                 <form asp-controller="Classes" asp-action="GenerateSessions" asp-route-id="@Model.Id" method="post">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="btn btn-outline-primary">Tạo buổi học</button>
                 </form>
             }
+            @if (Model.Status == EduCenterManagement.Enums.ClassStatus.Draft)
+            {
             <a asp-controller="Classes"
                asp-action="Edit"
                asp-route-id="@Model.Id"
                class="btn btn-primary">
                 Sửa lớp học
             </a>
+            }
+            @if (Model.Status == EduCenterManagement.Enums.ClassStatus.Open)
+            {
+                <a asp-controller="Classes" asp-action="Index" asp-route-classId="@Model.Id"
+                   class="btn btn-outline-primary">Đổi giáo viên</a>
+            }
+            <partial name="~/Views/Admin/Classes/_ClassStatusActions.cshtml" model="Model" />
 
             <a asp-controller="Classes"
                asp-action="Index"

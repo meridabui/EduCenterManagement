@@ -121,6 +121,8 @@ namespace EduCenterManagement.Controllers.Admin
 
                 OpenClasses = classes.Count(c =>
                     c.Status == ClassStatus.Open),
+                InProgressClasses = classes.Count(c =>
+                    c.Status == ClassStatus.InProgress),
 
                 CancelledClasses = await _context.Classes.CountAsync(c =>
                     c.Status == ClassStatus.Cancelled),

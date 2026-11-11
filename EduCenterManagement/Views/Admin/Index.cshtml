@@ -1,4 +1,5 @@
 @model EduCenterManagement.ViewModels.Admin.AdminDashboardViewModel
+
 @{ ViewData["Title"] = "Tổng quan trung tâm"; }
 <div class="dashboard-heading"><div><h1>Tổng quan trung tâm</h1><p>Theo dõi lớp học, nguồn lực và tình hình đăng ký.</p></div><a asp-controller="Classes" asp-action="Create" class="btn btn-primary">+ Tạo lớp học</a></div>
 @foreach (var key in new[] { "SuccessMessage", "ErrorMessage" })
@@ -7,18 +8,18 @@
 }
 <div class="row g-3 mb-4">
 @foreach (var metric in new[] {
-("Lớp mở đăng ký", Model.OpenClasses.ToString(), $"{Model.TotalClasses} lớp chưa bị hủy", "Classes"),
-("Giáo viên hoạt động", Model.ActiveTeachers.ToString(), $"Tổng cộng {Model.TotalTeachers} giáo viên", "Teachers"),
-("Môn học hoạt động", Model.ActiveSubjects.ToString(), $"Tổng cộng {Model.TotalSubjects} môn học", "Subjects"),
-("Tỷ lệ lấp đầy", $"{Model.OccupancyRate:0.#}%", $"{Model.OccupiedSeats}/{Model.TotalSeats} chỗ đã thanh toán hoặc giữ chỗ", "Classes") })
+("Lớp mở đăng ký", Model.OpenClasses.ToString(), "Các lớp ở trạng thái mở đăng ký", "Classes", "Open"),
+("Lớp đang học", Model.InProgressClasses.ToString(), "Các lớp ở trạng thái đang học", "Classes", "InProgress"),
+("Giáo viên hoạt động", Model.ActiveTeachers.ToString(), $"Tổng cộng {Model.TotalTeachers} giáo viên", "Teachers", (string?)null),
+("Môn học hoạt động", Model.ActiveSubjects.ToString(), $"Tổng cộng {Model.TotalSubjects} môn học", "Subjects", (string?)null) })
 {
-<div class="col-12 col-sm-6 col-xl-3"><div class="dashboard-kpi"><div class="dashboard-kpi-label">@metric.Item1</div><div class="dashboard-kpi-value">@metric.Item2</div><div class="dashboard-secondary mb-3">@metric.Item3</div><a asp-controller="@metric.Item4" asp-action="Index" class="small">Xem danh sách →</a></div></div>
+<div class="col-12 col-sm-6 col-xl-3"><div class="dashboard-kpi"><div class="dashboard-kpi-label">@metric.Item1</div><div class="dashboard-kpi-value">@metric.Item2</div><div class="dashboard-secondary mb-3">@metric.Item3</div><a asp-controller="@metric.Item4" asp-action="Index" asp-route-status="@metric.Item5" class="small">Xem danh sách →</a></div></div>
 }
 </div>
 <div class="row g-4 mb-4"><div class="col-xl-8"><section class="dashboard-panel"><div class="d-flex justify-content-between align-items-center gap-2"><h2>Lớp học tổng quan</h2><a asp-controller="Classes" asp-action="Index" class="small mb-3">Xem tất cả →</a></div><p class="dashboard-secondary">Tối đa 6 lớp theo tên. Không bao gồm lớp đã hủy.</p><div class="table-responsive"><table class="table dashboard-table"><thead><tr><th>Lớp / Môn học</th><th>Giáo viên</th><th>Sĩ số</th><th></th></tr></thead><tbody>
 @foreach (var item in Model.Classes.Take(6))
 {
-<tr><td><strong>@item.Name</strong><div class="dashboard-secondary">@item.SubjectName</div></td><td>@(item.TeacherName ?? "Chưa phân công")</td><td><span>@item.Occupied/@item.MaxStudents</span><div class="dashboard-progress"><span style="width: @(Math.Clamp(item.OccupancyRate, 0, 100).ToString(System.Globalization.CultureInfo.InvariantCulture))%"></span></div></td><td><a asp-controller="Classes" asp-action="Details" asp-route-id="@item.ClassId" aria-label="Chi tiết lớp @item.Name">Chi tiết</a></td></tr>
+<tr><td><strong>@item.Name</strong><div class="dashboard-secondary">@item.SubjectName</div></td><td>@(item.TeacherName ?? "Chưa phân công")</td><td><span>@item.Occupied/@item.MaxStudents</span><div class="dashboard-progress"><progress class="adminindex-progress" value="@(Math.Clamp(item.OccupancyRate, 0, 100).ToString(System.Globalization.CultureInfo.InvariantCulture))" max="100" aria-label="Tỷ lệ sĩ số"></progress></div></td><td><a asp-controller="Classes" asp-action="Details" asp-route-id="@item.ClassId" aria-label="Chi tiết lớp @item.Name">Chi tiết</a></td></tr>
 }
 @if (!Model.Classes.Any()) { <tr><td colspan="4" class="text-center py-4 text-muted">Chưa có lớp học để hiển thị.</td></tr> }
 </tbody></table></div><p class="dashboard-secondary mb-0">Sĩ số bao gồm đăng ký đã thanh toán và đang giữ chỗ còn hiệu lực.</p></section></div>

@@ -1,4 +1,4 @@
-﻿@using EduCenterManagement.Enums
+﻿@using EduCenterManagement.Enums    
 @model EduCenterManagement.ViewModels.Registration.EnrollmentConfirmationViewModel
 
 @{
@@ -8,16 +8,16 @@
 <div class="container mt-4" style="max-width: 640px;">
     @if (Model.IsHoldActive)
     {
-        <div class="alert alert-success">
-            <h4 class="alert-heading">Đăng ký thành công</h4>
-            Chỗ của học sinh đã được giữ. Vui lòng hoàn tất thanh toán trước khi hết thời gian giữ chỗ.
+        <div class="alert alert-warning">
+            <h4 class="alert-heading">Giữ chỗ thành công – chờ thanh toán</h4>
+            Chỗ của học sinh đang được giữ tạm thời. Đăng ký chỉ hoàn tất sau khi thanh toán thành công.
         </div>
     }
     else if (Model.Status == EnrollmentStatus.Confirm)
     {
         <div class="alert alert-success">
-            <h4 class="alert-heading">Đã thanh toán</h4>
-            Đăng ký đã được xác nhận.
+            <h4 class="alert-heading">Đăng ký lớp học thành công</h4>
+            Thanh toán đã hoàn tất và đăng ký đã được xác nhận.
         </div>
     }
     else
@@ -75,6 +75,7 @@
         </div>
     </div>
 
+    <a asp-action="History" asp-route-studentId="@Model.StudentId" class="btn btn-primary">Xem lịch sử đăng ký</a>
     <a asp-action="Index" asp-route-studentId="@Model.StudentId" class="btn btn-outline-primary">Đăng ký lớp khác</a>
     <a asp-controller="ParentDashboard" asp-action="Index" class="btn btn-outline-secondary">Về trang phụ huynh</a>
 </div>

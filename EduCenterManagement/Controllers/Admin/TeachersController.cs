@@ -25,17 +25,35 @@ namespace EduCenterManagement.Controllers.Admin
         }
 
         // GET: /Teachers
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1, int? subjectId = null)
         {
-            var teachers = await _context.TeacherProfiles
-                .AsNoTracking()
+            ViewBag.Subjects = new SelectList(await _context.Subjects.AsNoTracking()
+                .OrderBy(s => s.Name).ToListAsync(), "Id", "Name", subjectId);
+            ViewBag.SelectedSubjectId = subjectId;
+
+            var query = _context.TeacherProfiles.AsNoTracking();
+            if (subjectId.HasValue)
+                query = query.Where(t => t.TeacherSubjects.Any(s => s.SubjectId == subjectId.Value));
+
+            var teachers = await query
                 .Include(t => t.User)
                 .Include(t => t.TeacherSubjects)
                     .ThenInclude(ts => ts.Subject)
-                .OrderBy(t => t.FullName)
                 .ToListAsync();
 
-            return View("~/Views/Admin/Teachers/Index.cshtml", teachers);
+            var nameComparer = StringComparer.Create(
+                System.Globalization.CultureInfo.GetCultureInfo("vi-VN"), ignoreCase: true);
+            var sortedTeachers = teachers
+                .OrderBy(t => t.FullName.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                    .LastOrDefault() ?? string.Empty, nameComparer)
+                .ThenBy(t => t.FullName.Trim(), nameComparer)
+                .ThenBy(t => t.Id)
+                .ToList();
+
+            var pagination = new PaginationViewModel(sortedTeachers.Count, page);
+            ViewBag.Pagination = pagination;
+            return View("~/Views/Admin/Teachers/Index.cshtml", sortedTeachers
+                .Skip(pagination.Offset).Take(PaginationViewModel.PageSize).ToList());
         }
 
         // GET: /Teachers/Create
