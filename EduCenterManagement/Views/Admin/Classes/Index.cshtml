@@ -1,9 +1,12 @@
 @model IEnumerable<EduCenterManagement.Models.Class>
+
 @using Microsoft.AspNetCore.Mvc.Rendering
 @using EduCenterManagement.Enums
 
 @{
     ViewData["Title"] = "Quản lý lớp học";
+    ViewData["BodyClass"] = "admin-class-index";
+    var minStartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).AddDays(1);
     var pagination = (EduCenterManagement.ViewModels.Admin.PaginationViewModel)ViewBag.Pagination;
     var rowNumber = pagination.Offset;
     var subjects = ViewBag.Subjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
@@ -16,106 +19,12 @@
     var hasFilters = ViewBag.HasClassFilters is bool filtered && filtered;
 }
 
-<style>
-    .class-page { color: #172b4d; }
-    .class-header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:28px; }
-    .class-header h1 { font-size:28px; font-weight:750; margin-bottom:7px; }
-    .class-header p { color:#52637a; margin:0; }
-    .btn-purple { background:#2563eb; border-color:#2563eb; color:#fff; border-radius:10px; padding:11px 18px; font-weight:600; }
-    .btn-purple:hover { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
-    .class-table-card { border:1px solid #dce4ef; border-radius:14px; overflow:hidden; box-shadow:0 2px 5px rgba(20,40,80,.04); background:#fff; }
-    .class-table { margin-bottom:0; }
-    .class-table thead th { background:#f7f9fc; color:#52637a; font-size:12px; font-weight:700; text-transform:uppercase; white-space:nowrap; padding:16px 18px; border-bottom:1px solid #dce4ef; }
-    .class-table tbody td { padding:15px 18px; vertical-align:middle; border-color:#edf1f7; }
-    .class-code { font-weight:750; white-space:nowrap; }
-    .teacher-unassigned { color:#e11d48; font-weight:600; }
-    .btn-assign { background:#eff6ff; color:#1d4ed8; border:0; border-radius:7px; padding:7px 12px; font-weight:600; white-space:nowrap; }
-    .btn-assign:hover { background:#dbeafe; color:#1e40af; }
-    .modal-content { border:0; border-radius:14px; overflow:hidden; }
-    .modal-header { background:#f7f9fc; padding:22px 28px; border-bottom:1px solid #edf1f7; }
-    .modal-title { font-size:21px; font-weight:750; color:#263449; }
-    .modal-body { padding:26px 28px; }
-    .modal-body .form-label { font-size:13px; font-weight:700; color:#43516a; margin-bottom:7px; }
-    .modal-body .form-control, .modal-body .form-select { min-height:46px; border-radius:10px; border-color:#cbd5e1; }
-    .modal-body .form-control:focus, .modal-body .form-select:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
-    .schedule-row { background:#fff; }
-    .schedule-row .form-label { margin-bottom:5px; }
-    .modal-footer { padding:0 28px 26px; border-top:0; }
-    .status-badge { display:inline-block; border-radius:6px; padding:5px 9px; font-size:12px; font-weight:700; }
-    .status-open { background:#d1fae5; color:#047857; }
-    .status-draft { background:#eef2f7; color:#475569; }
-    .status-progress { background:#dbeafe; color:#1d4ed8; }
-    .status-completed { background:#cffafe; color:#0e7490; }
-    .status-cancelled { background:#ffe4e6; color:#be123c; }
-    .schedule-chip { display:inline-block; background:#f1f5f9; border-radius:6px; padding:4px 7px; margin:2px 3px 2px 0; white-space:nowrap; font-size:12px; }
-    .capacity-track { height:18px; display:flex; overflow:hidden; border-radius:999px; background:#e5e7eb; }
-    .capacity-confirmed { background:#10b981; }
-    .capacity-reserved { background:#fbbf24; }
-    .capacity-free { background:#e5e7eb; }
-    .conflict-box { display:none; border:1px solid #fecaca; color:#b91c1c; background:#fef2f2; border-radius:9px; padding:10px 12px; margin-top:12px; font-size:13px; }
-    @@media(max-width:768px) { .class-header { align-items:flex-start; flex-direction:column; } .modal-body { padding:20px; } .modal-header { padding:20px; } .modal-footer { padding:0 20px 20px; } }
-    /* Modal tạo lớp không vượt quá chiều cao màn hình */
-    
-/* Modal tạo lớp: cuộn nội dung, giữ cố định header và footer */
-#createClassModal .modal-dialog {
-    width: min(960px, calc(100% - 24px));
-    max-width: 960px;
-    height: calc(100dvh - 24px);
-    margin: 12px auto;
-}
-
-#createClassModal .modal-content {
-    height: 100%;
-    max-height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-#createClassModal .modal-header {
-    flex: 0 0 auto;
-}
-
-/* Form phải là flex container vì nó bao quanh body và footer */
-#createClassModal #createClassForm {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
-}
-
-#createClassModal .modal-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
-}
-
-#createClassModal .modal-footer {
-    flex: 0 0 auto;
-    padding: 16px 28px 24px;
-    background: #fff;
-    border-top: 1px solid #edf1f7;
-}
-
-@@media (max-width: 576px) {
-    #createClassModal .modal-dialog {
-        width: calc(100% - 16px);
-        height: calc(100dvh - 16px);
-        margin: 8px auto;
-    }
-
-    #createClassModal .modal-footer {
-        padding: 12px 16px 16px;
-    }
-}
-
-</style>
-
-<div class="class-page">
+<div class="class-page"
+     data-teachers-url="@Url.Action("GetTeachersBySubject", "Classes")"
+     data-conflict-url="@Url.Action("CheckConflict", "Classes")"
+     data-assign-info-url="@Url.Action("AssignInfo", "Classes")"
+     data-capacity-url="@Url.Action("Capacity", "Classes")"
+     data-open-create="@(openCreateModal ? "true" : "false")">
     <div class="class-header">
         <div>
             <h1>Quản lý lớp học</h1>
@@ -145,7 +54,8 @@
         <div class="row g-3 align-items-end">
             <div class="col-12 col-md-6 col-xl-3">
                 <label for="filterSubjectId" class="form-label fw-semibold">Môn học</label>
-                <select id="filterSubjectId" name="subjectId" asp-items="filterSubjects" class="form-select">
+                <select id="filterSubjectId" name="subjectId" asp-items="filterSubjects" class="form-select"
+                        aria-describedby="filterSubjectHelp">
                     <option value="">Tất cả môn học</option>
                 </select>
             </div>
@@ -194,7 +104,7 @@
                                 <td class="class-code">@item.Name</td>
                                 <td>@(item.Subject?.Name ?? "Chưa có môn học")</td>
                                 <td class="text-nowrap">@item.StartDate.ToString("dd/MM/yyyy") – @item.EndDate.ToString("dd/MM/yyyy")</td>
-                                <td style="min-width:210px">
+                                <td class="adminclassindex-column">
                                     @if (item.ClassSchedules != null && item.ClassSchedules.Any())
                                     {
                                         foreach (var schedule in item.ClassSchedules.OrderBy(s => s.DayOfWeek))
@@ -217,7 +127,7 @@
                                 <td>
                                     @if (item.Teacher == null)
                                     {
-                                        @if (item.Status == ClassStatus.Draft)
+                                        @if (item.Status == ClassStatus.Draft || item.Status == ClassStatus.Open)
                                         {
                                         <button type="button" class="btn btn-sm btn-outline-danger quick-assign-btn" data-class-id="@item.Id">
                                             Chưa phân công · Gán ngay
@@ -231,7 +141,7 @@
                                     else
                                     {
                                         <div class="fw-semibold">@item.Teacher.FullName</div>
-                                        @if (item.Status == ClassStatus.Draft)
+                                        @if (item.Status == ClassStatus.Draft || item.Status == ClassStatus.Open)
                                         {
                                             <button type="button" class="btn btn-sm btn-link p-0 quick-assign-btn" data-class-id="@item.Id">Đổi giáo viên</button>
                                         }
@@ -328,12 +238,12 @@
                         </div>
                         <div class="col-md-6">
                             <label for="StartDate" class="form-label fw-semibold">Ngày bắt đầu (*)</label>
-                            <input id="StartDate" name="StartDate" type="date" class="form-control form-control-lg fs-6" value="@DateTime.Today.ToString("yyyy-MM-dd")" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <input id="StartDate" name="StartDate" type="date" class="form-control form-control-lg fs-6" value="@minStartDate.ToString("yyyy-MM-dd")" min="@minStartDate.ToString("yyyy-MM-dd")" required />
                             <span class="text-danger small" data-valmsg-for="StartDate" aria-live="polite"></span>
                         </div>
                         <div class="col-md-6">
                             <label for="EndDate" class="form-label fw-semibold">Ngày kết thúc (*)</label>
-                            <input id="EndDate" name="EndDate" type="date" class="form-control form-control-lg fs-6" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
+                            <input id="EndDate" name="EndDate" type="date" class="form-control form-control-lg fs-6" min="@minStartDate.AddDays(1).ToString("yyyy-MM-dd")" required />
                             <span class="text-danger small" data-valmsg-for="EndDate" aria-live="polite"></span>
                         </div>
                         <div class="col-md-6">
@@ -461,11 +371,11 @@
             <div class="modal-header"><div><h5 class="modal-title" id="capacityTitle">Chi tiết sĩ số lớp</h5><div class="text-muted small" id="capacitySubtitle">Đang tải...</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
             <div class="modal-body">
                 <div class="d-flex flex-wrap gap-3 mb-3 small">
-                    <span><span class="badge" style="background:#10b981">&nbsp;</span> Đã xác nhận: <strong id="capacityConfirmed">0</strong></span>
-                    <span><span class="badge" style="background:#fbbf24">&nbsp;</span> Đang giữ chỗ: <strong id="capacityReserved">0</strong></span>
-                    <span><span class="badge" style="background:#e5e7eb">&nbsp;</span> Còn trống: <strong id="capacityAvailable">0</strong></span>
+                    <span><span class="badge adminclassindex-confirmed-badge">&nbsp;</span> Đã xác nhận: <strong id="capacityConfirmed">0</strong></span>
+                    <span><span class="badge adminclassindex-reserved-badge">&nbsp;</span> Đang giữ chỗ: <strong id="capacityReserved">0</strong></span>
+                    <span><span class="badge adminclassindex-free-badge">&nbsp;</span> Còn trống: <strong id="capacityAvailable">0</strong></span>
                 </div>
-                <div class="capacity-track mb-4"><div id="capacityConfirmedBar" class="capacity-confirmed" style="width:0%"></div><div id="capacityReservedBar" class="capacity-reserved" style="width:0%"></div><div id="capacityFreeBar" class="capacity-free" style="width:100%"></div></div>
+                <div class="capacity-track mb-4"><div id="capacityConfirmedBar" class="capacity-confirmed adminclassindex-empty-bar"></div><div id="capacityReservedBar" class="capacity-reserved adminclassindex-empty-bar"></div><div id="capacityFreeBar" class="capacity-free adminclassindex-full-bar"></div></div>
                 <div class="table-responsive"><table class="table table-sm table-hover align-middle"><thead class="table-light"><tr><th>Học sinh</th><th>Mã phụ huynh</th><th>Hạn giữ chỗ</th><th>Trạng thái</th></tr></thead><tbody id="capacityStudents"><tr><td colspan="4" class="text-center text-muted">Đang tải...</td></tr></tbody></table></div>
                 <div id="capacityError" class="text-danger small"></div>
             </div>
@@ -476,276 +386,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/class-dates.js" asp-append-version="true"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const createForm = document.getElementById("createClassForm");
-            const scheduleContainer = document.getElementById("createScheduleContainer");
-            const scheduleTemplate = document.getElementById("createScheduleTemplate");
-            const addScheduleButton = document.getElementById("addCreateScheduleBtn");
-            const scheduleError = document.getElementById("createScheduleError");
-            const createSubmit = document.getElementById("createClassSubmit");
-            const subjectSelect = document.getElementById("SubjectId");
-            const teacherSelect = document.getElementById("TeacherId");
-            const startDate = document.getElementById("StartDate");
-            const endDate = document.getElementById("EndDate");
-            const teachersUrl = '@Url.Action("GetTeachersBySubject", "Classes")';
-            const conflictUrl = '@Url.Action("CheckConflict", "Classes")';
-            let conflictRequestId = 0;
-
-            function reindexSchedules() {
-                scheduleContainer.querySelectorAll(".schedule-row").forEach((row, index) => {
-                    row.querySelector(".day-select").name = `Schedules[${index}].DayOfWeek`;
-                    row.querySelector(".slot-select").name = `Schedules[${index}].TimeSlotId`;
-                });
-            }
-
-            function validateUniqueDays() {
-                const rows = [...scheduleContainer.querySelectorAll(".schedule-row")];
-                const days = rows.map(row => row.querySelector(".day-select").value);
-                return new Set(days).size === days.length;
-            }
-
-            addScheduleButton.addEventListener("click", () => {
-                scheduleContainer.appendChild(scheduleTemplate.content.cloneNode(true));
-                reindexSchedules();
-                scheduleError.style.display = "none";
-                checkTeacherConflicts();
-            });
-
-            scheduleContainer.addEventListener("click", event => {
-                const button = event.target.closest(".remove-schedule");
-                if (!button) return;
-                if (scheduleContainer.querySelectorAll(".schedule-row").length <= 1) {
-                    showScheduleError("Lớp phải có ít nhất một lịch học.");
-                    return;
-                }
-                button.closest(".schedule-row").remove();
-                reindexSchedules();
-                checkTeacherConflicts();
-            });
-
-            function showScheduleError(message) {
-                scheduleError.textContent = message;
-                scheduleError.style.display = "block";
-            }
-
-            async function loadTeachers(preserveSelection = false) {
-                const subjectId = subjectSelect.value;
-                const oldValue = preserveSelection ? teacherSelect.value : "";
-                teacherSelect.innerHTML = '<option value="">-- Chưa phân công giáo viên --</option>';
-                if (!subjectId) return;
-                teacherSelect.disabled = true;
-                try {
-                    const response = await fetch(`${teachersUrl}?subjectId=${encodeURIComponent(subjectId)}`);
-                    if (!response.ok) throw new Error("Không tải được danh sách giáo viên.");
-                    const data = await response.json();
-                    data.forEach(teacher => {
-                        const option = document.createElement("option");
-                        option.value = teacher.id;
-                        option.textContent = teacher.fullName;
-                        if (String(teacher.id) === oldValue) option.selected = true;
-                        teacherSelect.appendChild(option);
-                    });
-                } catch (error) {
-                    showScheduleError(error.message || "Không tải được giáo viên.");
-                } finally {
-                    teacherSelect.disabled = false;
-                }
-                checkTeacherConflicts();
-            }
-
-            subjectSelect.addEventListener("change", () => loadTeachers(false));
-            [teacherSelect, startDate, endDate].forEach(el => el.addEventListener("change", checkTeacherConflicts));
-            scheduleContainer.addEventListener("change", event => {
-                if (event.target.matches(".day-select, .slot-select")) checkTeacherConflicts();
-            });
-
-            async function checkTeacherConflicts() {
-                const requestId = ++conflictRequestId;
-                const teacherId = teacherSelect.value;
-                const start = startDate.value;
-                const end = endDate.value;
-                const rows = [...scheduleContainer.querySelectorAll(".schedule-row")];
-                reindexSchedules();
-
-                if (!validateUniqueDays()) {
-                    showScheduleError("Mỗi thứ chỉ được chọn một ca học.");
-                    createSubmit.disabled = true;
-                    return;
-                }
-                if (!teacherId || !start || !end || end < start || rows.some(r => !r.querySelector(".slot-select").value)) {
-                    scheduleError.style.display = "none";
-                    createSubmit.disabled = false;
-                    return;
-                }
-
-                createSubmit.disabled = true;
-                scheduleError.style.display = "none";
-                try {
-                    const allConflicts = [];
-                    for (const row of rows) {
-                        const day = row.querySelector(".day-select").value;
-                        const slot = row.querySelector(".slot-select").value;
-                        const query = new URLSearchParams({
-                            teacherId, startDate: start, endDate: end,
-                            timeSlotId: slot, days: day
-                        });
-                        const response = await fetch(`${conflictUrl}?${query.toString()}`);
-                        const result = await response.json();
-                        if (response.status === 409 && result.conflicts) allConflicts.push(...result.conflicts);
-                    }
-                    if (requestId !== conflictRequestId) return;
-                    if (allConflicts.length) {
-                        const unique = [...new Set(allConflicts.map(c =>
-                            `Lớp ${c.className} – ${c.dayLabel} – ${c.slotName}`))];
-                        showScheduleError("Giáo viên trùng lịch: " + unique.join("; "));
-                        createSubmit.disabled = true;
-                    } else {
-                        scheduleError.style.display = "none";
-                        createSubmit.disabled = false;
-                    }
-                } catch (error) {
-                    if (requestId !== conflictRequestId) return;
-                    showScheduleError("Không kiểm tra được lịch giáo viên. Hãy thử lại.");
-                    createSubmit.disabled = true;
-                }
-            }
-
-            createForm.addEventListener("submit", event => {
-                reindexSchedules();
-                const rows = [...scheduleContainer.querySelectorAll(".schedule-row")];
-                if (!rows.length || rows.some(r => !r.querySelector(".slot-select").value)) {
-                    event.preventDefault();
-                    showScheduleError("Vui lòng chọn thứ và ca học cho tất cả lịch.");
-                    return;
-                }
-                if (!validateUniqueDays()) {
-                    event.preventDefault();
-                    showScheduleError("Mỗi thứ chỉ được chọn một ca học.");
-                    return;
-                }
-                if (endDate.value && startDate.value && endDate.value <= startDate.value) {
-                    event.preventDefault();
-                    showScheduleError("Ngày kết thúc phải sau ngày bắt đầu.");
-                }
-            });
-
-            // Quick assign teacher modal
-            const assignModalElement = document.getElementById("assignTeacherModal");
-            const assignModal = bootstrap.Modal.getOrCreateInstance(assignModalElement);
-            const assignForm = document.getElementById("assignTeacherForm");
-            const assignTeacherSelect = document.getElementById("assignTeacherId");
-            const assignError = document.getElementById("assignConflict");
-            const assignSubmit = document.getElementById("assignTeacherSubmit");
-
-            document.querySelectorAll(".quick-assign-btn").forEach(button => {
-                button.addEventListener("click", async () => {
-                    const id = button.dataset.classId;
-                    document.getElementById("assignClassId").value = id;
-                    document.getElementById("assignClassSchedule").textContent = "Đang tải lịch học...";
-                    assignTeacherSelect.innerHTML = '<option value="">-- Chọn giáo viên --</option>';
-                    assignError.style.display = "none";
-                    assignSubmit.disabled = false;
-                    assignModal.show();
-                    try {
-                        const response = await fetch(`@Url.Action("AssignInfo", "Classes")?id=${encodeURIComponent(id)}`);
-                        if (!response.ok) throw new Error("Không tải được thông tin lớp.");
-                        const data = await response.json();
-                        document.getElementById("assignTeacherTitle").textContent = `Phân công giáo viên – ${data.className}`;
-                        document.getElementById("assignClassSchedule").textContent = `${(data.days || []).join(", ")} · ${data.slot || "Chưa có lịch"}`;
-                        data.teachers.forEach(t => {
-                            const option = document.createElement("option");
-                            option.value = t.id;
-                            option.textContent = t.fullName;
-                            if (String(t.id) === String(data.currentTeacherId)) option.selected = true;
-                            assignTeacherSelect.appendChild(option);
-                        });
-                    } catch (error) {
-                        assignError.textContent = error.message;
-                        assignError.style.display = "block";
-                    }
-                });
-            });
-
-            assignForm.addEventListener("submit", async event => {
-                event.preventDefault();
-                assignError.style.display = "none";
-                assignSubmit.disabled = true;
-                try {
-                    const response = await fetch(assignForm.action, {
-                        method: "POST",
-                        body: new FormData(assignForm),
-                        headers: { "X-Requested-With": "XMLHttpRequest" }
-                    });
-                    const result = await response.json().catch(() => ({}));
-                    if (!response.ok) {
-                        let message = result.message || "Không thể phân công giáo viên.";
-                        if (result.conflicts) {
-                            message = "Giáo viên trùng lịch: " + result.conflicts.map(c =>
-                                `${c.className} (${c.dayLabel}, ${c.slotName})`).join("; ");
-                        }
-                        throw new Error(message);
-                    }
-                    window.location.reload();
-                } catch (error) {
-                    assignError.textContent = error.message;
-                    assignError.style.display = "block";
-                    assignSubmit.disabled = false;
-                }
-            });
-
-            // Capacity modal
-            const capacityModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("capacityModal"));
-            document.querySelectorAll(".capacity-btn").forEach(button => {
-                button.addEventListener("click", async () => {
-                    const id = button.dataset.classId;
-                    document.getElementById("capacitySubtitle").textContent = "Đang tải sĩ số...";
-                    document.getElementById("capacityStudents").innerHTML = '<tr><td colspan="4" class="text-center text-muted">Đang tải...</td></tr>';
-                    document.getElementById("capacityError").textContent = "";
-                    capacityModal.show();
-                    try {
-                        const response = await fetch(`@Url.Action("Capacity", "Classes")?id=${encodeURIComponent(id)}`);
-                        if (!response.ok) throw new Error("Không tải được thông tin sĩ số.");
-                        const data = await response.json();
-                        document.getElementById("capacityTitle").textContent = `Sĩ số lớp ${data.className}`;
-                        document.getElementById("capacitySubtitle").textContent = `${data.occupied}/${data.max} học sinh · Tỷ lệ lấp đầy ${data.max ? Math.round(data.occupied * 100 / data.max) : 0}%`;
-                        document.getElementById("capacityConfirmed").textContent = data.confirmed;
-                        document.getElementById("capacityReserved").textContent = data.reserved;
-                        document.getElementById("capacityAvailable").textContent = data.available;
-                        const max = Math.max(Number(data.max) || 0, 1);
-                        document.getElementById("capacityConfirmedBar").style.width = `${data.confirmed * 100 / max}%`;
-                        document.getElementById("capacityReservedBar").style.width = `${data.reserved * 100 / max}%`;
-                        document.getElementById("capacityFreeBar").style.width = `${data.available * 100 / max}%`;
-                        const tbody = document.getElementById("capacityStudents");
-                        tbody.replaceChildren();
-                        if (!data.students || data.students.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Chưa có học sinh đăng ký.</td></tr>';
-                        } else {
-                            data.students.forEach(student => {
-                                const tr = document.createElement("tr");
-                                const values = [student.studentName || "—", student.parentId ?? "—", student.reservedUntil ? new Date(student.reservedUntil).toLocaleString("vi-VN") : "—", student.status === "Confirmed" ? "Đã xác nhận" : "Đang giữ chỗ"];
-                                values.forEach((value, index) => {
-                                    const td = document.createElement("td");
-                                    td.textContent = value;
-                                    if (index === 3) td.innerHTML = student.status === "Confirmed" ? '<span class="badge bg-success">Đã xác nhận</span>' : '<span class="badge bg-warning text-dark">Đang giữ chỗ</span>';
-                                    tr.appendChild(td);
-                                });
-                                tbody.appendChild(tr);
-                            });
-                        }
-                    } catch (error) {
-                        document.getElementById("capacityError").textContent = error.message;
-                    }
-                });
-            });
-
-            @if (openCreateModal)
-            {
-                    <text>
-                        bootstrap.Modal.getOrCreateInstance(document.getElementById("createClassModal")).show();
-                    </text>
-            }
-        });
-    </script>
 }

@@ -1,9 +1,10 @@
 @model EduCenterManagement.ViewModels.Admin.ClassViewModel
+
 @using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Sửa lớp học";
-    var originalStartDate = ViewBag.OriginalStartDate is DateOnly savedDate ? savedDate : Model.StartDate;
+    var minStartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).AddDays(1);
     var slots = ViewBag.TimeSlots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
     var schedules = Model.Schedules ?? new List<EduCenterManagement.ViewModels.Admin.ClassScheduleInputViewModel>();
     if (schedules.Count == 0)
@@ -12,12 +13,12 @@
     }
 }
 
-<div class="mx-auto mb-4" style="max-width: 1000px;">
+<div class="mx-auto mb-4 adminclassedit-container">
     <h1 class="h3 fw-bold mb-4">Sửa thông tin lớp học</h1>
 
     <div class="card border-0 dashboard-panel p-0 overflow-hidden">
         <div class="card-body p-4">
-            <form asp-controller="Classes" asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editClassForm" data-class-dates data-original-start="@originalStartDate.ToString("yyyy-MM-dd")" data-today="@DateTime.Today.ToString("yyyy-MM-dd")">
+            <form asp-controller="Classes" asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editClassForm" data-teachers-url="@Url.Action("GetTeachersBySubject", "Classes")" data-class-dates data-min-start="@minStartDate.ToString("yyyy-MM-dd")">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="Id" />
 
@@ -39,12 +40,12 @@
                     </div>
                     <div class="col-md-6">
                         <label asp-for="StartDate" class="form-label fw-semibold"></label>
-                        <input asp-for="StartDate" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
+                        <input asp-for="StartDate" type="date" min="@minStartDate.ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
                         <span asp-validation-for="StartDate" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
                         <label asp-for="EndDate" class="form-label fw-semibold"></label>
-                        <input asp-for="EndDate" type="date" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
+                        <input asp-for="EndDate" type="date" min="@minStartDate.AddDays(1).ToString("yyyy-MM-dd")" class="form-control form-control-lg fs-6" required />
                         <span asp-validation-for="EndDate" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
@@ -151,74 +152,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/class-dates.js" asp-append-version="true"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const container = document.getElementById('scheduleContainer');
-            const template = document.getElementById('scheduleTemplate');
-            const addButton = document.getElementById('addScheduleBtn');
-            const form = document.getElementById('editClassForm');
-            const error = document.getElementById('scheduleError');
-            let nextIndex = container.querySelectorAll('.schedule-row').length;
-
-            function reindexRows() {
-                container.querySelectorAll('.schedule-row').forEach((row, index) => {
-                    row.querySelector('.day-select').name = `Schedules[${index}].DayOfWeek`;
-                    row.querySelector('.slot-select').name = `Schedules[${index}].TimeSlotId`;
-                });
-                nextIndex = container.querySelectorAll('.schedule-row').length;
-            }
-
-            addButton.addEventListener('click', function () {
-                const fragment = template.content.cloneNode(true);
-                container.appendChild(fragment);
-                reindexRows();
-                error.textContent = '';
-            });
-
-            container.addEventListener('click', function (event) {
-                const button = event.target.closest('.remove-schedule');
-                if (!button) return;
-                if (container.querySelectorAll('.schedule-row').length <= 1) {
-                    error.textContent = 'Lớp phải có ít nhất một lịch học.';
-                    return;
-                }
-                button.closest('.schedule-row').remove();
-                reindexRows();
-            });
-
-            form.addEventListener('submit', function (event) {
-                reindexRows();
-                const rows = [...container.querySelectorAll('.schedule-row')];
-                const days = rows.map(r => r.querySelector('.day-select').value);
-                const duplicate = new Set(days).size !== days.length;
-                const incomplete = rows.some(r => !r.querySelector('.day-select').value || !r.querySelector('.slot-select').value);
-                if (rows.length === 0 || duplicate || incomplete) {
-                    event.preventDefault();
-                    error.textContent = duplicate
-                        ? 'Mỗi thứ chỉ được chọn một lần.'
-                        : 'Vui lòng chọn thứ và ca học cho từng lịch.';
-                }
-            });
-
-            const subjectSelect = document.getElementById('SubjectId');
-            const teacherSelect = document.getElementById('TeacherId');
-            const teachersUrl = '@Url.Action("GetTeachersBySubject", "Classes")';
-            async function loadTeachers(preserve) {
-                const selected = preserve ? teacherSelect.value : '';
-                teacherSelect.innerHTML = '<option value="">-- Chưa phân công giáo viên --</option>';
-                if (!subjectSelect.value) return;
-                try {
-                    const response = await fetch(`${teachersUrl}?subjectId=${encodeURIComponent(subjectSelect.value)}`);
-                    if (!response.ok) throw new Error('Không tải được giáo viên.');
-                    const teachers = await response.json();
-                    teachers.forEach(t => {
-                        const option = new Option(t.fullName, t.id, false, String(t.id) === selected);
-                        teacherSelect.add(option);
-                    });
-                } catch (e) { console.error(e); }
-            }
-            subjectSelect.addEventListener('change', () => loadTeachers(false));
-        });
-    </script>
 }

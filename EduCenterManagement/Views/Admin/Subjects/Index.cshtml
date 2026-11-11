@@ -1,5 +1,6 @@
 @model IEnumerable<EduCenterManagement.Models.Subject>
 
+
 @{
     ViewData["Title"] = "Quản lý môn học";
     var pagination = (EduCenterManagement.ViewModels.Admin.PaginationViewModel)ViewBag.Pagination;
@@ -38,7 +39,7 @@
                         <th>Tên môn học</th>
                         <th>Mô tả</th>
                         <th>Trạng thái</th>
-                        <th style="width: 220px;">Thao tác</th>
+                        <th class="adminsubjectindex-column">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>

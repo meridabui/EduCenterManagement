@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
 </head>
-<body>
+<body class="@ViewData["BodyClass"]">
 <a class="admin-skip" href="#main-content">Đến nội dung chính</a>
 <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
 <a class="admin-brand" asp-controller="Admin" asp-action="Index">EduCenter<span>QUẢN TRỊ TRUNG TÂM</span></a>

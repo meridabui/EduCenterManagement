@@ -21,12 +21,6 @@ public sealed class EmailOutboxWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_settings.Enabled)
-        {
-            _logger.LogInformation("Class reminder email sending is disabled.");
-            return;
-        }
-
         var interval = TimeSpan.FromSeconds(
             Math.Clamp(_settings.SenderIntervalSeconds, 10, 3600));
 
@@ -35,20 +29,36 @@ public sealed class EmailOutboxWorker : BackgroundService
             try
             {
                 using var scope = _scopeFactory.CreateScope();
-                var processor = scope.ServiceProvider
-                    .GetRequiredService<EmailOutboxProcessor>();
-                var processed = await processor.ProcessDueAsync(stoppingToken);
+                var confirmationPlanner = scope.ServiceProvider
+                    .GetRequiredService<EnrollmentConfirmationPlannerService>();
+                var confirmationProcessor = scope.ServiceProvider
+                    .GetRequiredService<EnrollmentConfirmationEmailProcessor>();
 
-                if (processed > 0)
+                var planned = await confirmationPlanner.PlanAsync(stoppingToken);
+                var confirmations = await confirmationProcessor
+                    .ProcessDueAsync(stoppingToken);
+                var reminders = 0;
+
+                if (_settings.Enabled)
+                {
+                    var reminderProcessor = scope.ServiceProvider
+                        .GetRequiredService<EmailOutboxProcessor>();
+                    reminders = await reminderProcessor.ProcessDueAsync(stoppingToken);
+                }
+
+                if (planned > 0 || confirmations > 0 || reminders > 0)
                 {
                     _logger.LogInformation(
-                        "Processed {Count} due class reminder email(s).",
-                        processed);
+                        "Email outbox: planned {Planned} enrollment confirmation(s), " +
+                        "processed {Confirmations} confirmation(s) and {Reminders} reminder(s).",
+                        planned,
+                        confirmations,
+                        reminders);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Processing class reminder emails failed.");
+                _logger.LogError(ex, "Processing email outbox failed.");
             }
 
             try

@@ -56,9 +56,7 @@ namespace EduCenterManagement.Controllers.Admin
         [HttpGet]
         public IActionResult Create()
         {
-            return View(
-                "~/Views/Admin/Subjects/Create.cshtml",
-                new SubjectViewModel());
+            return View( "~/Views/Admin/Subjects/Create.cshtml", new SubjectViewModel());
         }
 
         // POST: /Subjects/Create
@@ -68,8 +66,7 @@ namespace EduCenterManagement.Controllers.Admin
         {
             if (!ModelState.IsValid)
             {
-                return View(
-                    "~/Views/Admin/Subjects/Create.cshtml", model);
+                return View("~/Views/Admin/Subjects/Create.cshtml", model);
             }
 
             var name = model.Name.Trim();
@@ -79,12 +76,9 @@ namespace EduCenterManagement.Controllers.Admin
 
             if (exists)
             {
-                ModelState.AddModelError(
-                    nameof(model.Name),
-                    "Tên môn học đã tồn tại.");
+                ModelState.AddModelError(nameof(model.Name),"Tên môn học đã tồn tại.");
 
-                return View(
-                    "~/Views/Admin/Subjects/Create.cshtml", model);
+                return View("~/Views/Admin/Subjects/Create.cshtml", model);
             }
 
             var now = DateTime.UtcNow;
@@ -106,12 +100,9 @@ namespace EduCenterManagement.Controllers.Admin
             }
             catch (DbUpdateException)
             {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "Không thể lưu môn học. Vui lòng kiểm tra dữ liệu.");
+                ModelState.AddModelError( string.Empty, "Không thể lưu môn học. Vui lòng kiểm tra dữ liệu.");
 
-                return View(
-                    "~/Views/Admin/Subjects/Create.cshtml", model);
+                return View( "~/Views/Admin/Subjects/Create.cshtml", model);
             }
 
             TempData["SuccessMessage"] = "Thêm môn học thành công.";

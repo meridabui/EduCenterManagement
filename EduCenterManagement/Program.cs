@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using EduCenterManagement.Models;
 using EduCenterManagement.Services;
+using EduCenterManagement.Services.Admin;
 using EduCenterManagement.Services.Email;
 using EduCenterManagement.Services.Reminders;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,9 @@ builder.Services.Configure<ClassReminderSettings>(
     builder.Configuration.GetSection(ClassReminderSettings.SectionName));
 builder.Services.AddScoped<ClassReminderPlannerService>();
 builder.Services.AddScoped<EmailOutboxProcessor>();
+builder.Services.AddSingleton(new EnrollmentConfirmationEmailRuntime(DateTime.UtcNow));
+builder.Services.AddScoped<EnrollmentConfirmationPlannerService>();
+builder.Services.AddScoped<EnrollmentConfirmationEmailProcessor>();
 builder.Services.AddHostedService<ClassReminderPlannerWorker>();
 builder.Services.AddHostedService<EmailOutboxWorker>();
 // Đăng ký Repository & Service cho phân hệ Student

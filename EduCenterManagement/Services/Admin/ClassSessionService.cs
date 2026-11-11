@@ -3,12 +3,12 @@ using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EduCenterManagement.Services;
+namespace EduCenterManagement.Services.Admin;
 
 public sealed record ClassSessionSyncResult(int Added, int Removed, int Total);
 
 // Called only from Admin write actions, within the same transaction as the class/schedules.
-public class ClassSessionService(ApplicationDbContext context, TimeProvider clock)
+public class ClassSessionService(ApplicationDbContext context)
 {
     public async Task<ClassSessionSyncResult> SynchronizeAsync(
         Class classItem, IReadOnlyCollection<ClassSchedule> schedules, bool onlyIfEmpty = false)
@@ -28,8 +28,8 @@ public class ClassSessionService(ApplicationDbContext context, TimeProvider cloc
                 .Select(c => c.SessionId!.Value))
             .ToListAsync();
 
-        var now = clock.GetLocalNow().DateTime;
-        var utcNow = clock.GetUtcNow().UtcDateTime;
+        var now = DateTime.Now;
+        var utcNow = DateTime.UtcNow;
         var referenced = referencedIds.ToHashSet();
         bool IsProtected(ClassSession s) => s.SessionDate.ToDateTime(s.StartsAt) <= now
             || s.Status != ClassSessionStatus.Scheduled || referenced.Contains(s.Id);

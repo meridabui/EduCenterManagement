@@ -25,10 +25,17 @@ namespace EduCenterManagement.Controllers.Admin
         }
 
         // GET: /Teachers
-        public async Task<IActionResult> Index(int page = 1)
+        public async Task<IActionResult> Index(int page = 1, int? subjectId = null)
         {
-            var teachers = await _context.TeacherProfiles
-                .AsNoTracking()
+            ViewBag.Subjects = new SelectList(await _context.Subjects.AsNoTracking()
+                .OrderBy(s => s.Name).ToListAsync(), "Id", "Name", subjectId);
+            ViewBag.SelectedSubjectId = subjectId;
+
+            var query = _context.TeacherProfiles.AsNoTracking();
+            if (subjectId.HasValue)
+                query = query.Where(t => t.TeacherSubjects.Any(s => s.SubjectId == subjectId.Value));
+
+            var teachers = await query
                 .Include(t => t.User)
                 .Include(t => t.TeacherSubjects)
                     .ThenInclude(ts => ts.Subject)

@@ -22,6 +22,21 @@
         </div>
     }
 
+    <form asp-action="Index" method="get" class="dashboard-panel mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-5 col-lg-4">
+                <label for="filterSubjectId" class="form-label fw-semibold">Môn học</label>
+                <select id="filterSubjectId" name="subjectId" asp-items="ViewBag.Subjects" class="form-select">
+                    <option value="">Tất cả môn học</option>
+                </select>
+            </div>
+            <div class="col-auto d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lọc</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Xóa lọc</a>
+            </div>
+        </div>
+    </form>
+
     <section class="dashboard-panel p-0 overflow-hidden mb-4"><div class="table-responsive"><table class="table table-hover dashboard-table align-middle mb-0">
         <thead class="table-light">
             <tr>
@@ -66,7 +81,7 @@
             {
                 <tr>
                     <td colspan="6" class="text-center">
-                        Chưa có giáo viên nào.
+                        @(ViewBag.SelectedSubjectId != null ? "Không có giáo viên được phân công môn này." : "Chưa có giáo viên nào.")
                     </td>
                 </tr>
             }
