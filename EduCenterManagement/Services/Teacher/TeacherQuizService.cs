@@ -291,6 +291,12 @@ namespace EduCenterManagement.Services.Teacher
             if (quiz.Class.Status is not (ClassStatus.Open or ClassStatus.InProgress))
                 return (false, "Chỉ quản lý Quiz khi lớp Mở đăng ký hoặc Đang học.");
 
+            var attemptCount = await _repo.GetAttemptCountByQuizIdAsync(model.QuizId);
+            if (attemptCount > 0)
+            {
+                return (false, "Đề thi đã có học sinh làm bài, không thể thêm câu hỏi mới.");
+            }
+
             if (string.IsNullOrWhiteSpace(model.QuestionText))
             {
                 return (false, "Nội dung câu hỏi không được để trống.");
@@ -352,6 +358,13 @@ namespace EduCenterManagement.Services.Teacher
 
             if (!await CanManageQuizAsync(quizId, teacher.Id))
                 return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
+
+            var attemptCount = await _repo.GetAttemptCountByQuizIdAsync(quizId);
+            if (attemptCount > 0)
+            {
+                return (false, "Đề thi đã có học sinh làm bài, không thể xóa câu hỏi.");
+            }
+
             bool deleted = await _repo.DeleteQuestionAsync(questionId, quizId, teacher.Id);
             if (!deleted) return (false, "Không tìm thấy câu hỏi hoặc bạn không có quyền xóa.");
 
@@ -497,10 +510,115 @@ namespace EduCenterManagement.Services.Teacher
 
             if (!await CanManageQuizAsync(quizId, teacher.Id))
                 return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
+
+            var attemptCount = await _repo.GetAttemptCountByQuizIdAsync(quizId);
+            if (attemptCount > 0)
+            {
+                return (false, "Bài Quiz đã có học sinh làm bài và ghi nhận điểm số, không thể xóa. Vui lòng chọn 'Đóng bài Quiz' để kết thúc.");
+            }
+
             bool deleted = await _repo.DeleteQuizCascadeAsync(quizId, teacher.Id);
             if (!deleted) return (false, "Bài Quiz không tồn tại hoặc bạn không có quyền xóa.");
 
             return (true, "Đã xóa bài Quiz thành công.");
+        }
+
+        public async Task<(bool Success, string Message)> UpdateQuizConfigAsync(int userId, EditQuizConfigViewModel model)
+        {
+            var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
+            if (teacher == null) return (false, "Không tìm thấy hồ sơ giáo viên.");
+
+            if (!await CanManageQuizAsync(model.QuizId, teacher.Id))
+                return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
+
+            if (string.IsNullOrWhiteSpace(model.Title))
+                return (false, "Tiêu đề bài Quiz không được để trống.");
+
+            if (model.AvailableUntil <= model.AvailableFrom)
+                return (false, "Thời gian kết thúc phải lớn hơn thời gian bắt đầu.");
+
+            int attempts = await _repo.GetAttemptCountByQuizIdAsync(model.QuizId);
+            bool hasAttempts = attempts > 0;
+
+            bool updated = await _repo.UpdateQuizConfigAsync(
+                model.QuizId,
+                teacher.Id,
+                model.Title,
+                model.DurationMinutes,
+                model.AvailableFrom,
+                model.AvailableUntil,
+                model.MaxAttempts,
+                hasAttempts);
+
+            if (!updated) return (false, "Không tìm thấy bài Quiz hoặc bạn không có quyền cập nhật.");
+
+            return (true, "Đã cập nhật cấu hình bài Quiz thành công!");
+        }
+
+        public async Task<(bool Success, string Message)> UpdateQuestionAsync(int userId, QuizQuestionFormViewModel model)
+        {
+            var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
+            if (teacher == null) return (false, "Không tìm thấy hồ sơ giáo viên.");
+
+            if (!await CanManageQuizAsync(model.QuizId, teacher.Id))
+                return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
+
+            var attempts = await _repo.GetAttemptCountByQuizIdAsync(model.QuizId);
+            if (attempts > 0)
+            {
+                return (false, "Đề thi đã có học sinh làm bài, không thể chỉnh sửa nội dung hoặc điểm số câu hỏi.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.QuestionText))
+            {
+                return (false, "Nội dung câu hỏi không được để trống.");
+            }
+
+            var filledOptions = model.Options?.Where(o => !string.IsNullOrWhiteSpace(o.OptionText)).ToList() ?? new();
+            if (filledOptions.Count < 2)
+            {
+                return (false, "Vui lòng nhập ít nhất 2 phương án đáp án.");
+            }
+
+            if (model.Options == null || model.CorrectOptionIndex < 0 || model.CorrectOptionIndex >= model.Options.Count ||
+                string.IsNullOrWhiteSpace(model.Options[model.CorrectOptionIndex]?.OptionText))
+            {
+                return (false, "Đáp án đúng được chọn không được để trống nội dung.");
+            }
+
+            var options = new List<QuizOption>();
+            for (int i = 0; i < model.Options.Count; i++)
+            {
+                var opt = model.Options[i];
+                if (string.IsNullOrWhiteSpace(opt.OptionText)) continue;
+
+                options.Add(new QuizOption
+                {
+                    OptionText = opt.OptionText.Trim(),
+                    IsCorrect = (i == model.CorrectOptionIndex),
+                    SortOrder = options.Count + 1
+                });
+            }
+
+            if (!options.Any(o => o.IsCorrect))
+            {
+                return (false, "Câu hỏi phải có ít nhất 1 đáp án đúng hợp lệ.");
+            }
+
+            bool updated = await _repo.UpdateQuestionWithOptionsAsync(
+                model.QuestionId,
+                model.QuizId,
+                teacher.Id,
+                model.QuestionText,
+                model.Points,
+                options);
+
+            if (!updated)
+            {
+                return (false, "Không tìm thấy câu hỏi hoặc bạn không có quyền sửa câu hỏi này.");
+            }
+
+            return (true, "Đã cập nhật nội dung câu hỏi thành công!");
         }
 
         private async Task<bool> CanManageQuizAsync(int quizId, int teacherId)

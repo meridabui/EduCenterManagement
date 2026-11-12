@@ -263,13 +263,22 @@
                                                     </form>
                                                 }
 
-                                                <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
-                                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi và lượt nộp sẽ bị xóa.');">
-                                                    @Html.AntiForgeryToken()
-                                                    <button type="submit" class="btn btn-outline-danger" title="Xóa Quiz">
+                                                @if (item.SubmittedAttemptsCount == 0)
+                                                {
+                                                    <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
+                                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi sẽ bị xóa.');">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-outline-danger" title="Xóa Quiz">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-outline-secondary disabled" title="Đã có @item.SubmittedAttemptsCount lượt làm bài, không thể xóa">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
-                                                </form>
+                                                }
                                             }
                                             else
                                             {

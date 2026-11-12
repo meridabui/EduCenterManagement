@@ -49,5 +49,11 @@ namespace EduCenterManagement.Repositories.Teacher
         Task<List<QuizAnswer>> GetAnswersByAttemptIdAsync(int attemptId);
 
         Task<Quiz> CloneQuizAsync(Quiz sourceQuiz, Quiz newQuiz);
+
+        Task<int> GetAttemptCountByQuizIdAsync(int quizId);
+
+        Task<bool> UpdateQuizConfigAsync(int quizId, int teacherId, string title, int durationMinutes, DateTime availableFrom, DateTime availableUntil, int maxAttempts, bool hasAttempts);
+
+        Task<bool> UpdateQuestionWithOptionsAsync(int questionId, int quizId, int teacherId, string questionText, decimal points, List<QuizOption> options);
     }
 }

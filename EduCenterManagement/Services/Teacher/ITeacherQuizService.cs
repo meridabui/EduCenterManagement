@@ -25,6 +25,10 @@ namespace EduCenterManagement.Services.Teacher
 
         Task<(bool Success, string Message)> DeleteQuizAsync(int userId, int quizId);
 
+        Task<(bool Success, string Message)> UpdateQuizConfigAsync(int userId, EditQuizConfigViewModel model);
+
+        Task<(bool Success, string Message)> UpdateQuestionAsync(int userId, QuizQuestionFormViewModel model);
+
         Task<StudentAttemptDetailViewModel?> GetStudentAttemptDetailAsync(int userId, int attemptId);
 
         Task<List<object>> GetSessionsByClassAsync(int userId, int classId);
