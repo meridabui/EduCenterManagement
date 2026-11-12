@@ -31,6 +31,9 @@ namespace EduCenterManagement.ViewModels.Teacher.Attendance
         public string SubjectName { get; set; } = string.Empty;
         public string TeacherName { get; set; } = string.Empty;
 
+        public bool CanEdit { get; set; } = true;
+        public string? ReadOnlyReason { get; set; }
+
         public bool MarkSessionAsCompleted { get; set; } = false;
 
         public List<StudentAttendanceItemViewModel> Students { get; set; } = new();

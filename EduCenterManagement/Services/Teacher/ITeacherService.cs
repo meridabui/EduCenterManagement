@@ -9,6 +9,8 @@ namespace EduCenterManagement.Services.Teacher
 
         Task<StudentListViewModel?> GetStudentListAsync(int userId, int classId);
 
+        Task<ClassGradebookViewModel?> GetClassGradebookAsync(int userId, int classId);
+
         Task<TeacherTimetableViewModel?> GetTimetableAsync(int userId, int weekOffset);
 
         Task<ClassSessionsViewModel?> GetSessionsAsync(int userId, int classId, string filter);

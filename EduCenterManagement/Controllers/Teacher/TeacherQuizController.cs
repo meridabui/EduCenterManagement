@@ -116,6 +116,26 @@ namespace EduCenterManagement.Controllers.Teacher
             return RedirectToAction(nameof(Details), new { id = model.QuizId, tab = "questions" });
         }
 
+        // POST: /Teacher/TeacherQuiz/EditQuestion
+        [HttpPost("EditQuestion")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditQuestion(QuizQuestionFormViewModel model)
+        {
+            int userId = GetCurrentUserId();
+            var (success, message) = await _quizService.UpdateQuestionAsync(userId, model);
+
+            if (!success)
+            {
+                TempData["ErrorMessage"] = message;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = message;
+            }
+
+            return RedirectToAction(nameof(Details), new { id = model.QuizId, tab = "questions" });
+        }
+
         // POST: /Teacher/TeacherQuiz/DeleteQuestion
         [HttpPost("DeleteQuestion")]
         [ValidateAntiForgeryToken]
@@ -134,6 +154,26 @@ namespace EduCenterManagement.Controllers.Teacher
             }
 
             return RedirectToAction(nameof(Details), new { id = quizId, tab = "questions" });
+        }
+
+        // POST: /Teacher/TeacherQuiz/EditConfig
+        [HttpPost("EditConfig")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditConfig(EditQuizConfigViewModel model)
+        {
+            int userId = GetCurrentUserId();
+            var (success, message) = await _quizService.UpdateQuizConfigAsync(userId, model);
+
+            if (!success)
+            {
+                TempData["ErrorMessage"] = message;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = message;
+            }
+
+            return RedirectToAction(nameof(Details), new { id = model.QuizId });
         }
 
         // GET: /Teacher/TeacherQuiz/Clone/{id}
@@ -188,7 +228,7 @@ namespace EduCenterManagement.Controllers.Teacher
         // POST: /Teacher/TeacherQuiz/UpdateStatus
         [HttpPost("UpdateStatus")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateStatus(int quizId, QuizStatus status)
+        public async Task<IActionResult> UpdateStatus(int quizId, QuizStatus status, string? returnUrl = null)
         {
             int userId = GetCurrentUserId();
             var (success, message) = await _quizService.UpdateStatusAsync(userId, quizId, status);
@@ -200,6 +240,11 @@ namespace EduCenterManagement.Controllers.Teacher
             else
             {
                 TempData["SuccessMessage"] = message;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
             }
 
             return RedirectToAction(nameof(Details), new { id = quizId });

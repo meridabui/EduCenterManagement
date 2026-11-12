@@ -28,6 +28,14 @@ namespace EduCenterManagement.Repositories.Teacher
         Task<ClassSession?> GetSessionByIdAndTeacherAsync(int sessionId, int teacherId);
 
         Task<bool> UpdateSessionStatusAsync(int sessionId, int teacherId, ClassSessionStatus status);
+
+        Task<List<AttendanceRecord>> GetAttendanceRecordsByClassSessionsAsync(List<int> sessionIds);
+
+        Task<List<Quiz>> GetQuizzesByClassIdAsync(int classId);
+
+        Task<List<QuizQuestion>> GetQuestionsByQuizIdsAsync(List<int> quizIds);
+
+        Task<List<QuizAttempt>> GetQuizAttemptsByQuizIdsAsync(List<int> quizIds);
     }
 }
 

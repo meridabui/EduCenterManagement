@@ -21,6 +21,9 @@
                 </p>
             </div>
             <div class="d-flex gap-2">
+                <a asp-controller="Teacher" asp-action="ClassGradebook" asp-route-classId="@Model.ClassId" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-journal-check me-1"></i>Sổ điểm & Chuyên cần
+                </a>
                 <a asp-controller="TeacherComment" asp-action="ListComment" asp-route-classId="@Model.ClassId" class="btn btn-outline-primary btn-sm">
                     <i class="bi bi-chat-left-text me-1"></i>Xem bảng nhận xét lớp
                 </a>

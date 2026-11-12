@@ -48,8 +48,7 @@ namespace EduCenterManagement.Repositories.Teacher
         {
             return await _context.Enrollments
                 .AsNoTracking()
-                .Where(e => classIds.Contains(e.ClassId) &&
-                           (e.Status == EnrollmentStatus.Confirm || e.Status == EnrollmentStatus.PendingPayment))
+                .Where(e => classIds.Contains(e.ClassId) && e.Status == EnrollmentStatus.Confirm)
                 .GroupBy(e => e.ClassId)
                 .Select(g => new { ClassId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.ClassId, x => x.Count);
@@ -66,8 +65,7 @@ namespace EduCenterManagement.Repositories.Teacher
         {
             return await _context.Enrollments
                 .AsNoTracking()
-                .Where(e => e.ClassId == classId &&
-                           (e.Status == EnrollmentStatus.Confirm || e.Status == EnrollmentStatus.PendingPayment))
+                .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Confirm)
                 .Include(e => e.Student)
                 .OrderBy(e => e.Student.FullName)
                 .ToListAsync();
@@ -135,6 +133,40 @@ namespace EduCenterManagement.Repositories.Teacher
             session.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<AttendanceRecord>> GetAttendanceRecordsByClassSessionsAsync(List<int> sessionIds)
+        {
+            return await _context.AttendanceRecords
+                .AsNoTracking()
+                .Where(a => sessionIds.Contains(a.SessionId))
+                .ToListAsync();
+        }
+
+        public async Task<List<Quiz>> GetQuizzesByClassIdAsync(int classId)
+        {
+            return await _context.Quizzes
+                .AsNoTracking()
+                .Where(q => q.ClassId == classId)
+                .OrderBy(q => q.AvailableFrom)
+                .ThenBy(q => q.Id)
+                .ToListAsync();
+        }
+
+        public async Task<List<QuizQuestion>> GetQuestionsByQuizIdsAsync(List<int> quizIds)
+        {
+            return await _context.QuizQuestions
+                .AsNoTracking()
+                .Where(qq => quizIds.Contains(qq.QuizId))
+                .ToListAsync();
+        }
+
+        public async Task<List<QuizAttempt>> GetQuizAttemptsByQuizIdsAsync(List<int> quizIds)
+        {
+            return await _context.QuizAttempts
+                .AsNoTracking()
+                .Where(qa => quizIds.Contains(qa.QuizId))
+                .ToListAsync();
         }
     }
 }

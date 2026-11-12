@@ -177,6 +177,17 @@ namespace EduCenterManagement.Repositories.Teacher
                 .ToListAsync();
         }
 
+        public async Task<List<StudentProfile>> GetEnrolledStudentsByClassIdAsync(int classId)
+        {
+            return await _context.Enrollments
+                .AsNoTracking()
+                .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Confirm)
+                .Include(e => e.Student)
+                .OrderBy(e => e.Student.FullName)
+                .Select(e => e.Student)
+                .ToListAsync();
+        }
+
         public async Task AddQuestionWithOptionsAsync(QuizQuestion question, List<QuizOption> options)
         {
             _context.QuizQuestions.Add(question);
@@ -314,6 +325,58 @@ namespace EduCenterManagement.Repositories.Teacher
 
             await _context.SaveChangesAsync();
             return newQuiz;
+        }
+
+        public async Task<int> GetAttemptCountByQuizIdAsync(int quizId)
+        {
+            return await _context.QuizAttempts.CountAsync(a => a.QuizId == quizId);
+        }
+
+        public async Task<bool> UpdateQuizConfigAsync(int quizId, int teacherId, string title, int durationMinutes, DateTime availableFrom, DateTime availableUntil, int maxAttempts, bool hasAttempts)
+        {
+            var quiz = await _context.Quizzes.FirstOrDefaultAsync(q => q.Id == quizId && q.CreatedByTeacherId == teacherId);
+            if (quiz == null) return false;
+
+            quiz.Title = title.Trim();
+            quiz.DurationMinutes = durationMinutes;
+            quiz.AvailableUntil = availableUntil;
+            quiz.MaxAttempts = maxAttempts;
+            if (!hasAttempts)
+            {
+                quiz.AvailableFrom = availableFrom;
+            }
+            quiz.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> UpdateQuestionWithOptionsAsync(int questionId, int quizId, int teacherId, string questionText, decimal points, List<QuizOption> options)
+        {
+            var quiz = await _context.Quizzes.FirstOrDefaultAsync(q => q.Id == quizId && q.CreatedByTeacherId == teacherId);
+            if (quiz == null) return false;
+
+            var question = await _context.QuizQuestions.FirstOrDefaultAsync(qq => qq.Id == questionId && qq.QuizId == quizId);
+            if (question == null) return false;
+
+            question.QuestionText = questionText.Trim();
+            question.Points = points <= 0 ? 1.00m : points;
+            question.UpdatedAt = DateTime.UtcNow;
+
+            var oldOptions = await _context.QuizOptions.Where(o => o.QuestionId == questionId).ToListAsync();
+            if (oldOptions.Any())
+            {
+                _context.QuizOptions.RemoveRange(oldOptions);
+            }
+
+            foreach (var opt in options)
+            {
+                opt.QuestionId = questionId;
+                _context.QuizOptions.Add(opt);
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

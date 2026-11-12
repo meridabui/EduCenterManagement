@@ -11,6 +11,9 @@
             <a asp-action="ListComment" asp-route-classId="@Model.ClassId" class="btn btn-outline-secondary btn-sm me-2">
                 <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách nhận xét lớp
             </a>
+            <a asp-controller="Teacher" asp-action="ClassGradebook" asp-route-classId="@Model.ClassId" class="btn btn-outline-success btn-sm me-2">
+                <i class="bi bi-journal-check me-1"></i>Sổ điểm & Chuyên cần
+            </a>
             <a asp-controller="Teacher" asp-action="StudentList" asp-route-classId="@Model.ClassId" class="btn btn-outline-info btn-sm">
                 <i class="bi bi-people me-1"></i>Danh sách học sinh
             </a>
@@ -41,8 +44,8 @@
     <!-- Student Header Card -->
     <div class="card shadow-sm border-0 mb-4 bg-white">
         <div class="card-body p-4">
-            <div class="row align-items-center">
-                <div class="col-md-8">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-6">
                     <div class="d-flex align-items-center mb-2">
                         <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
                             <i class="bi bi-person"></i>
@@ -52,7 +55,7 @@
                             <span class="badge bg-light text-dark border font-monospace mt-1">@Model.StudentCode</span>
                         </div>
                     </div>
-                    <div class="text-muted d-flex flex-wrap gap-3 mt-2">
+                    <div class="text-muted d-flex flex-wrap gap-3 mt-2 small">
                         <span><i class="bi bi-door-open me-1 text-primary"></i>Lớp: <strong>@Model.ClassName</strong></span>
                         <span><i class="bi bi-book me-1 text-info"></i>Môn: <strong>@Model.SubjectName</strong></span>
                         @if (Model.DateOfBirth.HasValue)
@@ -61,10 +64,34 @@
                         }
                     </div>
                 </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <div class="p-3 bg-light rounded border text-center d-inline-block">
-                        <div class="text-muted small">Tổng số nhận xét</div>
-                        <div class="h3 fw-bold text-primary mb-0">@Model.Comments.Count</div>
+                <!-- Khối thống kê học tập cho Giáo viên tiện theo dõi để đánh giá -->
+                <div class="col-lg-6">
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="p-2 bg-light rounded border h-100">
+                                <div class="text-muted small">Chuyên cần</div>
+                                <div class="fs-6 fw-bold @(Model.AttendanceRate >= 80 ? "text-success" : (Model.AttendanceRate >= 60 ? "text-warning" : "text-danger"))">
+                                    @Model.PresentSessions / @Model.TotalTakenSessions
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.75rem;">(@Model.AttendanceRate% - Vắng @Model.AbsentSessions)</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-light rounded border h-100">
+                                <div class="text-muted small">Điểm TB Quiz</div>
+                                <div class="fs-6 fw-bold @(Model.AverageQuizScore10 >= 5.0m ? "text-success" : "text-primary")">
+                                    @(Model.AverageQuizScore10.HasValue ? Model.AverageQuizScore10.Value.ToString("0.##") + " / 10" : "--")
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.75rem;">Đã làm @Model.CompletedQuizzes/@Model.TotalClassQuizzes bài</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-light rounded border h-100">
+                                <div class="text-muted small">Số nhận xét</div>
+                                <div class="fs-6 fw-bold text-dark">@Model.Comments.Count</div>
+                                <div class="text-muted small" style="font-size: 0.75rem;">đã ghi nhận</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

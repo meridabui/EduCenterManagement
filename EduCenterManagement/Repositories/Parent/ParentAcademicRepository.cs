@@ -37,7 +37,14 @@ public sealed class ParentAcademicRepository : IParentAcademicRepository
             .AsNoTracking()
             .Where(comment =>
                 comment.StudentId == studentId
-                && comment.Visibility == "parent_student")
+                && comment.Visibility == "parent_student"
+                && (comment.Class.Status == ClassStatus.Open
+                    || comment.Class.Status == ClassStatus.InProgress
+                    || comment.Class.Status == ClassStatus.Completed)
+                && _context.Enrollments.Any(enrollment =>
+                    enrollment.StudentId == studentId
+                    && enrollment.ClassId == comment.ClassId
+                    && enrollment.Status == EnrollmentStatus.Confirm))
             .Include(comment => comment.Teacher)
             .Include(comment => comment.Class)
                 .ThenInclude(classItem => classItem.Subject)
@@ -52,10 +59,14 @@ public sealed class ParentAcademicRepository : IParentAcademicRepository
     {
         return _context.Classes
             .AsNoTracking()
-            .Where(classItem => _context.Enrollments.Any(enrollment =>
-                enrollment.ClassId == classItem.Id
-                && enrollment.StudentId == studentId
-                && enrollment.Status == EnrollmentStatus.Confirm))
+            .Where(classItem =>
+                (classItem.Status == ClassStatus.Open
+                    || classItem.Status == ClassStatus.InProgress
+                    || classItem.Status == ClassStatus.Completed)
+                && _context.Enrollments.Any(enrollment =>
+                    enrollment.ClassId == classItem.Id
+                    && enrollment.StudentId == studentId
+                    && enrollment.Status == EnrollmentStatus.Confirm))
             .Include(classItem => classItem.Subject)
             .Include(classItem => classItem.Teacher)
             .OrderBy(classItem => classItem.Name)
@@ -74,6 +85,9 @@ public sealed class ParentAcademicRepository : IParentAcademicRepository
             .Where(enrollment =>
                 enrollment.StudentId == studentId
                 && enrollment.Status == EnrollmentStatus.Confirm
+                && (enrollment.Class.Status == ClassStatus.Open
+                    || enrollment.Class.Status == ClassStatus.InProgress
+                    || enrollment.Class.Status == ClassStatus.Completed)
                 && (!classId.HasValue || enrollment.ClassId == classId.Value))
             .Select(enrollment => enrollment.ClassId)
             .Distinct()
@@ -140,7 +154,14 @@ public sealed class ParentAcademicRepository : IParentAcademicRepository
                 attempt.StudentId == studentId
                 && (attempt.Status == QuizAttemptStatus.Submitted
                     || attempt.Status == QuizAttemptStatus.AutoSubmitted
-                    || attempt.Status == QuizAttemptStatus.Expired))
+                    || attempt.Status == QuizAttemptStatus.Expired)
+                && (attempt.Quiz.Class.Status == ClassStatus.Open
+                    || attempt.Quiz.Class.Status == ClassStatus.InProgress
+                    || attempt.Quiz.Class.Status == ClassStatus.Completed)
+                && _context.Enrollments.Any(enrollment =>
+                    enrollment.StudentId == studentId
+                    && enrollment.ClassId == attempt.Quiz.ClassId
+                    && enrollment.Status == EnrollmentStatus.Confirm))
             .Include(attempt => attempt.Quiz)
                 .ThenInclude(quiz => quiz.Class)
                     .ThenInclude(classItem => classItem.Subject)

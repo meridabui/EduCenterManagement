@@ -1,4 +1,4 @@
-﻿@using EduCenterManagement.Enums
+@using EduCenterManagement.Enums
 @model EduCenterManagement.ViewModels.Teacher.Quiz.QuizDetailViewModel
 
 @{
@@ -48,6 +48,10 @@
             <div class="d-flex flex-wrap gap-2">
                 @if (Model.IsMine)
                 {
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editQuizConfigModal">
+                        <i class="bi bi-sliders me-1"></i> Sửa cấu hình
+                    </button>
+
                     <div class="dropdown">
                         <button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-gear me-1"></i> Trạng thái phát hành
@@ -86,13 +90,22 @@
                         </ul>
                     </div>
 
-                    <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline"
-                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi và kết quả thi sẽ bị xóa.');">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                    @if (!Model.Attempts.Any())
+                    {
+                        <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi sẽ bị xóa.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash me-1"></i> Xóa Quiz
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-secondary btn-sm disabled" title="Đã có học sinh làm bài, không thể xóa">
                             <i class="bi bi-trash me-1"></i> Xóa Quiz
                         </button>
-                    </form>
+                    }
                 }
                 else
                 {
@@ -180,9 +193,18 @@
                         <h5 class="fw-bold mb-0">Danh sách các câu hỏi trắc nghiệm</h5>
                         @if (Model.IsMine)
                         {
-                            <button type="button" class="btn btn-success btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
-                                <i class="bi bi-plus-lg me-1"></i> Thêm câu hỏi mới
-                            </button>
+                            if (!Model.Attempts.Any())
+                            {
+                                <button type="button" class="btn btn-success btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+                                    <i class="bi bi-plus-lg me-1"></i> Thêm câu hỏi mới
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-3 py-2">
+                                    <i class="bi bi-lock-fill me-1"></i> Đã có học sinh làm bài (Khóa thêm/sửa/xóa câu hỏi)
+                                </span>
+                            }
                         }
                     </div>
 
@@ -198,17 +220,27 @@
                                             <span class="badge bg-primary me-2">Câu @(i + 1)</span>
                                             <span>Điểm: @q.Points.ToString("0.##")</span>
                                         </div>
-                                        @if (Model.IsMine)
+                                        @if (Model.IsMine && !Model.Attempts.Any())
                                         {
-                                            <form asp-controller="TeacherQuiz" asp-action="DeleteQuestion" method="post"
-                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa câu hỏi này?');">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="questionId" value="@q.Id" />
-                                                <input type="hidden" name="quizId" value="@Model.Id" />
-                                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Xóa câu hỏi">
-                                                    <i class="bi bi-trash"></i>
+                                            <div class="d-flex gap-1">
+                                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 btn-edit-question"
+                                                        data-id="@q.Id"
+                                                        data-text="@q.QuestionText"
+                                                        data-points="@q.Points.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                        data-options='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(q.Options))'
+                                                        title="Sửa câu hỏi">
+                                                    <i class="bi bi-pencil"></i>
                                                 </button>
-                                            </form>
+                                                <form asp-controller="TeacherQuiz" asp-action="DeleteQuestion" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa câu hỏi này?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="questionId" value="@q.Id" />
+                                                    <input type="hidden" name="quizId" value="@Model.Id" />
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Xóa câu hỏi">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
                                         }
                                     </div>
                                     <div class="card-body">
@@ -245,7 +277,7 @@
                         <div class="text-center py-5 border rounded bg-light">
                             <i class="bi bi-question-diamond fs-1 text-secondary d-block mb-2"></i>
                             <p class="text-muted mb-2">Chưa có câu hỏi nào trong bài Quiz này.</p>
-                            @if (Model.IsMine)
+                            @if (Model.IsMine && !Model.Attempts.Any())
                             {
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
                                     <i class="bi bi-plus-lg me-1"></i> Thêm câu hỏi đầu tiên
@@ -259,48 +291,92 @@
                 @if (Model.IsMine)
                 {
                     <div class="tab-pane fade @(Model.ActiveTab == "results" ? "show active" : "")" id="tabResults" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold mb-0">Kết quả làm bài của học sinh lớp @Model.ClassName</h5>
-                            <span class="badge bg-light text-dark border">Tổng số: @Model.Attempts.Count lượt làm</span>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h5 class="fw-bold mb-1">Bảng tổng hợp kết quả Quiz - Lớp @Model.ClassName</h5>
+                                <div class="text-muted small">
+                                    Sĩ số lớp: <strong class="text-dark">@Model.TotalClassStudents</strong> em |
+                                    Đã làm bài: <strong class="text-success">@Model.TotalAttemptedStudents</strong> em |
+                                    Chưa làm bài: <strong class="text-danger">@Model.TotalNotAttemptedStudents</strong> em
+                                </div>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group" id="studentResultFilter">
+                                <button type="button" class="btn btn-outline-primary active" data-filter="all">Tất cả (@Model.StudentResults.Count)</button>
+                                <button type="button" class="btn btn-outline-success" data-filter="attempted">Đã làm (@Model.TotalAttemptedStudents)</button>
+                                <button type="button" class="btn btn-outline-danger" data-filter="not-attempted">Chưa làm (@Model.TotalNotAttemptedStudents)</button>
+                            </div>
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
+                            <table class="table table-hover align-middle mb-0" id="tableStudentResults">
                                 <thead class="table-light">
                                     <tr>
                                         <th class="ps-3">Mã HS</th>
                                         <th>Họ và tên</th>
-                                        <th>Lần làm</th>
-                                        <th>Thời gian nộp</th>
-                                        <th>Điểm số</th>
                                         <th>Trạng thái</th>
-                                        <th class="pe-3 text-end">Chi tiết bài làm</th>
+                                        <th>Số lượt làm</th>
+                                        <th>Điểm chốt (Cao nhất)</th>
+                                        <th>Thời gian nộp</th>
+                                        <th class="pe-3 text-end">Chi tiết</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @if (Model.Attempts.Any())
+                                    @if (Model.StudentResults.Any())
                                     {
-                                        foreach (var att in Model.Attempts)
+                                        foreach (var s in Model.StudentResults)
                                         {
-                                            <tr>
-                                                <td class="ps-3 font-monospace fw-bold text-secondary">@att.StudentCode</td>
-                                                <td class="fw-semibold">@att.StudentFullName</td>
-                                                <td><span class="badge bg-light text-dark border">Lần @att.AttemptNumber</span></td>
+                                            <tr class="student-row" data-status="@(s.HasAttempted ? "attempted" : "not-attempted")">
+                                                <td class="ps-3 font-monospace fw-bold text-secondary">@s.StudentCode</td>
+                                                <td class="fw-semibold">@s.StudentFullName</td>
                                                 <td>
-                                                    @if (att.SubmittedAt.HasValue)
+                                                    @if (!s.HasAttempted)
                                                     {
-                                                        <span>📅 @att.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                                        <span class="badge bg-danger-subtle text-danger border border-danger">
+                                                            <i class="bi bi-x-circle me-1"></i>Chưa làm bài
+                                                        </span>
                                                     }
                                                     else
                                                     {
-                                                        <span class="text-muted fst-italic">Đang làm bài...</span>
+                                                        switch (s.LatestStatus)
+                                                        {
+                                                            case QuizAttemptStatus.Submitted:
+                                                                <span class="badge bg-success-subtle text-success border border-success">
+                                                                    <i class="bi bi-check-circle me-1"></i>Đã nộp bài
+                                                                </span>
+                                                                break;
+                                                            case QuizAttemptStatus.AutoSubmitted:
+                                                                <span class="badge bg-info-subtle text-info border border-info">
+                                                                    <i class="bi bi-robot me-1"></i>Tự động nộp
+                                                                </span>
+                                                                break;
+                                                            case QuizAttemptStatus.Expired:
+                                                                <span class="badge bg-secondary-subtle text-secondary border">
+                                                                    <i class="bi bi-clock-history me-1"></i>Hết giờ
+                                                                </span>
+                                                                break;
+                                                            default:
+                                                                <span class="badge bg-warning-subtle text-warning border">
+                                                                    <i class="bi bi-pencil me-1"></i>Đang làm
+                                                                </span>
+                                                                break;
+                                                        }
                                                     }
                                                 </td>
                                                 <td>
-                                                    @if (att.Score.HasValue)
+                                                    @if (s.HasAttempted)
                                                     {
-                                                        <span class="fs-6 fw-bold @(att.Score.Value >= (att.MaxScore / 2) ? "text-success" : "text-danger")">
-                                                            @att.Score.Value.ToString("0.##") / @att.MaxScore.ToString("0.##")
+                                                        <span class="badge bg-light text-dark border">@s.AttemptsUsed / @Model.MaxAttempts lần</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">0 / @Model.MaxAttempts</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (s.BestScore.HasValue)
+                                                    {
+                                                        <span class="fs-6 fw-bold @(s.BestScore.Value >= (s.MaxScore / 2) ? "text-success" : "text-danger")">
+                                                            @s.BestScore.Value.ToString("0.##") / @s.MaxScore.ToString("0.##")
                                                         </span>
                                                     }
                                                     else
@@ -309,29 +385,26 @@
                                                     }
                                                 </td>
                                                 <td>
-                                                    @switch (att.Status)
+                                                    @if (s.LatestSubmittedAt.HasValue)
                                                     {
-                                                        case QuizAttemptStatus.Submitted:
-                                                            <span class="badge bg-success-subtle text-success border border-success">Đã nộp bài</span>
-                                                            break;
-                                                        case QuizAttemptStatus.AutoSubmitted:
-                                                            <span class="badge bg-info-subtle text-info border border-info">Tự động nộp</span>
-                                                            break;
-                                                        case QuizAttemptStatus.Expired:
-                                                            <span class="badge bg-secondary-subtle text-secondary border">Hết giờ</span>
-                                                            break;
-                                                        default:
-                                                            <span class="badge bg-warning-subtle text-warning border">Đang làm</span>
-                                                            break;
+                                                        <span>📅 @s.LatestSubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">--</span>
                                                     }
                                                 </td>
                                                 <td class="pe-3 text-end">
-                                                    @if (att.Status != QuizAttemptStatus.InProgress)
+                                                    @if (s.BestAttemptId.HasValue)
                                                     {
-                                                        <a asp-controller="TeacherQuiz" asp-action="StudentAttempt" asp-route-attemptId="@att.AttemptId"
+                                                        <a asp-controller="TeacherQuiz" asp-action="StudentAttempt" asp-route-attemptId="@s.BestAttemptId.Value"
                                                            class="btn btn-outline-primary btn-sm">
                                                             <i class="bi bi-journal-text me-1"></i> Xem bài nộp
                                                         </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted small fst-italic">Chưa có bài nộp</span>
                                                     }
                                                 </td>
                                             </tr>
@@ -342,7 +415,7 @@
                                         <tr>
                                             <td colspan="7" class="text-center py-4 text-muted">
                                                 <i class="bi bi-people fs-3 d-block mb-1"></i>
-                                                Chưa có học sinh nào nộp bài kiểm tra này.
+                                                Chưa có học sinh nào trong danh sách lớp.
                                             </td>
                                         </tr>
                                     }
@@ -356,81 +429,69 @@
     </div>
 </div>
 
-<!-- Modal Thêm câu hỏi mới -->
 @if (Model.IsMine)
 {
-    <div class="modal fade" id="addQuestionModal" tabindex="-1" aria-labelledby="addQuestionModalLabel" aria-hidden="true">
+    <!-- Modal Sửa cấu hình Quiz -->
+    <div class="modal fade" id="editQuizConfigModal" tabindex="-1" aria-labelledby="editQuizConfigModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form asp-controller="TeacherQuiz" asp-action="AddQuestion" method="post">
+                <form asp-controller="TeacherQuiz" asp-action="EditConfig" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="QuizId" value="@Model.Id" />
 
                     <div class="modal-header">
-                        <h5 class="modal-title fw-bold" id="addQuestionModalLabel">
-                            <i class="bi bi-question-circle-fill text-primary me-2"></i>Thêm câu hỏi trắc nghiệm mới
+                        <h5 class="modal-title fw-bold" id="editQuizConfigModalLabel">
+                            <i class="bi bi-sliders text-primary me-2"></i>Chỉnh sửa cấu hình bài Quiz
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                     </div>
 
                     <div class="modal-body p-4">
-                        <!-- Nội dung câu hỏi -->
+                        @if (Model.Attempts.Any())
+                        {
+                            <div class="alert alert-warning py-2 small mb-3">
+                                <i class="bi bi-info-circle-fill me-1"></i>
+                                Bài Quiz đã có học sinh làm bài: Bạn được sửa Tiêu đề, Thời lượng làm bài, Thời gian đóng và Số lần làm tối đa. Thời gian mở được giữ nguyên.
+                            </div>
+                        }
+
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Nội dung câu hỏi <span class="text-danger">*</span></label>
-                            <textarea name="QuestionText" rows="3" class="form-control" placeholder="Nhập đề bài câu hỏi trắc nghiệm..." required></textarea>
+                            <label class="form-label fw-semibold">Tiêu đề bài Quiz <span class="text-danger">*</span></label>
+                            <input type="text" name="Title" class="form-control" value="@Model.Title" required maxlength="200" />
                         </div>
 
-                        <!-- Điểm số -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Điểm số cho câu hỏi này</label>
-                            <div class="input-group" style="max-width: 200px;">
-                                <input type="number" step="0.25" min="0.25" max="100" name="Points" value="1.00" class="form-control" required />
-                                <span class="input-group-text">điểm</span>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Thời lượng làm bài (phút) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" min="1" max="300" name="DurationMinutes" class="form-control" value="@Model.DurationMinutes" required />
+                                    <span class="input-group-text">phút</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số lần làm bài tối đa <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" min="1" max="10" name="MaxAttempts" class="form-control" value="@Model.MaxAttempts" required />
+                                    <span class="input-group-text">lần</span>
+                                </div>
                             </div>
                         </div>
 
-                        <hr />
-                        <h6 class="fw-bold mb-3 text-secondary">Các phương án lựa chọn (Tick chọn nút tròn ở đáp án đúng):</h6>
-
-                        <div class="d-flex flex-column gap-3">
-                            <!-- Đáp án A -->
-                            <div class="input-group">
-                                <div class="input-group-text bg-light">
-                                    <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="0" checked id="radioA" />
-                                    <label class="form-check-label fw-bold text-primary mb-0" for="radioA">A</label>
-                                </div>
-                                <input type="hidden" name="Options[0].SortOrder" value="1" />
-                                <input type="text" name="Options[0].OptionText" class="form-control" placeholder="Nội dung phương án A" required />
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Thời gian mở làm bài <span class="text-danger">*</span></label>
+                                <input type="datetime-local" name="AvailableFrom" class="form-control"
+                                       value="@Model.AvailableFrom.ToString("yyyy-MM-ddTHH:mm")"
+                                       @(Model.Attempts.Any() ? "readonly" : "") required />
+                                @if (Model.Attempts.Any())
+                                {
+                                    <span class="text-muted small">Cố định do đã có học sinh làm bài.</span>
+                                }
                             </div>
-
-                            <!-- Đáp án B -->
-                            <div class="input-group">
-                                <div class="input-group-text bg-light">
-                                    <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="1" id="radioB" />
-                                    <label class="form-check-label fw-bold text-primary mb-0" for="radioB">B</label>
-                                </div>
-                                <input type="hidden" name="Options[1].SortOrder" value="2" />
-                                <input type="text" name="Options[1].OptionText" class="form-control" placeholder="Nội dung phương án B" required />
-                            </div>
-
-                            <!-- Đáp án C -->
-                            <div class="input-group">
-                                <div class="input-group-text bg-light">
-                                    <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="2" id="radioC" />
-                                    <label class="form-check-label fw-bold text-primary mb-0" for="radioC">C</label>
-                                </div>
-                                <input type="hidden" name="Options[2].SortOrder" value="3" />
-                                <input type="text" name="Options[2].OptionText" class="form-control" placeholder="Nội dung phương án C" required />
-                            </div>
-
-                            <!-- Đáp án D -->
-                            <div class="input-group">
-                                <div class="input-group-text bg-light">
-                                    <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="3" id="radioD" />
-                                    <label class="form-check-label fw-bold text-primary mb-0" for="radioD">D</label>
-                                </div>
-                                <input type="hidden" name="Options[3].SortOrder" value="4" />
-                                <input type="text" name="Options[3].OptionText" class="form-control" placeholder="Nội dung phương án D" required />
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Thời gian đóng bài thi <span class="text-danger">*</span></label>
+                                <input type="datetime-local" name="AvailableUntil" class="form-control"
+                                       value="@Model.AvailableUntil.ToString("yyyy-MM-ddTHH:mm")" required />
                             </div>
                         </div>
                     </div>
@@ -438,12 +499,239 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-primary px-4">
-                            <i class="bi bi-save me-1"></i> Lưu câu hỏi
+                            <i class="bi bi-save me-1"></i> Lưu thay đổi
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    @if (!Model.Attempts.Any())
+    {
+        <!-- Modal Thêm câu hỏi mới -->
+        <div class="modal fade" id="addQuestionModal" tabindex="-1" aria-labelledby="addQuestionModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form asp-controller="TeacherQuiz" asp-action="AddQuestion" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="QuizId" value="@Model.Id" />
+
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold" id="addQuestionModalLabel">
+                                <i class="bi bi-question-circle-fill text-primary me-2"></i>Thêm câu hỏi trắc nghiệm mới
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        </div>
+
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                                <textarea name="QuestionText" rows="3" class="form-control" placeholder="Nhập đề bài câu hỏi trắc nghiệm..." required></textarea>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Điểm số cho câu hỏi này</label>
+                                <div class="input-group" style="max-width: 200px;">
+                                    <input type="number" step="0.25" min="0.25" max="100" name="Points" value="1.00" class="form-control" required />
+                                    <span class="input-group-text">điểm</span>
+                                </div>
+                            </div>
+
+                            <hr />
+                            <h6 class="fw-bold mb-3 text-secondary">Các phương án lựa chọn (Tick chọn nút tròn ở đáp án đúng):</h6>
+
+                            <div class="d-flex flex-column gap-3">
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="0" checked id="radioA" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="radioA">A</label>
+                                    </div>
+                                    <input type="hidden" name="Options[0].SortOrder" value="1" />
+                                    <input type="text" name="Options[0].OptionText" class="form-control" placeholder="Nội dung phương án A" required />
+                                </div>
+
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="1" id="radioB" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="radioB">B</label>
+                                    </div>
+                                    <input type="hidden" name="Options[1].SortOrder" value="2" />
+                                    <input type="text" name="Options[1].OptionText" class="form-control" placeholder="Nội dung phương án B" required />
+                                </div>
+
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="2" id="radioC" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="radioC">C</label>
+                                    </div>
+                                    <input type="hidden" name="Options[2].SortOrder" value="3" />
+                                    <input type="text" name="Options[2].OptionText" class="form-control" placeholder="Nội dung phương án C" required />
+                                </div>
+
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="3" id="radioD" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="radioD">D</label>
+                                    </div>
+                                    <input type="hidden" name="Options[3].SortOrder" value="4" />
+                                    <input type="text" name="Options[3].OptionText" class="form-control" placeholder="Nội dung phương án D" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i> Lưu câu hỏi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Sửa câu hỏi -->
+        <div class="modal fade" id="editQuestionModal" tabindex="-1" aria-labelledby="editQuestionModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form asp-controller="TeacherQuiz" asp-action="EditQuestion" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="QuizId" value="@Model.Id" />
+                        <input type="hidden" name="QuestionId" id="editQuestionId" value="0" />
+
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold" id="editQuestionModalLabel">
+                                <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa câu hỏi trắc nghiệm
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        </div>
+
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                                <textarea name="QuestionText" id="editQuestionText" rows="3" class="form-control" placeholder="Nhập đề bài câu hỏi trắc nghiệm..." required></textarea>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Điểm số cho câu hỏi này</label>
+                                <div class="input-group" style="max-width: 200px;">
+                                    <input type="number" step="0.25" min="0.25" max="100" name="Points" id="editQuestionPoints" value="1.00" class="form-control" required />
+                                    <span class="input-group-text">điểm</span>
+                                </div>
+                            </div>
+
+                            <hr />
+                            <h6 class="fw-bold mb-3 text-secondary">Các phương án lựa chọn (Tick chọn nút tròn ở đáp án đúng):</h6>
+
+                            <div class="d-flex flex-column gap-3">
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="0" id="editRadio0" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="editRadio0">A</label>
+                                    </div>
+                                    <input type="hidden" name="Options[0].SortOrder" value="1" />
+                                    <input type="text" name="Options[0].OptionText" id="editOptionText0" class="form-control" placeholder="Nội dung phương án A" required />
+                                </div>
+
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="1" id="editRadio1" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="editRadio1">B</label>
+                                    </div>
+                                    <input type="hidden" name="Options[1].SortOrder" value="2" />
+                                    <input type="text" name="Options[1].OptionText" id="editOptionText1" class="form-control" placeholder="Nội dung phương án B" required />
+                                </div>
+
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="2" id="editRadio2" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="editRadio2">C</label>
+                                    </div>
+                                    <input type="hidden" name="Options[2].SortOrder" value="3" />
+                                    <input type="text" name="Options[2].OptionText" id="editOptionText2" class="form-control" placeholder="Nội dung phương án C" required />
+                                </div>
+
+                                <div class="input-group">
+                                    <div class="input-group-text bg-light">
+                                        <input class="form-check-input mt-0 me-2" type="radio" name="CorrectOptionIndex" value="3" id="editRadio3" />
+                                        <label class="form-check-label fw-bold text-primary mb-0" for="editRadio3">D</label>
+                                    </div>
+                                    <input type="hidden" name="Options[3].SortOrder" value="4" />
+                                    <input type="text" name="Options[3].OptionText" id="editOptionText3" class="form-control" placeholder="Nội dung phương án D" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i> Lưu cập nhật câu hỏi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.btn-edit-question').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var qId = this.getAttribute('data-id');
+                    var qText = this.getAttribute('data-text');
+                    var qPoints = this.getAttribute('data-points');
+                    var options = JSON.parse(this.getAttribute('data-options') || '[]');
+
+                    document.getElementById('editQuestionId').value = qId;
+                    document.getElementById('editQuestionText').value = qText;
+                    document.getElementById('editQuestionPoints').value = qPoints;
+
+                    for (var i = 0; i < 4; i++) {
+                        var optTextElem = document.getElementById('editOptionText' + i);
+                        var optRadioElem = document.getElementById('editRadio' + i);
+                        if (optTextElem && optRadioElem) {
+                            if (i < options.length) {
+                                optTextElem.value = options[i].OptionText || '';
+                                if (options[i].IsCorrect) {
+                                    optRadioElem.checked = true;
+                                }
+                            } else {
+                                optTextElem.value = '';
+                                optRadioElem.checked = false;
+                            }
+                        }
+                    }
+
+                    var modal = new bootstrap.Modal(document.getElementById('editQuestionModal'));
+                    modal.show();
+                });
+            });
+
+            // Bộ lọc danh sách học sinh (Tất cả / Đã làm / Chưa làm)
+            var filterBtns = document.querySelectorAll('#studentResultFilter button');
+            var studentRows = document.querySelectorAll('#tableStudentResults .student-row');
+
+            filterBtns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    var filter = this.getAttribute('data-filter');
+                    studentRows.forEach(function (row) {
+                        var status = row.getAttribute('data-status');
+                        if (filter === 'all' || status === filter) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
 }
 

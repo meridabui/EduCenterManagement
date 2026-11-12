@@ -7,6 +7,7 @@ namespace EduCenterManagement.Services.Teacher
 {
     public class TeacherAttendanceService : ITeacherAttendanceService
     {
+        private const int MaxAllowedDaysAfterSession = 2;
         private readonly ITeacherAttendanceRepository _repo;
 
         public TeacherAttendanceService(ITeacherAttendanceRepository repo)
@@ -76,6 +77,31 @@ namespace EduCenterManagement.Services.Teacher
                 };
             }).ToList();
 
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            bool canEdit = true;
+            string? readOnlyReason = null;
+
+            if (session.Class.Status != ClassStatus.InProgress)
+            {
+                canEdit = false;
+                readOnlyReason = "Chỉ được điểm danh khi lớp học đang ở trạng thái Đang học.";
+            }
+            else if (session.Status == ClassSessionStatus.Cancelled)
+            {
+                canEdit = false;
+                readOnlyReason = "Buổi học này đã bị hủy / báo nghỉ. Sổ điểm danh ở chế độ chỉ xem.";
+            }
+            else if (session.SessionDate > today)
+            {
+                canEdit = false;
+                readOnlyReason = "Buổi học chưa diễn ra. Không thể điểm danh trước.";
+            }
+            else if (today > session.SessionDate.AddDays(MaxAllowedDaysAfterSession))
+            {
+                canEdit = false;
+                readOnlyReason = $"Buổi học đã kết thúc quá {MaxAllowedDaysAfterSession} ngày. Sổ điểm danh đã bị khóa. Vui lòng liên hệ Admin nếu cần điều chỉnh.";
+            }
+
             return new AttendanceSheetViewModel
             {
                 SessionId = session.Id,
@@ -89,7 +115,9 @@ namespace EduCenterManagement.Services.Teacher
                 ClassName = session.Class.Name,
                 SubjectName = session.Class.Subject?.Name ?? "Chưa xác định",
                 TeacherName = teacher.FullName,
-                MarkSessionAsCompleted = session.Status == ClassSessionStatus.Scheduled,
+                MarkSessionAsCompleted = canEdit && session.Status == ClassSessionStatus.Scheduled,
+                CanEdit = canEdit,
+                ReadOnlyReason = readOnlyReason,
                 Students = studentItems
             };
         }
@@ -104,13 +132,23 @@ namespace EduCenterManagement.Services.Teacher
             if (session.Class.Status != ClassStatus.InProgress)
                 return (false, "Chỉ được điểm danh khi lớp đang ở trạng thái Đang học.");
 
+            if (session.Status == ClassSessionStatus.Cancelled)
+                return (false, "Buổi học này đã bị hủy / báo nghỉ, không thể điểm danh.");
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            if (session.SessionDate > today)
+                return (false, "Buổi học chưa diễn ra, không thể điểm danh trước.");
+
+            if (today > session.SessionDate.AddDays(MaxAllowedDaysAfterSession))
+                return (false, $"Đã quá thời hạn {MaxAllowedDaysAfterSession} ngày chỉnh sửa điểm danh. Sổ điểm danh đã bị khóa.");
+
             var records = model.Students.Select(s => (s.StudentId, s.Status, s.Note)).ToList();
 
             await _repo.SaveAttendanceRecordsAsync(
                 model.SessionId,
                 teacher.Id,
                 records,
-                model.MarkSessionAsCompleted);
+                markSessionCompleted: true);
 
             int presentCount = records.Count(r => r.Status == AttendanceStatus.Present);
             int absentCount = records.Count(r => r.Status == AttendanceStatus.Absent);
