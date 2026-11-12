@@ -395,16 +395,63 @@
                                                     }
                                                 </td>
                                                 <td class="pe-3 text-end">
-                                                    @if (s.BestAttemptId.HasValue)
+                                                    @if (!s.HasAttempted || !s.Attempts.Any())
                                                     {
-                                                        <a asp-controller="TeacherQuiz" asp-action="StudentAttempt" asp-route-attemptId="@s.BestAttemptId.Value"
-                                                           class="btn btn-outline-primary btn-sm">
-                                                            <i class="bi bi-journal-text me-1"></i> Xem bài nộp
-                                                        </a>
+                                                        <span class="text-muted small fst-italic">Chưa có bài nộp</span>
+                                                    }
+                                                    else if (s.Attempts.Count == 1)
+                                                    {
+                                                        var singleAtt = s.Attempts.First();
+                                                        @if (singleAtt.Status != QuizAttemptStatus.InProgress)
+                                                        {
+                                                            <a asp-controller="TeacherQuiz" asp-action="StudentAttempt" asp-route-attemptId="@singleAtt.AttemptId"
+                                                               class="btn btn-outline-primary btn-sm">
+                                                                <i class="bi bi-journal-text me-1"></i> Xem bài nộp
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-warning-subtle text-warning border">Đang làm bài</span>
+                                                        }
                                                     }
                                                     else
                                                     {
-                                                        <span class="text-muted small fst-italic">Chưa có bài nộp</span>
+                                                        <div class="dropdown d-inline-block">
+                                                            <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="bi bi-journal-text me-1"></i> Xem bài (@s.Attempts.Count lượt)
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                                @foreach (var att in s.Attempts)
+                                                                {
+                                                                    var isBest = att.AttemptId == s.BestAttemptId;
+                                                                    <li>
+                                                                        @if (att.Status != QuizAttemptStatus.InProgress)
+                                                                        {
+                                                                            <a class="dropdown-item d-flex justify-content-between align-items-center gap-3 py-2"
+                                                                               asp-controller="TeacherQuiz" asp-action="StudentAttempt" asp-route-attemptId="@att.AttemptId">
+                                                                                <div>
+                                                                                    <span class="fw-semibold">Lần @att.AttemptNumber</span>
+                                                                                    @if (att.SubmittedAt.HasValue)
+                                                                                    {
+                                                                                        <div class="small text-muted" style="font-size: 0.75rem;">@att.SubmittedAt.Value.ToString("dd/MM HH:mm")</div>
+                                                                                    }
+                                                                                </div>
+                                                                                <span class="badge @(isBest ? "bg-success" : "bg-light text-dark border")">
+                                                                                    @(att.Score.HasValue ? att.Score.Value.ToString("0.##") + "đ" : "--")
+                                                                                    @(isBest ? " (Cao nhất)" : "")
+                                                                                </span>
+                                                                            </a>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="dropdown-item text-muted fst-italic">
+                                                                                Lần @att.AttemptNumber: Đang làm bài...
+                                                                            </span>
+                                                                        }
+                                                                    </li>
+                                                                }
+                                                            </ul>
+                                                        </div>
                                                     }
                                                 </td>
                                             </tr>

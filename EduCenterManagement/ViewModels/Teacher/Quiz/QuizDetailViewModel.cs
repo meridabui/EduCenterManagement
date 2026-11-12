@@ -80,5 +80,6 @@ namespace EduCenterManagement.ViewModels.Teacher.Quiz
         public DateTime? LatestSubmittedAt { get; set; }
         public QuizAttemptStatus? LatestStatus { get; set; }
         public int? BestAttemptId { get; set; }
+        public List<QuizAttemptDetailViewModel> Attempts { get; set; } = new();
     }
 }
