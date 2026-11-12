@@ -176,6 +176,11 @@ namespace EduCenterManagement.Services.Teacher
                 model.SessionId = null;
             }
 
+            if (model.Status == QuizStatus.Published)
+            {
+                return (false, "Không thể xuất bản bài Quiz khi chưa có câu hỏi. Vui lòng tạo dưới dạng Bản nháp và thêm câu hỏi trước.", 0);
+            }
+
             var now = DateTime.UtcNow;
             var newQuiz = new Quiz
             {
@@ -297,6 +302,12 @@ namespace EduCenterManagement.Services.Teacher
                 return (false, "Vui lòng nhập ít nhất 2 phương án đáp án.");
             }
 
+            if (model.Options == null || model.CorrectOptionIndex < 0 || model.CorrectOptionIndex >= model.Options.Count ||
+                string.IsNullOrWhiteSpace(model.Options[model.CorrectOptionIndex]?.OptionText))
+            {
+                return (false, "Đáp án đúng được chọn không được để trống nội dung.");
+            }
+
             var currentQuestions = await _repo.GetQuestionsByQuizIdAsync(model.QuizId);
             int nextSort = (currentQuestions.Any() ? currentQuestions.Max(q => q.SortOrder) : 0) + 1;
 
@@ -312,7 +323,7 @@ namespace EduCenterManagement.Services.Teacher
             };
 
             var options = new List<QuizOption>();
-            for (int i = 0; i < model.Options!.Count; i++)
+            for (int i = 0; i < model.Options.Count; i++)
             {
                 var opt = model.Options[i];
                 if (string.IsNullOrWhiteSpace(opt.OptionText)) continue;
@@ -321,8 +332,13 @@ namespace EduCenterManagement.Services.Teacher
                 {
                     OptionText = opt.OptionText.Trim(),
                     IsCorrect = (i == model.CorrectOptionIndex),
-                    SortOrder = i + 1
+                    SortOrder = options.Count + 1
                 });
+            }
+
+            if (!options.Any(o => o.IsCorrect))
+            {
+                return (false, "Câu hỏi phải có ít nhất 1 đáp án đúng hợp lệ.");
             }
 
             await _repo.AddQuestionWithOptionsAsync(question, options);
@@ -451,6 +467,16 @@ namespace EduCenterManagement.Services.Teacher
 
             if (!await CanManageQuizAsync(quizId, teacher.Id))
                 return (false, "Chỉ quản lý Quiz của lớp phụ trách đang Mở đăng ký hoặc Đang học.");
+
+            if (status == QuizStatus.Published)
+            {
+                var questions = await _repo.GetQuestionsByQuizIdAsync(quizId);
+                if (questions.Count == 0)
+                {
+                    return (false, "Không thể xuất bản bài Quiz chưa có câu hỏi nào. Vui lòng thêm câu hỏi trước.");
+                }
+            }
+
             bool updated = await _repo.UpdateQuizStatusAsync(quizId, teacher.Id, status);
             if (!updated) return (false, "Không có quyền cập nhật bài Quiz này.");
 

@@ -1,4 +1,4 @@
-﻿@using EduCenterManagement.Enums
+@using EduCenterManagement.Enums
 @model EduCenterManagement.ViewModels.Teacher.Quiz.TeacherQuizListViewModel
 
 @{
@@ -235,6 +235,34 @@
                                                    class="btn btn-outline-success" title="Xem điểm học sinh">
                                                     <i class="bi bi-trophy"></i>
                                                 </a>
+
+                                                @if (item.Status == QuizStatus.Published)
+                                                {
+                                                    <form asp-controller="TeacherQuiz" asp-action="UpdateStatus" method="post" class="d-inline"
+                                                          onsubmit="return confirm('Bạn có chắc muốn đóng bài Quiz này? Học sinh sẽ không thể làm bài thêm.');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="quizId" value="@item.Id" />
+                                                        <input type="hidden" name="status" value="@QuizStatus.Closed" />
+                                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                        <button type="submit" class="btn btn-outline-dark" title="Đóng bài Quiz (Chốt điểm)">
+                                                            <i class="bi bi-lock"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else if (item.Status == QuizStatus.Closed)
+                                                {
+                                                    <form asp-controller="TeacherQuiz" asp-action="UpdateStatus" method="post" class="d-inline"
+                                                          onsubmit="return confirm('Bạn có muốn mở lại bài Quiz này cho học sinh?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="quizId" value="@item.Id" />
+                                                        <input type="hidden" name="status" value="@QuizStatus.Published" />
+                                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                        <button type="submit" class="btn btn-outline-success" title="Mở lại bài Quiz">
+                                                            <i class="bi bi-unlock"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+
                                                 <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
                                                       onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi và lượt nộp sẽ bị xóa.');">
                                                     @Html.AntiForgeryToken()
