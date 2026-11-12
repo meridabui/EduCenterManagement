@@ -39,8 +39,6 @@ public sealed class ParentAttendanceViewModel
     public int TotalSessions { get; set; }
     public int PresentCount { get; set; }
     public int AbsentCount { get; set; }
-    public int NotMarkedCount { get; set; }
-    public int UpcomingCount { get; set; }
     public decimal AttendanceRate { get; set; }
     public List<ParentAttendanceItemViewModel> Items { get; set; } = new();
 }
