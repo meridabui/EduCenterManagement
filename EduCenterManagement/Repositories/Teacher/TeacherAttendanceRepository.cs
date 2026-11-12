@@ -52,8 +52,7 @@ namespace EduCenterManagement.Repositories.Teacher
         {
             return await _context.Enrollments
                 .AsNoTracking()
-                .Where(e => e.ClassId == classId &&
-                           (e.Status == EnrollmentStatus.Confirm || e.Status == EnrollmentStatus.PendingPayment))
+                .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Confirm)
                 .Include(e => e.Student)
                 .OrderBy(e => e.Student.FullName)
                 .ToListAsync();

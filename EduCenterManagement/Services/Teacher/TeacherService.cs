@@ -266,6 +266,9 @@ namespace EduCenterManagement.Services.Teacher
             if (session.Class.Status != ClassStatus.InProgress)
                 return (false, "Chỉ được cập nhật buổi học khi lớp đang ở trạng thái Đang học.", 0);
 
+            if (status == ClassSessionStatus.Completed)
+                return (false, "Không thể chuyển trạng thái hoàn thành thủ công. Buổi học sẽ tự động hoàn thành khi bạn lưu điểm danh.", 0);
+
             bool updated = await _repo.UpdateSessionStatusAsync(sessionId, teacher.Id, status);
             if (!updated) return (false, "Cập nhật trạng thái thất bại.", 0);
 

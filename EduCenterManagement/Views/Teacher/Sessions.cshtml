@@ -1,4 +1,4 @@
-﻿@using EduCenterManagement.Enums
+@using EduCenterManagement.Enums
 @model EduCenterManagement.ViewModels.Teacher.ClassSessionsViewModel
 
 @{
@@ -229,16 +229,9 @@
                                         @if (s.Status == ClassSessionStatus.Scheduled)
                                         {
                                             <div class="d-flex gap-1">
-                                                <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="sessionId" value="@s.SessionId" />
-                                                    <input type="hidden" name="status" value="@ClassSessionStatus.Completed" />
-                                                    <input type="hidden" name="classId" value="@Model.ClassId" />
-                                                    <input type="hidden" name="filter" value="@Model.CurrentFilter" />
-                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Xác nhận dạy xong buổi này">
-                                                        <i class="bi bi-check-lg"></i> Xong
-                                                    </button>
-                                                </form>
+                                                <a asp-controller="TeacherAttendance" asp-action="Sheet" asp-route-sessionId="@s.SessionId" class="btn btn-sm btn-outline-primary" title="Điểm danh để hoàn thành buổi học">
+                                                    <i class="bi bi-clipboard-check"></i> Điểm danh
+                                                </a>
 
                                                 <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline"
                                                       onsubmit="return confirm('Bạn có chắc chắn muốn báo nghỉ / hủy buổi học này?');">
@@ -255,16 +248,9 @@
                                         }
                                         else if (s.Status == ClassSessionStatus.Completed)
                                         {
-                                            <form asp-controller="Teacher" asp-action="UpdateSessionStatus" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="sessionId" value="@s.SessionId" />
-                                                <input type="hidden" name="status" value="@ClassSessionStatus.Scheduled" />
-                                                <input type="hidden" name="classId" value="@Model.ClassId" />
-                                                <input type="hidden" name="filter" value="@Model.CurrentFilter" />
-                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Đưa lại về trạng thái Đã lên lịch">
-                                                    <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
-                                                </button>
-                                            </form>
+                                            <a asp-controller="TeacherAttendance" asp-action="Sheet" asp-route-sessionId="@s.SessionId" class="btn btn-sm btn-outline-secondary" title="Xem hoặc sửa kết quả điểm danh">
+                                                <i class="bi bi-pencil-square"></i> Sửa điểm danh
+                                            </a>
                                         }
                                         else if (s.Status == ClassSessionStatus.Cancelled)
                                         {
