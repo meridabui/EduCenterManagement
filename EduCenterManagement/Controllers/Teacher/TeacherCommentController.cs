@@ -20,10 +20,10 @@ namespace EduCenterManagement.Controllers.Teacher
         // GET: /Teacher/TeacherComment hoặc /Teacher/TeacherComment/ListComment
         [HttpGet("")]
         [HttpGet("ListComment")]
-        public async Task<IActionResult> ListComment(int? classId = null)
+        public async Task<IActionResult> ListComment(int? classId = null, int? selectedClassId = null)
         {
             int userId = GetCurrentUserId();
-            var model = await _commentService.GetClassStudentCommentListAsync(userId, classId);
+            var model = await _commentService.GetClassStudentCommentListAsync(userId, classId ?? selectedClassId);
             if (model == null)
             {
                 return Forbid();
