@@ -75,29 +75,28 @@ public sealed class ParentAcademicService : IParentAcademicService
         if (classId.HasValue && classes.All(item => item.Id != classId.Value))
             return null;
 
-        var now = _clock.GetLocalNow().DateTime;
         var allSessions = await _repository.GetSessionsAsync(
             studentId, classId, null, null, cancellationToken);
         allSessions = allSessions
             .Where(session => session.Status != ClassSessionStatus.Cancelled)
             .ToList();
-        var elapsedSessions = allSessions
-            .Where(session => session.SessionDate.ToDateTime(session.StartsAt) <= now)
+        var completedSessions = allSessions
+            .Where(session => session.Status == ClassSessionStatus.Completed)
             .ToList();
 
         var records = await _repository.GetAttendanceRecordsAsync(
             studentId,
-            elapsedSessions.Select(session => session.Id).ToArray(),
+            completedSessions.Select(session => session.Id).ToArray(),
             cancellationToken);
         var recordsBySession = records.ToDictionary(record => record.SessionId);
 
-        var items = elapsedSessions
+        var items = completedSessions
             .OrderByDescending(session => session.SessionDate)
             .ThenByDescending(session => session.StartsAt)
             .Select(session =>
             {
                 recordsBySession.TryGetValue(session.Id, out var record);
-                var status = GetDisplayStatus(session, record, now);
+                var status = GetDisplayStatus(session, record);
                 return new ParentAttendanceItemViewModel
                 {
                     SessionNumber = session.SessionNumber,
@@ -125,11 +124,9 @@ public sealed class ParentAcademicService : IParentAcademicService
             TotalSessions = allSessions.Count,
             PresentCount = present,
             AbsentCount = absent,
-            NotMarkedCount = Math.Max(0, elapsedSessions.Count - marked),
-            UpcomingCount = Math.Max(0, allSessions.Count - elapsedSessions.Count),
-            AttendanceRate = allSessions.Count == 0
+            AttendanceRate = marked == 0
                 ? 0
-                : Math.Round(present * 100m / allSessions.Count, 1),
+                : Math.Round(present * 100m / marked, 1),
             Items = items
         };
     }
@@ -179,7 +176,7 @@ public sealed class ParentAcademicService : IParentAcademicService
                         .Select(session =>
                         {
                             recordsBySession.TryGetValue(session.Id, out var record);
-                            var status = GetDisplayStatus(session, record, now);
+                            var status = GetDisplayStatus(session, record);
                             return new ParentTimetableSessionViewModel
                             {
                                 TimeSlotId = session.ClassSchedule?.TimeSlotId,
@@ -295,8 +292,7 @@ public sealed class ParentAcademicService : IParentAcademicService
 
     private static (string Text, string CssClass) GetDisplayStatus(
         ClassSession session,
-        AttendanceRecord? attendance,
-        DateTime now)
+        AttendanceRecord? attendance)
     {
         if (session.Status == ClassSessionStatus.Cancelled)
             return ("Đã hủy", "secondary");
@@ -307,12 +303,13 @@ public sealed class ParentAcademicService : IParentAcademicService
         if (attendance?.Status == AttendanceStatus.Absent)
             return ("Vắng mặt", "danger");
 
+        if (session.Status == ClassSessionStatus.Completed)
+            return ("Chưa điểm danh", "warning text-dark");
+
         if (session.Status == ClassSessionStatus.Rescheduled)
             return ("Đã đổi lịch", "info");
 
-        return session.SessionDate.ToDateTime(session.StartsAt) > now
-            ? ("Sắp học", "primary")
-            : ("Chưa điểm danh", "warning text-dark");
+        return ("Chưa hoàn thành", "primary");
     }
 
     private static DateOnly StartOfWeek(DateOnly date)
