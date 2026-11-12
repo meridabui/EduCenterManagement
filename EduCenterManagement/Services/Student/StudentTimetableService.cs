@@ -148,22 +148,23 @@ namespace EduCenterManagement.Services.Student
             var sessionEntities = await _repository.GetSessionsByClassIdAsync(classId);
             var sessionIds = sessionEntities.Select(s => s.Id).ToList();
 
-            var slidesInfo = await _repository.GetSlidesInfoAsync(sessionIds);
+            // Lấy toàn bộ slide thật của từng buổi (mọi file giáo viên đã upload)
+            var slidesBySession = (await _repository.GetSlidesBySessionIdsAsync(sessionIds))
+                .GroupBy(sl => sl.SessionId)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             var sessions = sessionEntities.Select(s =>
             {
-                var slides = new List<SlideItemViewModel>();
-                // Nếu có slide trong session
-                if (slidesInfo.TryGetValue(s.Id, out var slideData) && slideData.Count > 0)
-                {
-                    slides.Add(new SlideItemViewModel
+                var slides = slidesBySession.TryGetValue(s.Id, out var sessionSlides)
+                    ? sessionSlides.Select(sl => new SlideItemViewModel
                     {
-                        SlideId = slideData.FirstSlideId,
-                        Title = $"Bài giảng Buổi {s.SessionNumber}",
-                        OriginalFileName = $"Slide_Buoi_{s.SessionNumber}.pdf",
-                        UploadedAt = s.CreatedAt
-                    });
-                }
+                        SlideId = sl.Id,
+                        Title = sl.Title,
+                        OriginalFileName = sl.OriginalFileName,
+                        FileSize = sl.FileSize,
+                        UploadedAt = sl.UploadedAt
+                    }).ToList()
+                    : new List<SlideItemViewModel>();
 
                 return new SessionMaterialViewModel
                 {

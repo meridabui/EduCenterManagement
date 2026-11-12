@@ -17,6 +17,9 @@ namespace EduCenterManagement.Repositories.Student
 
         Task<Dictionary<int, (int Count, int FirstSlideId)>> GetSlidesInfoAsync(List<int> sessionIds);
 
+        // Lấy toàn bộ slide thật của các buổi học (mọi file, không chỉ file đầu tiên)
+        Task<List<Slide>> GetSlidesBySessionIdsAsync(List<int> sessionIds);
+
         Task<Dictionary<int, (int Count, int FirstQuizId)>> GetQuizzesInfoAsync(List<int> sessionIds);
 
         Task<HashSet<int>> GetAttemptedQuizIdsAsync(int studentId, List<int> quizIds);
