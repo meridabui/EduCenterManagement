@@ -291,48 +291,92 @@
                 @if (Model.IsMine)
                 {
                     <div class="tab-pane fade @(Model.ActiveTab == "results" ? "show active" : "")" id="tabResults" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold mb-0">Kết quả làm bài của học sinh lớp @Model.ClassName</h5>
-                            <span class="badge bg-light text-dark border">Tổng số: @Model.Attempts.Count lượt làm</span>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h5 class="fw-bold mb-1">Bảng tổng hợp kết quả Quiz - Lớp @Model.ClassName</h5>
+                                <div class="text-muted small">
+                                    Sĩ số lớp: <strong class="text-dark">@Model.TotalClassStudents</strong> em |
+                                    Đã làm bài: <strong class="text-success">@Model.TotalAttemptedStudents</strong> em |
+                                    Chưa làm bài: <strong class="text-danger">@Model.TotalNotAttemptedStudents</strong> em
+                                </div>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group" id="studentResultFilter">
+                                <button type="button" class="btn btn-outline-primary active" data-filter="all">Tất cả (@Model.StudentResults.Count)</button>
+                                <button type="button" class="btn btn-outline-success" data-filter="attempted">Đã làm (@Model.TotalAttemptedStudents)</button>
+                                <button type="button" class="btn btn-outline-danger" data-filter="not-attempted">Chưa làm (@Model.TotalNotAttemptedStudents)</button>
+                            </div>
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
+                            <table class="table table-hover align-middle mb-0" id="tableStudentResults">
                                 <thead class="table-light">
                                     <tr>
                                         <th class="ps-3">Mã HS</th>
                                         <th>Họ và tên</th>
-                                        <th>Lần làm</th>
-                                        <th>Thời gian nộp</th>
-                                        <th>Điểm số</th>
                                         <th>Trạng thái</th>
-                                        <th class="pe-3 text-end">Chi tiết bài làm</th>
+                                        <th>Số lượt làm</th>
+                                        <th>Điểm chốt (Cao nhất)</th>
+                                        <th>Thời gian nộp</th>
+                                        <th class="pe-3 text-end">Chi tiết</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @if (Model.Attempts.Any())
+                                    @if (Model.StudentResults.Any())
                                     {
-                                        foreach (var att in Model.Attempts)
+                                        foreach (var s in Model.StudentResults)
                                         {
-                                            <tr>
-                                                <td class="ps-3 font-monospace fw-bold text-secondary">@att.StudentCode</td>
-                                                <td class="fw-semibold">@att.StudentFullName</td>
-                                                <td><span class="badge bg-light text-dark border">Lần @att.AttemptNumber</span></td>
+                                            <tr class="student-row" data-status="@(s.HasAttempted ? "attempted" : "not-attempted")">
+                                                <td class="ps-3 font-monospace fw-bold text-secondary">@s.StudentCode</td>
+                                                <td class="fw-semibold">@s.StudentFullName</td>
                                                 <td>
-                                                    @if (att.SubmittedAt.HasValue)
+                                                    @if (!s.HasAttempted)
                                                     {
-                                                        <span>📅 @att.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                                        <span class="badge bg-danger-subtle text-danger border border-danger">
+                                                            <i class="bi bi-x-circle me-1"></i>Chưa làm bài
+                                                        </span>
                                                     }
                                                     else
                                                     {
-                                                        <span class="text-muted fst-italic">Đang làm bài...</span>
+                                                        switch (s.LatestStatus)
+                                                        {
+                                                            case QuizAttemptStatus.Submitted:
+                                                                <span class="badge bg-success-subtle text-success border border-success">
+                                                                    <i class="bi bi-check-circle me-1"></i>Đã nộp bài
+                                                                </span>
+                                                                break;
+                                                            case QuizAttemptStatus.AutoSubmitted:
+                                                                <span class="badge bg-info-subtle text-info border border-info">
+                                                                    <i class="bi bi-robot me-1"></i>Tự động nộp
+                                                                </span>
+                                                                break;
+                                                            case QuizAttemptStatus.Expired:
+                                                                <span class="badge bg-secondary-subtle text-secondary border">
+                                                                    <i class="bi bi-clock-history me-1"></i>Hết giờ
+                                                                </span>
+                                                                break;
+                                                            default:
+                                                                <span class="badge bg-warning-subtle text-warning border">
+                                                                    <i class="bi bi-pencil me-1"></i>Đang làm
+                                                                </span>
+                                                                break;
+                                                        }
                                                     }
                                                 </td>
                                                 <td>
-                                                    @if (att.Score.HasValue)
+                                                    @if (s.HasAttempted)
                                                     {
-                                                        <span class="fs-6 fw-bold @(att.Score.Value >= (att.MaxScore / 2) ? "text-success" : "text-danger")">
-                                                            @att.Score.Value.ToString("0.##") / @att.MaxScore.ToString("0.##")
+                                                        <span class="badge bg-light text-dark border">@s.AttemptsUsed / @Model.MaxAttempts lần</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">0 / @Model.MaxAttempts</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (s.BestScore.HasValue)
+                                                    {
+                                                        <span class="fs-6 fw-bold @(s.BestScore.Value >= (s.MaxScore / 2) ? "text-success" : "text-danger")">
+                                                            @s.BestScore.Value.ToString("0.##") / @s.MaxScore.ToString("0.##")
                                                         </span>
                                                     }
                                                     else
@@ -341,29 +385,26 @@
                                                     }
                                                 </td>
                                                 <td>
-                                                    @switch (att.Status)
+                                                    @if (s.LatestSubmittedAt.HasValue)
                                                     {
-                                                        case QuizAttemptStatus.Submitted:
-                                                            <span class="badge bg-success-subtle text-success border border-success">Đã nộp bài</span>
-                                                            break;
-                                                        case QuizAttemptStatus.AutoSubmitted:
-                                                            <span class="badge bg-info-subtle text-info border border-info">Tự động nộp</span>
-                                                            break;
-                                                        case QuizAttemptStatus.Expired:
-                                                            <span class="badge bg-secondary-subtle text-secondary border">Hết giờ</span>
-                                                            break;
-                                                        default:
-                                                            <span class="badge bg-warning-subtle text-warning border">Đang làm</span>
-                                                            break;
+                                                        <span>📅 @s.LatestSubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">--</span>
                                                     }
                                                 </td>
                                                 <td class="pe-3 text-end">
-                                                    @if (att.Status != QuizAttemptStatus.InProgress)
+                                                    @if (s.BestAttemptId.HasValue)
                                                     {
-                                                        <a asp-controller="TeacherQuiz" asp-action="StudentAttempt" asp-route-attemptId="@att.AttemptId"
+                                                        <a asp-controller="TeacherQuiz" asp-action="StudentAttempt" asp-route-attemptId="@s.BestAttemptId.Value"
                                                            class="btn btn-outline-primary btn-sm">
                                                             <i class="bi bi-journal-text me-1"></i> Xem bài nộp
                                                         </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted small fst-italic">Chưa có bài nộp</span>
                                                     }
                                                 </td>
                                             </tr>
@@ -374,7 +415,7 @@
                                         <tr>
                                             <td colspan="7" class="text-center py-4 text-muted">
                                                 <i class="bi bi-people fs-3 d-block mb-1"></i>
-                                                Chưa có học sinh nào nộp bài kiểm tra này.
+                                                Chưa có học sinh nào trong danh sách lớp.
                                             </td>
                                         </tr>
                                     }
@@ -667,6 +708,27 @@
 
                     var modal = new bootstrap.Modal(document.getElementById('editQuestionModal'));
                     modal.show();
+                });
+            });
+
+            // Bộ lọc danh sách học sinh (Tất cả / Đã làm / Chưa làm)
+            var filterBtns = document.querySelectorAll('#studentResultFilter button');
+            var studentRows = document.querySelectorAll('#tableStudentResults .student-row');
+
+            filterBtns.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    var filter = this.getAttribute('data-filter');
+                    studentRows.forEach(function (row) {
+                        var status = row.getAttribute('data-status');
+                        if (filter === 'all' || status === filter) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
                 });
             });
         });

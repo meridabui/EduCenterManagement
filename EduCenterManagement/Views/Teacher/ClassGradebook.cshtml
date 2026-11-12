@@ -1,0 +1,150 @@
+@model EduCenterManagement.ViewModels.Teacher.ClassGradebookViewModel
+
+@{
+    ViewData["Title"] = $"Sổ điểm & Chuyên cần - {Model.ClassName}";
+}
+
+<div class="container-fluid py-2">
+    <!-- Breadcrumb & Navigation -->
+    <div class="mb-4">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a asp-controller="Teacher" asp-action="AssignedClasses" class="btn btn-outline-secondary btn-sm">
+                ⬅ Quay lại danh sách lớp
+            </a>
+            <a asp-controller="Teacher" asp-action="StudentList" asp-route-classId="@Model.ClassId" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-people me-1"></i>Danh sách học sinh
+            </a>
+            <a asp-controller="TeacherComment" asp-action="ListComment" asp-route-classId="@Model.ClassId" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-chat-left-text me-1"></i>Bảng nhận xét lớp
+            </a>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h2 class="mb-1">📊 Sổ điểm & Chuyên cần - Lớp @Model.ClassName</h2>
+                <p class="text-muted mb-0">
+                    Môn: <strong class="text-primary">@Model.SubjectName</strong> |
+                    Khóa học: <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong> đến <strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong> |
+                    Tiến độ: <strong>@Model.TakenSessionsCount / @Model.TotalSessions</strong> buổi đã diễn ra
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="badge bg-primary fs-6 d-flex align-items-center">
+                    Sĩ số: @Model.Students.Count học sinh
+                </span>
+                <span class="badge bg-secondary fs-6 d-flex align-items-center">
+                    Tổng số Quiz: @Model.Quizzes.Count bài
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng tổng hợp -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3 text-start" style="min-width: 100px;">Mã HS</th>
+                            <th class="text-start" style="min-width: 180px;">Họ và tên</th>
+                            <th style="min-width: 140px;">Chuyên cần<br /><small class="text-muted fw-normal">(Có mặt / Đã học)</small></th>
+                            @if (Model.Quizzes.Any())
+                            {
+                                foreach (var q in Model.Quizzes)
+                                {
+                                    <th style="min-width: 130px;">
+                                        <div class="text-truncate" style="max-width: 150px;" title="@q.Title">@q.Title</div>
+                                        <small class="text-muted fw-normal">(@q.TotalPoints.ToString("0.##") đ)</small>
+                                    </th>
+                                }
+                            }
+                            else
+                            {
+                                <th style="min-width: 150px;" class="text-muted fst-italic">Chưa có bài Quiz</th>
+                            }
+                            <th style="min-width: 120px;" class="bg-primary-subtle text-primary fw-bold">Điểm TB Quiz<br /><small class="fw-normal">(Hệ 10)</small></th>
+                            <th class="pe-3 text-center" style="min-width: 120px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Students.Any())
+                        {
+                            foreach (var s in Model.Students)
+                            {
+                                var rateClass = s.AttendanceRate >= 80 ? "text-success" : (s.AttendanceRate >= 60 ? "text-warning" : "text-danger");
+                                <tr>
+                                    <td class="ps-3 text-start font-monospace fw-bold text-secondary">@s.StudentCode</td>
+                                    <td class="text-start fw-semibold">@s.FullName</td>
+                                    <td>
+                                        <span class="fw-bold @rateClass">@s.PresentCount / @Model.TakenSessionsCount</span>
+                                        <span class="small text-muted">(@s.AttendanceRate%)</span>
+                                        @if (s.AbsentCount > 0)
+                                        {
+                                            <div class="small text-danger">Vắng @s.AbsentCount buổi</div>
+                                        }
+                                    </td>
+
+                                    @if (Model.Quizzes.Any())
+                                    {
+                                        foreach (var q in Model.Quizzes)
+                                        {
+                                            var hasScore = s.QuizScores.TryGetValue(q.QuizId, out var score) && score.HasValue;
+                                            <td>
+                                                @if (hasScore)
+                                                {
+                                                    <span class="fw-bold @(score!.Value >= (q.TotalPoints / 2) ? "text-success" : "text-danger")">
+                                                        @score.Value.ToString("0.##")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-light text-secondary border">Chưa làm</span>
+                                                }
+                                            </td>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <td class="text-muted">--</td>
+                                    }
+
+                                    <td class="bg-primary-subtle">
+                                        @if (s.AverageQuizScore10.HasValue)
+                                        {
+                                            <span class="fs-6 fw-bold @(s.AverageQuizScore10.Value >= 5.0m ? "text-success" : "text-danger")">
+                                                @s.AverageQuizScore10.Value.ToString("0.##") / 10
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">--</span>
+                                        }
+                                    </td>
+
+                                    <td class="pe-3 text-center">
+                                        <a asp-controller="TeacherComment" asp-action="StudentComments"
+                                           asp-route-classId="@Model.ClassId" asp-route-studentId="@s.StudentId"
+                                           class="btn btn-sm btn-outline-primary" title="Viết nhận xét cho học sinh này">
+                                            <i class="bi bi-chat-left-text me-1"></i>Nhận xét
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="@(4 + Math.Max(1, Model.Quizzes.Count))" class="text-center py-5 text-muted">
+                                    <i class="bi bi-people fs-2 d-block mb-2"></i>
+                                    Chưa có học sinh nào trong lớp.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

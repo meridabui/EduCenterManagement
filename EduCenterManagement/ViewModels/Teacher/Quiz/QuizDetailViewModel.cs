@@ -28,8 +28,13 @@ namespace EduCenterManagement.ViewModels.Teacher.Quiz
         public decimal TotalPoints { get; set; }
         public string ActiveTab { get; set; } = "questions"; // "questions" or "results"
 
+        public int TotalClassStudents { get; set; }
+        public int TotalAttemptedStudents { get; set; }
+        public int TotalNotAttemptedStudents { get; set; }
+
         public List<QuizQuestionDetailViewModel> Questions { get; set; } = new();
         public List<QuizAttemptDetailViewModel> Attempts { get; set; } = new();
+        public List<QuizStudentResultViewModel> StudentResults { get; set; } = new();
     }
 
     public class QuizQuestionDetailViewModel
@@ -61,5 +66,19 @@ namespace EduCenterManagement.ViewModels.Teacher.Quiz
         public QuizAttemptStatus Status { get; set; }
         public decimal? Score { get; set; }
         public decimal MaxScore { get; set; }
+    }
+
+    public class QuizStudentResultViewModel
+    {
+        public int StudentId { get; set; }
+        public string StudentCode { get; set; } = string.Empty;
+        public string StudentFullName { get; set; } = string.Empty;
+        public bool HasAttempted { get; set; }
+        public int AttemptsUsed { get; set; }
+        public decimal? BestScore { get; set; }
+        public decimal MaxScore { get; set; }
+        public DateTime? LatestSubmittedAt { get; set; }
+        public QuizAttemptStatus? LatestStatus { get; set; }
+        public int? BestAttemptId { get; set; }
     }
 }

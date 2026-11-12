@@ -90,6 +90,40 @@ namespace EduCenterManagement.Repositories.Teacher
                 .FirstOrDefaultAsync(s => s.Id == studentId);
         }
 
+        public async Task<List<AttendanceRecord>> GetStudentAttendanceRecordsInClassAsync(int studentId, List<int> sessionIds)
+        {
+            return await _context.AttendanceRecords
+                .AsNoTracking()
+                .Where(a => a.StudentId == studentId && sessionIds.Contains(a.SessionId))
+                .ToListAsync();
+        }
+
+        public async Task<List<Quiz>> GetQuizzesWithQuestionsByClassIdAsync(int classId)
+        {
+            return await _context.Quizzes
+                .AsNoTracking()
+                .Where(q => q.ClassId == classId)
+                .ToListAsync();
+        }
+
+        public async Task<Dictionary<int, decimal>> GetQuizTotalPointsByQuizIdsAsync(List<int> quizIds)
+        {
+            return await _context.QuizQuestions
+                .AsNoTracking()
+                .Where(qq => quizIds.Contains(qq.QuizId))
+                .GroupBy(qq => qq.QuizId)
+                .Select(g => new { QuizId = g.Key, TotalPoints = g.Sum(qq => qq.Points) })
+                .ToDictionaryAsync(x => x.QuizId, x => x.TotalPoints);
+        }
+
+        public async Task<List<QuizAttempt>> GetStudentQuizAttemptsByQuizIdsAsync(int studentId, List<int> quizIds)
+        {
+            return await _context.QuizAttempts
+                .AsNoTracking()
+                .Where(qa => qa.StudentId == studentId && quizIds.Contains(qa.QuizId))
+                .ToListAsync();
+        }
+
         public async Task AddCommentAsync(TeacherComment comment)
         {
             await _context.TeacherComments.AddAsync(comment);

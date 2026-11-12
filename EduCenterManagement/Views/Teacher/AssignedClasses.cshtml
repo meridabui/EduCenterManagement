@@ -110,6 +110,13 @@
                                     <td class="text-center pe-3">
                                         <div class="d-flex justify-content-center gap-1">
                                             <a asp-controller="Teacher"
+                                               asp-action="ClassGradebook"
+                                               asp-route-classId="@item.ClassId"
+                                               class="btn btn-sm btn-outline-warning"
+                                               title="Xem Sổ điểm & Chuyên cần">
+                                                📊 Sổ điểm
+                                            </a>
+                                            <a asp-controller="Teacher"
                                                asp-action="Sessions"
                                                asp-route-classId="@item.ClassId"
                                                class="btn btn-sm btn-outline-success"

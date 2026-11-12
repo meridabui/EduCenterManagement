@@ -36,6 +36,8 @@ namespace EduCenterManagement.Repositories.Teacher
 
         Task<List<QuizAttempt>> GetAttemptsByQuizIdAsync(int quizId);
 
+        Task<List<StudentProfile>> GetEnrolledStudentsByClassIdAsync(int classId);
+
         Task AddQuestionWithOptionsAsync(QuizQuestion question, List<QuizOption> options);
 
         Task<bool> DeleteQuestionAsync(int questionId, int quizId, int teacherId);

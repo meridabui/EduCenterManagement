@@ -177,6 +177,17 @@ namespace EduCenterManagement.Repositories.Teacher
                 .ToListAsync();
         }
 
+        public async Task<List<StudentProfile>> GetEnrolledStudentsByClassIdAsync(int classId)
+        {
+            return await _context.Enrollments
+                .AsNoTracking()
+                .Where(e => e.ClassId == classId && e.Status == EnrollmentStatus.Confirm)
+                .Include(e => e.Student)
+                .OrderBy(e => e.Student.FullName)
+                .Select(e => e.Student)
+                .ToListAsync();
+        }
+
         public async Task AddQuestionWithOptionsAsync(QuizQuestion question, List<QuizOption> options)
         {
             _context.QuizQuestions.Add(question);

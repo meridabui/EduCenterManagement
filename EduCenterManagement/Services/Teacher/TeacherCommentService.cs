@@ -1,3 +1,4 @@
+using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
 using EduCenterManagement.Repositories.Teacher;
 using EduCenterManagement.ViewModels.Teacher.Comment;
@@ -81,6 +82,37 @@ namespace EduCenterManagement.Services.Teacher
             var comments = await _repo.GetCommentsForStudentInClassAsync(studentId, classId);
             var sessions = await _repo.GetSessionsByClassIdAsync(classId);
 
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var takenSessions = sessions.Where(s => s.Status == ClassSessionStatus.Completed || s.SessionDate < today).ToList();
+            var takenSessionIds = takenSessions.Select(s => s.Id).ToList();
+
+            var attendances = await _repo.GetStudentAttendanceRecordsInClassAsync(studentId, takenSessionIds);
+            int present = attendances.Count(a => a.Status == AttendanceStatus.Present);
+            int absent = attendances.Count(a => a.Status == AttendanceStatus.Absent);
+            double attRate = takenSessions.Count > 0 ? Math.Round((double)present * 100.0 / takenSessions.Count, 1) : 100.0;
+
+            var quizzes = await _repo.GetQuizzesWithQuestionsByClassIdAsync(classId);
+            var quizIds = quizzes.Select(q => q.Id).ToList();
+            var quizPoints = await _repo.GetQuizTotalPointsByQuizIdsAsync(quizIds);
+            var attempts = await _repo.GetStudentQuizAttemptsByQuizIdsAsync(studentId, quizIds);
+
+            var scores10 = new List<decimal>();
+            foreach (var q in quizzes)
+            {
+                var myAttempts = attempts.Where(a => a.QuizId == q.Id && a.Score.HasValue).ToList();
+                if (myAttempts.Any())
+                {
+                    decimal bestScore = myAttempts.Max(a => a.Score!.Value);
+                    decimal totalPoints = quizPoints.TryGetValue(q.Id, out var pts) ? pts : 0;
+                    if (totalPoints > 0)
+                    {
+                        scores10.Add(bestScore * 10m / totalPoints);
+                    }
+                }
+            }
+
+            decimal? avgScore10 = scores10.Any() ? Math.Round(scores10.Average(), 2) : null;
+
             var viewModel = new StudentCommentDetailViewModel
             {
                 StudentId = student.Id,
@@ -91,6 +123,13 @@ namespace EduCenterManagement.Services.Teacher
                 ClassName = classItem.Name,
                 SubjectName = classItem.Subject?.Name ?? "N/A",
                 TeacherName = teacher.FullName,
+                TotalTakenSessions = takenSessions.Count,
+                PresentSessions = present,
+                AbsentSessions = absent,
+                AttendanceRate = attRate,
+                TotalClassQuizzes = quizzes.Count,
+                CompletedQuizzes = scores10.Count,
+                AverageQuizScore10 = avgScore10,
                 Comments = comments.Select(c => new CommentItemViewModel
                 {
                     Id = c.Id,

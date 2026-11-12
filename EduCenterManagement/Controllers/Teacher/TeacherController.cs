@@ -53,6 +53,20 @@ namespace EduCenterManagement.Controllers.Teacher
             return View("~/Views/Teacher/StudentList.cshtml", model);
         }
 
+        // GET: /Teacher/ClassGradebook/{classId}
+        [HttpGet("ClassGradebook/{classId:int}")]
+        public async Task<IActionResult> ClassGradebook(int classId)
+        {
+            int userId = GetCurrentUserId();
+            var model = await _teacherService.GetClassGradebookAsync(userId, classId);
+            if (model == null)
+            {
+                return NotFound("Lớp học không tồn tại hoặc bạn không được phân công phụ trách lớp này.");
+            }
+
+            return View("~/Views/Teacher/ClassGradebook.cshtml", model);
+        }
+
         // GET: /Teacher/Timetable
         [HttpGet("Timetable")]
         public async Task<IActionResult> Timetable(int weekOffset = 0)

@@ -52,6 +52,9 @@
                 @if (Model.ClassId > 0)
                 {
                     <div class="col-md-7 d-flex justify-content-md-end gap-2 align-self-end">
+                        <a asp-controller="Teacher" asp-action="ClassGradebook" asp-route-classId="@Model.ClassId" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-journal-check me-1"></i>Sổ điểm & Chuyên cần
+                        </a>
                         <a asp-controller="Teacher" asp-action="StudentList" asp-route-classId="@Model.ClassId" class="btn btn-outline-info btn-sm">
                             <i class="bi bi-people me-1"></i>Xem danh sách học sinh
                         </a>

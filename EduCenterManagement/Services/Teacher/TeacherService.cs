@@ -79,6 +79,104 @@ namespace EduCenterManagement.Services.Teacher
             };
         }
 
+        public async Task<ClassGradebookViewModel?> GetClassGradebookAsync(int userId, int classId)
+        {
+            var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);
+            if (teacher == null) return null;
+
+            var classItem = await _repo.GetClassByIdAndTeacherAsync(classId, teacher.Id);
+            if (classItem == null) return null;
+
+            var enrollments = await _repo.GetConfirmedStudentsByClassIdAsync(classId);
+            var sessions = await _repo.GetSessionsByClassIdAsync(classId);
+            var sessionIds = sessions.Select(s => s.Id).ToList();
+            var takenSessions = sessions.Where(s => s.Status == ClassSessionStatus.Completed || s.SessionDate < DateOnly.FromDateTime(DateTime.Today)).ToList();
+            var takenSessionIds = takenSessions.Select(s => s.Id).ToList();
+
+            var attendances = await _repo.GetAttendanceRecordsByClassSessionsAsync(sessionIds);
+            var quizzes = await _repo.GetQuizzesByClassIdAsync(classId);
+            var quizIds = quizzes.Select(q => q.Id).ToList();
+            var questions = await _repo.GetQuestionsByQuizIdsAsync(quizIds);
+            var attempts = await _repo.GetQuizAttemptsByQuizIdsAsync(quizIds);
+
+            var quizHeaders = quizzes.Select(q =>
+            {
+                var qQuestions = questions.Where(qq => qq.QuizId == q.Id).ToList();
+                decimal totalPts = qQuestions.Sum(qq => qq.Points);
+                return new GradebookQuizHeaderViewModel
+                {
+                    QuizId = q.Id,
+                    Title = q.Title,
+                    TotalPoints = totalPts
+                };
+            }).ToList();
+
+            var studentRows = new List<StudentGradebookRowViewModel>();
+            foreach (var e in enrollments)
+            {
+                var s = e.Student;
+                var studentAttendances = attendances
+                    .Where(a => a.StudentId == s.Id && takenSessionIds.Contains(a.SessionId))
+                    .ToList();
+
+                int present = studentAttendances.Count(a => a.Status == AttendanceStatus.Present);
+                int absent = studentAttendances.Count(a => a.Status == AttendanceStatus.Absent);
+                int takenCount = takenSessions.Count;
+                double rate = takenCount > 0 ? Math.Round((double)present * 100.0 / takenCount, 1) : 100.0;
+
+                var studentAttempts = attempts.Where(a => a.StudentId == s.Id).ToList();
+                var quizScores = new Dictionary<int, decimal?>();
+                var scores10 = new List<decimal>();
+
+                foreach (var qh in quizHeaders)
+                {
+                    var myQuizAttempts = studentAttempts.Where(a => a.QuizId == qh.QuizId && a.Score.HasValue).ToList();
+                    if (myQuizAttempts.Any())
+                    {
+                        decimal bestScore = myQuizAttempts.Max(a => a.Score!.Value);
+                        quizScores[qh.QuizId] = bestScore;
+                        if (qh.TotalPoints > 0)
+                        {
+                            scores10.Add(bestScore * 10m / qh.TotalPoints);
+                        }
+                    }
+                    else
+                    {
+                        quizScores[qh.QuizId] = null;
+                    }
+                }
+
+                decimal? avgScore10 = scores10.Any() ? Math.Round(scores10.Average(), 2) : null;
+
+                studentRows.Add(new StudentGradebookRowViewModel
+                {
+                    StudentId = s.Id,
+                    StudentCode = $"HS{s.Id:D3}",
+                    FullName = s.FullName,
+                    PresentCount = present,
+                    AbsentCount = absent,
+                    AttendanceRate = rate,
+                    QuizScores = quizScores,
+                    AverageQuizScore10 = avgScore10,
+                    CompletedQuizzesCount = scores10.Count
+                });
+            }
+
+            return new ClassGradebookViewModel
+            {
+                ClassId = classItem.Id,
+                ClassName = classItem.Name,
+                SubjectName = classItem.Subject?.Name ?? "Chưa xác định",
+                TeacherName = teacher.FullName,
+                StartDate = classItem.StartDate,
+                EndDate = classItem.EndDate,
+                TotalSessions = sessions.Count,
+                TakenSessionsCount = takenSessions.Count,
+                Quizzes = quizHeaders,
+                Students = studentRows
+            };
+        }
+
         public async Task<TeacherTimetableViewModel?> GetTimetableAsync(int userId, int weekOffset)
         {
             var teacher = await _repo.GetTeacherProfileByUserIdAsync(userId);

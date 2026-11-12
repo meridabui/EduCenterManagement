@@ -233,9 +233,15 @@ namespace EduCenterManagement.Services.Teacher
             }).ToList();
 
             var attemptVMs = new List<QuizAttemptDetailViewModel>();
+            var studentResultVMs = new List<QuizStudentResultViewModel>();
+            int totalClassStudents = 0;
+            int totalAttemptedStudents = 0;
+            int totalNotAttemptedStudents = 0;
+
             if (isMine)
             {
                 var attempts = await _repo.GetAttemptsByQuizIdAsync(quizId);
+                var enrolledStudents = await _repo.GetEnrolledStudentsByClassIdAsync(quiz.ClassId);
                 decimal totalPoints = questionVMs.Sum(q => q.Points);
 
                 attemptVMs = attempts.Select(a => new QuizAttemptDetailViewModel
@@ -251,6 +257,33 @@ namespace EduCenterManagement.Services.Teacher
                     Score = a.Score,
                     MaxScore = totalPoints
                 }).ToList();
+
+                totalClassStudents = enrolledStudents.Count;
+
+                foreach (var student in enrolledStudents)
+                {
+                    var myAttempts = attempts.Where(a => a.StudentId == student.Id).ToList();
+                    bool hasAttempted = myAttempts.Any();
+                    var bestAttempt = myAttempts.OrderByDescending(a => a.Score ?? -1).FirstOrDefault();
+                    var latestAttempt = myAttempts.OrderByDescending(a => a.StartedAt).FirstOrDefault();
+
+                    studentResultVMs.Add(new QuizStudentResultViewModel
+                    {
+                        StudentId = student.Id,
+                        StudentCode = $"HS{student.Id:D3}",
+                        StudentFullName = student.FullName,
+                        HasAttempted = hasAttempted,
+                        AttemptsUsed = myAttempts.Count,
+                        BestScore = bestAttempt?.Score,
+                        MaxScore = totalPoints,
+                        LatestSubmittedAt = latestAttempt?.SubmittedAt,
+                        LatestStatus = latestAttempt?.Status,
+                        BestAttemptId = bestAttempt?.Id
+                    });
+                }
+
+                totalAttemptedStudents = studentResultVMs.Count(s => s.HasAttempted);
+                totalNotAttemptedStudents = totalClassStudents - totalAttemptedStudents;
             }
 
             return new QuizDetailViewModel
@@ -273,8 +306,12 @@ namespace EduCenterManagement.Services.Teacher
                 Status = quiz.Status,
                 TotalPoints = questionVMs.Sum(q => q.Points),
                 ActiveTab = tab?.ToLower() == "results" ? "results" : "questions",
+                TotalClassStudents = totalClassStudents,
+                TotalAttemptedStudents = totalAttemptedStudents,
+                TotalNotAttemptedStudents = totalNotAttemptedStudents,
                 Questions = questionVMs,
-                Attempts = attemptVMs
+                Attempts = attemptVMs,
+                StudentResults = studentResultVMs
             };
         }
 

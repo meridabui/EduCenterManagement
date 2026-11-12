@@ -13,6 +13,10 @@ namespace EduCenterManagement.Repositories.Teacher
         Task<List<TeacherComment>> GetCommentsForStudentInClassAsync(int studentId, int classId);
         Task<TeacherComment?> GetCommentByIdAsync(int commentId, int teacherId);
         Task<StudentProfile?> GetStudentByIdAsync(int studentId);
+        Task<List<AttendanceRecord>> GetStudentAttendanceRecordsInClassAsync(int studentId, List<int> sessionIds);
+        Task<List<Quiz>> GetQuizzesWithQuestionsByClassIdAsync(int classId);
+        Task<Dictionary<int, decimal>> GetQuizTotalPointsByQuizIdsAsync(List<int> quizIds);
+        Task<List<QuizAttempt>> GetStudentQuizAttemptsByQuizIdsAsync(int studentId, List<int> quizIds);
         Task AddCommentAsync(TeacherComment comment);
         Task UpdateCommentAsync(TeacherComment comment);
         Task DeleteCommentAsync(TeacherComment comment);

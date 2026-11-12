@@ -134,6 +134,40 @@ namespace EduCenterManagement.Repositories.Teacher
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<List<AttendanceRecord>> GetAttendanceRecordsByClassSessionsAsync(List<int> sessionIds)
+        {
+            return await _context.AttendanceRecords
+                .AsNoTracking()
+                .Where(a => sessionIds.Contains(a.SessionId))
+                .ToListAsync();
+        }
+
+        public async Task<List<Quiz>> GetQuizzesByClassIdAsync(int classId)
+        {
+            return await _context.Quizzes
+                .AsNoTracking()
+                .Where(q => q.ClassId == classId)
+                .OrderBy(q => q.AvailableFrom)
+                .ThenBy(q => q.Id)
+                .ToListAsync();
+        }
+
+        public async Task<List<QuizQuestion>> GetQuestionsByQuizIdsAsync(List<int> quizIds)
+        {
+            return await _context.QuizQuestions
+                .AsNoTracking()
+                .Where(qq => quizIds.Contains(qq.QuizId))
+                .ToListAsync();
+        }
+
+        public async Task<List<QuizAttempt>> GetQuizAttemptsByQuizIdsAsync(List<int> quizIds)
+        {
+            return await _context.QuizAttempts
+                .AsNoTracking()
+                .Where(qa => quizIds.Contains(qa.QuizId))
+                .ToListAsync();
+        }
     }
 }
 
