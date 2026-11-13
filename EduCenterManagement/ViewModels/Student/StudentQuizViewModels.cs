@@ -87,6 +87,28 @@ namespace EduCenterManagement.ViewModels.Student
         public List<QuizResultQuestionViewModel> Questions { get; set; } = new();
     }
 
+    public class QuizAttemptHistoryViewModel
+    {
+        public int QuizId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string ClassName { get; set; } = string.Empty;
+        public int MaxAttempts { get; set; }
+        public decimal TotalPoints { get; set; }
+        public bool CanRetake { get; set; }
+        public List<QuizAttemptHistoryItemViewModel> Attempts { get; set; } = new();
+    }
+
+    public class QuizAttemptHistoryItemViewModel
+    {
+        public int AttemptId { get; set; }
+        public int AttemptNumber { get; set; }
+        public QuizAttemptStatus Status { get; set; }
+        public DateTime StartedAt { get; set; }
+        public DateTime? SubmittedAt { get; set; }
+        public decimal? Score { get; set; }
+        public bool IsInProgress => Status == QuizAttemptStatus.InProgress;
+    }
+
     public class QuizResultQuestionViewModel
     {
         public int Number { get; set; }

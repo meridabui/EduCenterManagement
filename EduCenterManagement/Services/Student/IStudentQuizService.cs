@@ -15,5 +15,8 @@ namespace EduCenterManagement.Services.Student
         Task<(bool Success, string Message)> SubmitAttemptAsync(int userId, int attemptId, Dictionary<int, int> answers, bool isAutoSubmit);
 
         Task<QuizResultViewModel?> GetResultAsync(int userId, int attemptId);
+
+        // Danh sách tất cả lượt làm của học sinh cho một bài quiz
+        Task<QuizAttemptHistoryViewModel?> GetAttemptHistoryAsync(int userId, int quizId);
     }
 }

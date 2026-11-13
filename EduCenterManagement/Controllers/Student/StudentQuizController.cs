@@ -98,6 +98,22 @@ namespace EduCenterManagement.Controllers.Student
             return View("~/Views/Student/StudentQuiz/Result.cshtml", model);
         }
 
+        // GET: /StudentQuiz/History/{quizId}
+        [HttpGet]
+        public async Task<IActionResult> History(int id)
+        {
+            if (!TryGetUserId(out int userId)) return Forbid();
+
+            var model = await _quizService.GetAttemptHistoryAsync(userId, id);
+            if (model == null)
+            {
+                TempData["Error"] = "Không tìm thấy bài quiz hoặc bạn không có quyền xem.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View("~/Views/Student/StudentQuiz/History.cshtml", model);
+        }
+
         private bool TryGetUserId(out int userId)
         {
             userId = 0;

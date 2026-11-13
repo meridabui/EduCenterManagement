@@ -265,6 +265,52 @@ namespace EduCenterManagement.Services.Student
             };
         }
 
+        public async Task<QuizAttemptHistoryViewModel?> GetAttemptHistoryAsync(int userId, int quizId)
+        {
+            var student = await _repo.GetStudentProfileByUserIdAsync(userId);
+            if (student == null) return null;
+
+            var quiz = await _repo.GetQuizByIdAsync(quizId);
+            if (quiz == null || quiz.Status == QuizStatus.Draft) return null;
+
+            var classIds = await _repo.GetPaidClassIdsAsync(student.Id);
+            if (!classIds.Contains(quiz.ClassId)) return null;
+
+            await FinalizeExpiredAttemptsAsync(student.Id, new List<int> { quizId });
+
+            var attempts = await _repo.GetAttemptsAsync(student.Id, new List<int> { quizId });
+
+            var totalPoints = (await _repo.GetTotalPointsAsync(new List<int> { quizId })).GetValueOrDefault(quizId);
+
+            var now = Now;
+            bool canRetake = quiz.Status == QuizStatus.Published
+                && now >= quiz.AvailableFrom && now < quiz.AvailableUntil
+                && attempts.Count < quiz.MaxAttempts
+                && attempts.All(a => a.Status != QuizAttemptStatus.InProgress);
+
+            return new QuizAttemptHistoryViewModel
+            {
+                QuizId = quiz.Id,
+                Title = quiz.Title,
+                ClassName = quiz.Class.Name,
+                MaxAttempts = quiz.MaxAttempts,
+                TotalPoints = totalPoints,
+                CanRetake = canRetake,
+                Attempts = attempts
+                    .OrderBy(a => a.AttemptNumber)
+                    .Select(a => new QuizAttemptHistoryItemViewModel
+                    {
+                        AttemptId = a.Id,
+                        AttemptNumber = a.AttemptNumber,
+                        Status = a.Status,
+                        StartedAt = a.StartedAt,
+                        SubmittedAt = a.SubmittedAt,
+                        Score = a.Status == QuizAttemptStatus.InProgress ? null : (a.Score ?? 0)
+                    })
+                    .ToList()
+            };
+        }
+
         // ===== Helpers =====
 
         private static StudentQuizState GetState(Quiz quiz, int attemptsUsed, bool hasInProgress, int questionCount)
