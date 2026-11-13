@@ -150,6 +150,11 @@ namespace EduCenterManagement.Services.Teacher
                 return (false, "Thời gian kết thúc phải lớn hơn thời gian bắt đầu.", 0);
             }
 
+            if (model.AvailableUntil <= DateTime.Now)
+            {
+                return (false, "Thời gian đóng bài Quiz phải lớn hơn thời điểm hiện tại.", 0);
+            }
+
             var classItem = await _repo.GetClassByIdAndTeacherAsync(model.ClassId, teacher.Id);
             if (classItem == null)
             {
@@ -158,9 +163,19 @@ namespace EduCenterManagement.Services.Teacher
             if (classItem.Status is not (ClassStatus.Open or ClassStatus.InProgress))
                 return (false, "Chỉ quản lý Quiz khi lớp Mở đăng ký hoặc Đang học.", 0);
 
-            if (model.Status == QuizStatus.Published && DateOnly.FromDateTime(model.AvailableFrom) < classItem.StartDate)
+            if (DateOnly.FromDateTime(DateTime.Now) > classItem.EndDate)
             {
-                return (false, $"Không thể xuất bản: Thời gian mở bài Quiz ({model.AvailableFrom:dd/MM/yyyy HH:mm}) không được diễn ra trước ngày lớp học bắt đầu ({classItem.StartDate:dd/MM/yyyy}).", 0);
+                return (false, $"Lớp học đã kết thúc vào ngày {classItem.EndDate:dd/MM/yyyy}, không thể tạo thêm bài Quiz mới.", 0);
+            }
+
+            if (DateOnly.FromDateTime(model.AvailableFrom) < classItem.StartDate)
+            {
+                return (false, $"Thời gian mở bài Quiz ({model.AvailableFrom:dd/MM/yyyy HH:mm}) không được diễn ra trước ngày lớp học bắt đầu ({classItem.StartDate:dd/MM/yyyy}).", 0);
+            }
+
+            if (DateOnly.FromDateTime(model.AvailableUntil) > classItem.EndDate)
+            {
+                return (false, $"Hạn chót làm bài thi ({model.AvailableUntil:dd/MM/yyyy HH:mm}) không được vượt quá ngày kết thúc lớp học ({classItem.EndDate:dd/MM/yyyy}).", 0);
             }
 
             if (model.SessionId.HasValue && model.SessionId.Value > 0)
@@ -505,6 +520,26 @@ namespace EduCenterManagement.Services.Teacher
                 return (false, "Thời gian kết thúc phải lớn hơn thời gian bắt đầu.", 0);
             }
 
+            if (model.AvailableUntil <= DateTime.Now)
+            {
+                return (false, "Thời gian đóng bài Quiz phải lớn hơn thời điểm hiện tại.", 0);
+            }
+
+            if (DateOnly.FromDateTime(DateTime.Now) > targetClass.EndDate)
+            {
+                return (false, $"Lớp mục tiêu đã kết thúc vào ngày {targetClass.EndDate:dd/MM/yyyy}, không thể nhân bản Quiz vào lớp này.", 0);
+            }
+
+            if (DateOnly.FromDateTime(model.AvailableFrom) < targetClass.StartDate)
+            {
+                return (false, $"Thời gian mở bài Quiz ({model.AvailableFrom:dd/MM/yyyy HH:mm}) không được diễn ra trước ngày lớp học bắt đầu ({targetClass.StartDate:dd/MM/yyyy}).", 0);
+            }
+
+            if (DateOnly.FromDateTime(model.AvailableUntil) > targetClass.EndDate)
+            {
+                return (false, $"Hạn chót làm bài thi ({model.AvailableUntil:dd/MM/yyyy HH:mm}) không được vượt quá ngày kết thúc của lớp mục tiêu ({targetClass.EndDate:dd/MM/yyyy}).", 0);
+            }
+
             var now = DateTime.UtcNow;
             var newQuiz = new Quiz
             {
@@ -535,6 +570,12 @@ namespace EduCenterManagement.Services.Teacher
 
             if (status == QuizStatus.Published)
             {
+                var quiz = await _repo.GetQuizByIdAsync(quizId);
+                if (quiz != null && quiz.AvailableUntil <= DateTime.Now)
+                {
+                    return (false, "Không thể xuất bản: Thời gian đóng bài Quiz đã qua. Vui lòng vào 'Sửa cấu hình' để gia hạn thời gian làm bài.");
+                }
+
                 var questions = await _repo.GetQuestionsByQuizIdAsync(quizId);
                 if (questions.Count == 0)
                 {
@@ -588,6 +629,26 @@ namespace EduCenterManagement.Services.Teacher
 
             if (model.AvailableUntil <= model.AvailableFrom)
                 return (false, "Thời gian kết thúc phải lớn hơn thời gian bắt đầu.");
+
+            if (model.AvailableUntil <= DateTime.Now)
+                return (false, "Thời gian đóng bài Quiz phải lớn hơn thời điểm hiện tại.");
+
+            var currentQuiz = await _repo.GetQuizByIdAsync(model.QuizId);
+            if (currentQuiz != null)
+            {
+                var classItem = await _repo.GetClassByIdAndTeacherAsync(currentQuiz.ClassId, teacher.Id);
+                if (classItem != null)
+                {
+                    if (DateOnly.FromDateTime(model.AvailableFrom) < classItem.StartDate)
+                    {
+                        return (false, $"Thời gian mở bài Quiz ({model.AvailableFrom:dd/MM/yyyy HH:mm}) không được diễn ra trước ngày lớp học bắt đầu ({classItem.StartDate:dd/MM/yyyy}).");
+                    }
+                    if (DateOnly.FromDateTime(model.AvailableUntil) > classItem.EndDate)
+                    {
+                        return (false, $"Hạn chót làm bài thi ({model.AvailableUntil:dd/MM/yyyy HH:mm}) không được vượt quá ngày kết thúc lớp học ({classItem.EndDate:dd/MM/yyyy}).");
+                    }
+                }
+            }
 
             int attempts = await _repo.GetAttemptCountByQuizIdAsync(model.QuizId);
             bool hasAttempts = attempts > 0;

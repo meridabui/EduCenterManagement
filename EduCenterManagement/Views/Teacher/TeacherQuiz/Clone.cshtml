@@ -96,6 +96,7 @@
                             <div class="col-md-6">
                                 <label asp-for="AvailableUntil" class="form-label fw-semibold">Thời gian đóng</label>
                                 <input asp-for="AvailableUntil" class="form-control" type="datetime-local"
+                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                                        value="@Model.AvailableUntil.ToString("yyyy-MM-ddTHH:mm")" />
                                 <span asp-validation-for="AvailableUntil" class="text-danger small"></span>
                             </div>

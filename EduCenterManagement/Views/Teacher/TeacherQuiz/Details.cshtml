@@ -541,6 +541,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Thời gian đóng bài thi <span class="text-danger">*</span></label>
                                 <input type="datetime-local" name="AvailableUntil" class="form-control"
+                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                                        value="@Model.AvailableUntil.ToString("yyyy-MM-ddTHH:mm")" required />
                             </div>
                         </div>
