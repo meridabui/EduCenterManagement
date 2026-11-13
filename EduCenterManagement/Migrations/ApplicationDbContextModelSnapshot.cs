@@ -322,6 +322,9 @@ namespace EduCenterManagement.Migrations
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("int");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -335,10 +338,7 @@ namespace EduCenterManagement.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TokenHash")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("email_verification_tokens");
                 });

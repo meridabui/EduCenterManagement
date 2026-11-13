@@ -18,10 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Repositories\" />
     <Folder Include="Controllers\Teacher\" />
     <Folder Include="Controllers\Student\" />
+    <Folder Include="Repositories\Account\" />
     <Folder Include="Repositories\Student\" />
+    <Folder Include="Services\Account\" />
     <Folder Include="Services\Student\" />
     <Folder Include="ViewModels\Teacher\" />
     <Folder Include="Views\Teacher\" />

@@ -154,9 +154,6 @@
 
                             <div id="layoutLoginError" class="alert alert-danger ed-hidden" role="alert"></div>
 
-                            <div id="layoutResendWrap" class="text-center mb-3 ed-hidden">
-                                <a href="#" id="layoutResendVerification" class="ed-link small">Gửi lại email xác thực</a>
-                            </div>
 
                             <div class="mb-3">
                                 <label for="layoutLoginEmail" class="ed-soft-label">Email</label>
@@ -260,26 +257,7 @@
             </div>
         </div>
 
-        <!-- REGISTRATION RESULT MODAL -->
-        <div class="modal fade ed-auth-modal" id="layoutRegisterResultModal" tabindex="-1" aria-labelledby="layoutRegisterResultTitle" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="ed-modal-body text-center p-4 p-md-5">
-                        <div class="ed-feature-icon mx-auto"
-                             style="background:#d1fae5;color:#047857;font-size:1.8rem">✓</div>
-
-                        <h2 id="layoutRegisterResultTitle" class="h4 fw-bold">Đăng ký thành công</h2>
-                        <p id="layoutRegisterResultMessage" class="text-secondary">
-                            Vui lòng kiểm tra email để xác thực tài khoản.
-                        </p>
-
-                        <button type="button" class="btn ed-btn-primary w-100 mt-4" data-bs-dismiss="modal">
-                            Đóng
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <partial name="_VerifyCodeModal" />
     }
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -292,12 +270,10 @@
             document.addEventListener("DOMContentLoaded", function () {
                 const loginModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("layoutLoginModal"));
                 const registerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("layoutRegisterModal"));
-                const resultModal = bootstrap.Modal.getOrCreateInstance(document.getElementById("layoutRegisterResultModal"));
 
                 const loginForm = document.getElementById("layoutLoginForm");
                 const loginError = document.getElementById("layoutLoginError");
                 const loginSubmit = document.getElementById("layoutLoginSubmit");
-                const resendWrap = document.getElementById("layoutResendWrap");
 
                 const registerForm = document.getElementById("layoutRegisterForm");
                 const registerError = document.getElementById("layoutRegisterError");
@@ -337,7 +313,6 @@
                     event.preventDefault();
 
                     loginError.classList.add("ed-hidden");
-                    resendWrap.classList.add("ed-hidden");
                     loginSubmit.disabled = true;
                     loginSubmit.textContent = "Đang đăng nhập...";
 
@@ -355,8 +330,13 @@
                         const result = await response.json();
 
                         if (!response.ok || !result.success) {
+                            if (result.needsVerification) {
+                                const emailValue = document.getElementById("layoutLoginEmail").value.trim();
+                                loginModal.hide();
+                                setTimeout(() => window.openVerifyCodeModal(emailValue), 180);
+                                return;
+                            }
                             loginError.textContent = result.message || "Đăng nhập không thành công.";
-                            resendWrap.classList.toggle("ed-hidden", !result.needsVerification);
                             loginError.classList.remove("ed-hidden");
                             return;
                         }
@@ -372,37 +352,6 @@
                         loginSubmit.disabled = false;
                         loginSubmit.textContent = "Đăng nhập";
                     }
-                });
-
-                // Gửi lại email xác thực cho tài khoản chưa xác thực.
-                document.getElementById("layoutResendVerification").addEventListener("click", async function (event) {
-                    event.preventDefault();
-
-                    const body = new URLSearchParams();
-                    body.append("email", document.getElementById("layoutLoginEmail").value.trim());
-                    body.append(
-                        "__RequestVerificationToken",
-                        loginForm.querySelector('input[name="__RequestVerificationToken"]').value);
-
-                    try {
-                        const response = await fetch("@Url.Action("ResendVerification", "Account", new { area = "" })", {
-                            method: "POST",
-                            body: body,
-                            credentials: "same-origin",
-                            headers: {
-                                "Accept": "application/json",
-                                "X-Requested-With": "XMLHttpRequest"
-                            }
-                        });
-
-                        const result = await response.json();
-                        loginError.textContent = result.message || "Đã xử lý yêu cầu.";
-                    } catch (error) {
-                        console.error("Resend verification failed:", error);
-                        loginError.textContent = "Không gửi được yêu cầu. Vui lòng thử lại.";
-                    }
-
-                    loginError.classList.remove("ed-hidden");
                 });
 
                 // Đăng ký Parent / Student: tạo tài khoản thật và gửi email xác thực.
@@ -458,10 +407,7 @@
                         registerForm.reset();
                         registerRole.value = document.querySelector("[data-layout-register-role].active").dataset.layoutRegisterRole;
 
-                        document.getElementById("layoutRegisterResultTitle").textContent = "Đăng ký thành công";
-                        document.getElementById("layoutRegisterResultMessage").textContent = result.message;
-
-                        resultModal.show();
+                        setTimeout(() => window.openVerifyCodeModal(result.email, result.message), 180);
                     } catch (error) {
                         console.error("Register request failed:", error);
                         registerError.textContent = "Không gửi được yêu cầu đến máy chủ. Vui lòng thử lại.";

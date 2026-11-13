@@ -1,0 +1,136 @@
+﻿<div class="modal fade ed-auth-modal" id="verifyCodeModal" tabindex="-1"
+     aria-labelledby="verifyCodeTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="ed-modal-body text-center p-4 p-md-5">
+                <h2 id="verifyCodeTitle" class="h4 fw-bold">Xác thực email</h2>
+                <p class="text-secondary">
+                    Mã 6 số đã được gửi tới <strong id="verifyCodeEmail"></strong>.
+                    Mã có hiệu lực 10 phút.
+                </p>
+
+                <form id="verifyCodeForm">
+                    @Html.AntiForgeryToken()
+                    <input id="verifyCodeInput" type="text"
+                           class="form-control ed-form-control text-center fs-3"
+                           style="letter-spacing:.5rem"
+                           inputmode="numeric" autocomplete="one-time-code"
+                           maxlength="6" placeholder="••••••" required />
+
+                    <div id="verifyCodeMessage" class="alert ed-hidden mt-3" role="alert"></div>
+
+                    <button id="verifyCodeSubmit" type="submit"
+                            class="btn ed-btn-primary w-100 mt-3">
+                        Xác nhận
+                    </button>
+                </form>
+
+                <div class="small mt-3">
+                    Chưa nhận được mã?
+                    <a href="#" id="verifyCodeResend" class="ed-link">Gửi lại mã</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const modal = bootstrap.Modal.getOrCreateInstance(
+            document.getElementById("verifyCodeModal"));
+        const form = document.getElementById("verifyCodeForm");
+        const input = document.getElementById("verifyCodeInput");
+        const box = document.getElementById("verifyCodeMessage");
+        const submit = document.getElementById("verifyCodeSubmit");
+        let currentEmail = "";
+
+        function show(message, ok) {
+            box.textContent = message;
+            box.classList.toggle("alert-success", ok);
+            box.classList.toggle("alert-danger", !ok);
+            box.classList.remove("ed-hidden");
+        }
+
+        function post(url, params) {
+            params.append("__RequestVerificationToken",
+                form.querySelector('input[name="__RequestVerificationToken"]').value);
+            return fetch(url, {
+                method: "POST",
+                body: params,
+                credentials: "same-origin",
+                headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" }
+            });
+        }
+
+        // Các modal khác gọi hàm này để mở bước nhập mã.
+        window.openVerifyCodeModal = function (email, message) {
+            currentEmail = email;
+            document.getElementById("verifyCodeEmail").textContent = email;
+            input.value = "";
+            box.classList.add("ed-hidden");
+            if (message) show(message, true);
+            modal.show();
+            setTimeout(() => input.focus(), 300);
+        };
+
+        // Chỉ cho nhập số.
+        input.addEventListener("input", function () {
+            input.value = input.value.replace(/\D/g, "").slice(0, 6);
+        });
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            if (input.value.length !== 6) {
+                show("Vui lòng nhập đủ 6 chữ số.", false);
+                return;
+            }
+
+            submit.disabled = true;
+            try {
+                const body = new URLSearchParams();
+                body.append("email", currentEmail);
+                body.append("code", input.value);
+
+                const response = await post("@Url.Action("VerifyEmail", "Account", new { area = "" })", body);
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    show(result.message || "Xác thực không thành công.", false);
+                    return;
+                }
+
+                show(result.message, true);
+
+                // Xác thực xong thì mở modal đăng nhập (Home hoặc Layout).
+                setTimeout(function () {
+                    modal.hide();
+                    const login = document.getElementById("loginModal")
+                        || document.getElementById("layoutLoginModal");
+                    if (login) {
+                        setTimeout(() => bootstrap.Modal.getOrCreateInstance(login).show(), 180);
+                    }
+                }, 1200);
+            } catch (error) {
+                console.error("Verify code failed:", error);
+                show("Không gửi được yêu cầu. Vui lòng thử lại.", false);
+            } finally {
+                submit.disabled = false;
+            }
+        });
+
+        document.getElementById("verifyCodeResend").addEventListener("click", async function (event) {
+            event.preventDefault();
+            try {
+                const body = new URLSearchParams();
+                body.append("email", currentEmail);
+
+                const response = await post("@Url.Action("ResendVerification", "Account", new { area = "" })", body);
+                const result = await response.json();
+                show(result.message || "Đã xử lý yêu cầu.", response.ok);
+            } catch (error) {
+                console.error("Resend failed:", error);
+                show("Không gửi được yêu cầu. Vui lòng thử lại.", false);
+            }
+        });
+    });
+</script>
