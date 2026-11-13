@@ -11,8 +11,8 @@
                 <a asp-controller="TeacherQuiz" asp-action="QuizList" class="btn btn-outline-secondary btn-sm mb-3">
                     ⬅ Quay lại danh sách Quiz
                 </a>
-                <h2 class="mb-1"><i class="bi bi-copy text-primary me-2"></i>Nhân bản bài Quiz của đồng nghiệp</h2>
-                <p class="text-muted">Sao chép toàn bộ nội dung câu hỏi và các đáp án trắc nghiệm sang lớp học do bạn phụ trách.</p>
+                <h2 class="mb-1"><i class="bi bi-copy text-primary me-2"></i>Nhân bản bài Quiz</h2>
+                <p class="text-muted">Tạo bản sao toàn bộ câu hỏi và đáp án để mở đợt làm bài mới cho lớp hiện tại hoặc chuyển sang lớp khác.</p>
             </div>
 
             <!-- Box tóm tắt bài thi nguồn -->
@@ -49,9 +49,9 @@
                         <!-- Chọn lớp & buổi học mục tiêu -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label asp-for="TargetClassId" class="form-label fw-semibold">Gán vào Lớp của bạn <span class="text-danger">*</span></label>
+                                <label asp-for="TargetClassId" class="form-label fw-semibold">Gán vào Lớp học <span class="text-danger">*</span></label>
                                 <select asp-for="TargetClassId" asp-items="Model.TargetClasses" class="form-select" id="targetClassSelect">
-                                    <option value="">-- Chọn lớp học của bạn --</option>
+                                    <option value="">-- Chọn lớp học --</option>
                                 </select>
                                 <span asp-validation-for="TargetClassId" class="text-danger small"></span>
                             </div>

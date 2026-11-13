@@ -453,7 +453,9 @@ namespace EduCenterManagement.Services.Teacher
             {
                 SourceQuizId = sourceQuiz.Id,
                 SourceQuizTitle = sourceQuiz.Title,
-                SourceTeacherName = sourceQuiz.CreatedByTeacher?.FullName ?? "Đồng nghiệp",
+                SourceTeacherName = sourceQuiz.CreatedByTeacherId == teacher.Id 
+                    ? $"{teacher.FullName} (Tôi)" 
+                    : (sourceQuiz.CreatedByTeacher?.FullName ?? "Đồng nghiệp"),
                 SourceSubjectName = sourceQuiz.Class?.Subject?.Name ?? "Chưa rõ",
                 QuestionCount = questions.Count,
                 NewTitle = $"Bản sao - {sourceQuiz.Title}",
@@ -469,7 +471,9 @@ namespace EduCenterManagement.Services.Teacher
 
             if (myClasses.Any())
             {
-                model.TargetClassId = myClasses.First().Id;
+                model.TargetClassId = myClasses.Any(c => c.Id == sourceQuiz.ClassId)
+                    ? sourceQuiz.ClassId
+                    : myClasses.First().Id;
                 var sessions = await _repo.GetSessionsByClassIdAsync(model.TargetClassId, teacher.Id);
                 var sessionList = new List<SelectListItem>
                 {

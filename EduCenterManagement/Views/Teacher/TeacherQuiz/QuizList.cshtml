@@ -280,13 +280,11 @@
                                                     </button>
                                                 }
                                             }
-                                            else
-                                            {
-                                                <a asp-controller="TeacherQuiz" asp-action="Clone" asp-route-id="@item.Id"
-                                                   class="btn btn-outline-secondary" title="Nhân bản đề thi này sang lớp của tôi">
-                                                    <i class="bi bi-copy"></i> Copy
-                                                </a>
-                                            }
+
+                                            <a asp-controller="TeacherQuiz" asp-action="Clone" asp-route-id="@item.Id"
+                                               class="btn btn-outline-secondary" title="Nhân bản bài Quiz này">
+                                                <i class="bi bi-copy"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
