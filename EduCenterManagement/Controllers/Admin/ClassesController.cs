@@ -1,773 +1,174 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using EduCenterManagement.Data;
 using EduCenterManagement.Enums;
-using EduCenterManagement.Models;
 using EduCenterManagement.Services.Admin;
 using EduCenterManagement.ViewModels.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
-namespace EduCenterManagement.Controllers.Admin
+namespace EduCenterManagement.Controllers.Admin;
+
+[Authorize(Roles = "Admin")]
+public class ClassesController : Controller
 {
-    [Authorize(Roles = "Admin")]
-    public class ClassesController : Controller
+    private readonly IAdminClassService _service;
+    public ClassesController(IAdminClassService service) => _service = service;
+
+    [HttpGet]
+    public async Task<IActionResult> Index(int? subjectId = null, int? teacherId = null, string? status = null, int page = 1)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ClassSessionService _sessions;
-        private readonly ClassLifecycleService _lifecycle;
+        var result = await _service.GetIndexAsync(subjectId, teacherId, status, page);
+        if (!result.Success) return BadRequest(result.Message);
+        var data = result.Data!;
+        SetFormData(data.Form);
+        ViewBag.FilterSubjects = data.FilterSubjects;
+        ViewBag.FilterTeachers = data.FilterTeachers;
+        ViewBag.FilterStatuses = data.FilterStatuses;
+        ViewBag.HasClassFilters = data.HasClassFilters;
+        ViewBag.Pagination = data.Pagination;
+        return View("~/Views/Admin/Classes/Index.cshtml", data.Classes);
+    }
 
-        public ClassesController(ApplicationDbContext context, ClassSessionService sessions, ClassLifecycleService lifecycle)
+    [HttpGet]
+    public IActionResult Create() => RedirectToAction(nameof(Index));
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(ClassViewModel model)
+    {
+        model.Name = (model.Name ?? string.Empty).Trim();
+        model.Schedules ??= new List<ClassScheduleInputViewModel>();
+        if (!ModelState.IsValid) return ReturnCreateError();
+        var result = await _service.CreateAsync(model);
+        if (!result.Success)
         {
-            _context = context;
-            _sessions = sessions;
-            _lifecycle = lifecycle;
+            AddErrors(result);
+            return ReturnCreateError();
         }
+        TempData["SuccessMessage"] = result.Message;
+        return RedirectToAction(nameof(Index));
+    }
 
-        [HttpGet]
-        public async Task<IActionResult> Index(int? subjectId = null, int? teacherId = null, string? status = null, int page = 1)
+    [HttpGet]
+    public async Task<IActionResult> CheckConflict(int teacherId, int? classId, DateOnly? startDate, DateOnly? endDate,
+        int? timeSlotId, [FromQuery] int[] days, [FromQuery] int[] timeSlotIds)
+        => DisplayJson(await _service.CheckConflictAsync(teacherId, classId, startDate, endDate, timeSlotId, days, timeSlotIds), useOk: true);
+
+    [HttpGet]
+    public async Task<IActionResult> AssignInfo(int id) => DisplayJson(await _service.GetAssignInfoAsync(id));
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignTeacher(AssignTeacherViewModel model)
+    {
+        if (!ModelState.IsValid) return BadRequest(new { message = "Dữ liệu phân công không hợp lệ." });
+        return DisplayJson(await _service.AssignTeacherAsync(model), useOk: true);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Capacity(int id) => DisplayJson(await _service.GetCapacityAsync(id));
+
+    [HttpGet]
+    public async Task<IActionResult> Details(int? id)
+    {
+        if (!id.HasValue) return NotFound();
+        var data = await _service.GetDetailsAsync(id.Value);
+        if (data == null) return NotFound();
+        ViewBag.SessionCount = data.SessionCount;
+        ViewBag.HasPaidEnrollments = data.HasPaidEnrollments;
+        return View("~/Views/Admin/Classes/Details.cshtml", data.Class);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> GenerateSessions(int id)
+    {
+        var result = await _service.GenerateSessionsAsync(id);
+        if (result.Status == AdminResultStatus.NotFound) return NotFound();
+        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(int? id)
+    {
+        if (!id.HasValue) return NotFound();
+        var result = await _service.GetEditAsync(id.Value);
+        if (result.Status == AdminResultStatus.NotFound) return NotFound();
+        if (!result.Success)
         {
-            if (!string.IsNullOrEmpty(status) && status != "Open,InProgress"
-                && (!System.Enum.TryParse<ClassStatus>(status, out var parsedStatus)
-                    || !System.Enum.IsDefined(parsedStatus)))
-                return BadRequest("Trạng thái lớp học không hợp lệ.");
-
-            var classes = await BuildIndexAsync(subjectId, teacherId, status, page);
-
-            return View("~/Views/Admin/Classes/Index.cshtml", classes);
-        }
-
-        [HttpGet]
-        public IActionResult Create()
-        {
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ClassViewModel model)
-        {
-            model.Name = (model.Name ?? string.Empty).Trim();
-
-            if (model.Schedules == null)
-                model.Schedules = new List<ClassScheduleInputViewModel>();
-
-            if (!ModelState.IsValid)
-                return ReturnCreateError();
-
-            await ValidateClassAsync(model);
-            if (!ModelState.IsValid)
-                return ReturnCreateError();
-
-            var slotIds = model.Schedules.Select(s => s.TimeSlotId).Distinct().ToList();
-            var now = DateTime.UtcNow;
-
-            var classItem = new Class
-            {
-                Name = model.Name,
-                SubjectId = model.SubjectId,
-                TeacherId = model.TeacherId,
-                StartDate = model.StartDate,
-                EndDate = model.EndDate,
-                MaxStudents = model.MaxStudents,
-                Fee = model.Fee,
-                Status = ClassStatus.Draft,
-                CreatedAt = now,
-                UpdatedAt = now
-            };
-
-            await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-
-            try
-            {
-                _context.Classes.Add(classItem);
-                await _context.SaveChangesAsync();
-
-                var schedules = model.Schedules.Select(s =>
-                    new ClassSchedule
-                    {
-                        ClassId = classItem.Id,
-                        DayOfWeek = s.DayOfWeek,
-                        TimeSlotId = s.TimeSlotId,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }).ToList();
-
-                _context.ClassSchedules.AddRange(schedules);
-                await _context.SaveChangesAsync();
-
-                var slots = await _context.TimeSlots.Where(t => slotIds.Contains(t.Id))
-                    .ToDictionaryAsync(t => t.Id);
-                foreach (var schedule in schedules)
-                    schedule.TimeSlot = slots[schedule.TimeSlotId];
-                var sessionResult = await _sessions.SynchronizeAsync(classItem, schedules);
-
-                await transaction.CommitAsync();
-
-                TempData["SuccessMessage"] = $"Đã tạo lớp {classItem.Name} với " +
-                    $"{schedules.Count} lịch học và {sessionResult.Added} buổi học.";
-                TempData["SuccessMessage"] += " Lớp đang ở Bản nháp; hãy mở đăng ký khi đã kiểm tra thông tin.";
-
-                if (!model.TeacherId.HasValue)
-                {
-                    TempData["SuccessMessage"] += " Vui lòng phân công giáo viên sau.";
-                }
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException)
-            {
-                await transaction.RollbackAsync();
-
-                TempData["ErrorMessage"] = "Không thể lưu lớp và lịch học. " +
-                    "Vui lòng kiểm tra dữ liệu.";
-
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> CheckConflict(int teacherId, int? classId,
-            DateOnly? startDate, DateOnly? endDate, int? timeSlotId,
-            [FromQuery] int[] days, [FromQuery] int[] timeSlotIds)
-        {
-            if (teacherId <= 0)
-                return Ok(new { ok = true });
-
-            List<(int Day, int SlotId)> proposed;
-            DateOnly start, end;
-            if (classId.HasValue && !timeSlotId.HasValue
-                && (days == null || days.Length == 0) && (timeSlotIds == null || timeSlotIds.Length == 0))
-            {
-                var classItem = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == classId);
-                if (classItem == null)
-                    return NotFound();
-                start = classItem.StartDate;
-                end = classItem.EndDate;
-                var schedules = await _context.ClassSchedules.AsNoTracking()
-                    .Where(s => s.ClassId == classId).Select(s => new { s.DayOfWeek, s.TimeSlotId }).ToListAsync();
-                proposed = schedules.Select(s => (s.DayOfWeek, s.TimeSlotId)).ToList();
-            }
-            else
-            {
-                if (!startDate.HasValue || !endDate.HasValue || endDate <= startDate)
-                    return BadRequest(new { ok = false, message = "Khoảng ngày học không hợp lệ." });
-                start = startDate.Value;
-                end = endDate.Value;
-                if (days == null || days.Length == 0)
-                    return Ok(new { ok = true, incomplete = true });
-                if (timeSlotIds != null && timeSlotIds.Length > 0)
-                {
-                    if (days.Length != timeSlotIds.Length)
-                        return BadRequest(new { ok = false, message = "Số thứ và số ca học không khớp." });
-                    proposed = days.Zip(timeSlotIds, (day, slot) => (day, slot)).Distinct().ToList();
-                }
-                else if (timeSlotId.HasValue)
-                {
-                    proposed = days.Distinct().Select(day => (day, timeSlotId.Value)).ToList();
-                }
-                else
-                {
-                    return Ok(new { ok = true, incomplete = true });
-                }
-            }
-
-            var conflicts = await FindConflictsAsync(teacherId, classId, start, end, proposed);
-            if (conflicts.Count > 0)
-                return Conflict(new { ok = false, conflicts });
-            return Ok(new { ok = true });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> AssignInfo(int id)
-        {
-            var classItem = await _context.Classes.AsNoTracking().Include(c => c.ClassSchedules)
-                    .ThenInclude(s => s.TimeSlot).FirstOrDefaultAsync(c => c.Id == id);
-
-            if (classItem == null)
-                return NotFound();
-
-            if (classItem.Status != ClassStatus.Draft && classItem.Status != ClassStatus.Open)
-                return BadRequest(new { message = "Chỉ được phân công giáo viên cho lớp Bản nháp hoặc Mở đăng ký." });
-
-            var teachers = await _context.TeacherProfiles.AsNoTracking().Where(t =>
-                    t.TeacherSubjects.Any(ts => ts.SubjectId == classItem.SubjectId) &&
-                    t.User.Status == UserStatus.Active &&
-                    t.User.Role == UserRole.Teacher).OrderBy(t => t.FullName).Select(t => new
-                {
-                    id = t.Id,
-                    fullName = t.FullName
-                }).ToListAsync();
-
-            var schedules = classItem.ClassSchedules.OrderBy(s => s.DayOfWeek).Select(s => new
-                {
-                    dayOfWeek = s.DayOfWeek,
-                    dayLabel = DayLabel(s.DayOfWeek),
-                    timeSlotId = s.TimeSlotId,
-                    slotName = s.TimeSlot.Name,
-                    startTime = s.TimeSlot.StartTime.ToString("HH:mm"),
-                    endTime = s.TimeSlot.EndTime.ToString("HH:mm")
-                }).ToList();
-
-            return Json(new
-            {
-                classId = classItem.Id,
-                className = classItem.Name,
-                currentTeacherId = classItem.TeacherId,
-                startDate = classItem.StartDate.ToString("yyyy-MM-dd"),
-                endDate = classItem.EndDate.ToString("yyyy-MM-dd"), schedules, teachers
-            });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignTeacher(AssignTeacherViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new { message = "Dữ liệu phân công không hợp lệ." });
-            }
-
-            await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-            var claimed = await _context.Classes.Where(c => c.Id == model.ClassId
-                    && (c.Status == ClassStatus.Draft || c.Status == ClassStatus.Open))
-                .ExecuteUpdateAsync(s => s.SetProperty(c => c.UpdatedAt, c => c.UpdatedAt));
-            if (claimed == 0)
-                return BadRequest(new { message = "Lớp không tồn tại hoặc không còn ở trạng thái Bản nháp / Mở đăng ký. Vui lòng tải lại trang." });
-            var classItem = await _context.Classes.Include(c => c.ClassSchedules)
-                .FirstOrDefaultAsync(c => c.Id == model.ClassId);
-
-            if (classItem == null)
-                return NotFound();
-
-            if (!await IsActiveTeacherForSubjectAsync(model.TeacherId, classItem.SubjectId))
-            {
-                return BadRequest(new
-                {
-                    message = "Giáo viên không hoạt động " +
-                              "hoặc không thuộc môn học của lớp."
-                });
-            }
-
-            var proposed = classItem.ClassSchedules.Select(s => (s.DayOfWeek, s.TimeSlotId)).ToList();
-
-            var conflicts = await FindConflictsAsync(model.TeacherId, classItem.Id, classItem.StartDate,
-                classItem.EndDate, proposed);
-
-            if (conflicts.Count > 0)
-                return Conflict(new { ok = false, conflicts });
-
-            classItem.TeacherId = model.TeacherId;
-
-            classItem.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return Ok(new
-            {
-                ok = true,
-                message = $"Đã gán giáo viên cho lớp {classItem.Name}."
-            });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Capacity(int id)
-        {
-            var classItem = await _context.Classes.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
-
-            if (classItem == null)
-                return NotFound();
-
-            var now = DateTime.UtcNow;
-
-            var enrollments = await _context.Enrollments.AsNoTracking()
-                .Where(e => e.ClassId == id && (e.Status == EnrollmentStatus.Confirm ||
-                    (e.Status == EnrollmentStatus.PendingPayment &&
-                        (e.ReservedUntil == null || e.ReservedUntil > now))))
-                .OrderBy(e => e.Status)
-                .ThenBy(e => e.ReservedUntil).Select(e => new
-                {
-                    studentName = e.Student.FullName,
-                    parentId = e.RegisteredByParentId,
-                    reservedUntil = e.ReservedUntil,
-                    status = e.Status == EnrollmentStatus.Confirm
-                        ? "Confirmed"
-                        : "Reserved"
-                }).ToListAsync();
-
-            int confirmed = enrollments.Count(e => e.status == "Confirmed");
-            int reserved = enrollments.Count(e => e.status == "Reserved");
-            int occupied = confirmed + reserved;
-
-            return Json(new
-            {
-                classId = classItem.Id,
-                className = classItem.Name,
-                max = classItem.MaxStudents, confirmed, reserved, occupied,
-                available = Math.Max(classItem.MaxStudents - occupied, 0),
-                isFull = occupied >= classItem.MaxStudents,
-                students = enrollments
-            });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (!id.HasValue)
-                return NotFound();
-
-            var classItem = await _context.Classes.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher)
-                    .ThenInclude(t => t!.User).Include(c => c.ClassSchedules).ThenInclude(s => s.TimeSlot)
-                .FirstOrDefaultAsync(c => c.Id == id.Value);
-
-            if (classItem == null)
-                return NotFound();
-
-            ViewBag.SessionCount = await _context.ClassSessions.CountAsync(s => s.ClassId == classItem.Id);
-            ViewBag.HasPaidEnrollments = await _context.Enrollments.AnyAsync(e => e.ClassId == classItem.Id && e.Status == EnrollmentStatus.Confirm)
-                || await _context.Payments.AnyAsync(p => p.Enrollment.ClassId == classItem.Id && p.Status == PaymentStatus.Paid);
-            return View("~/Views/Admin/Classes/Details.cshtml", classItem);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerateSessions(int id)
-        {
-            await using var transaction = await _context.Database
-                .BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-            var classItem = await _context.Classes.Include(c => c.ClassSchedules)
-                .ThenInclude(s => s.TimeSlot).FirstOrDefaultAsync(c => c.Id == id);
-            if (classItem == null)
-                return NotFound();
-
-            if (classItem.Status != ClassStatus.Draft)
-            {
-                TempData["ErrorMessage"] = "Chỉ được tạo buổi học khi lớp còn Bản nháp.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            if (!classItem.ClassSchedules.Any() || classItem.StartDate > classItem.EndDate)
-            {
-                TempData["ErrorMessage"] = "Vui lòng thiết lập lịch học và khoảng ngày hợp lệ trước khi tạo buổi.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            try
-            {
-                var result = await _sessions.SynchronizeAsync(classItem,
-                    classItem.ClassSchedules.ToList(), onlyIfEmpty: true);
-                await transaction.CommitAsync();
-                TempData["SuccessMessage"] = result.Added > 0
-                    ? $"Đã tạo {result.Added} buổi học theo lịch của lớp."
-                    : result.Total > 0 ? "Lớp đã có buổi học; không tạo trùng."
-                    : "Không có ngày học phù hợp trong khoảng thời gian của lớp.";
-            }
-            catch (DbUpdateException)
-            {
-                await transaction.RollbackAsync();
-                TempData["ErrorMessage"] = "Không thể tạo buổi học. Vui lòng thử lại.";
-            }
-
+            TempData["ErrorMessage"] = result.Message;
             return RedirectToAction(nameof(Details), new { id });
         }
+        SetFormData(result.Data!.Form);
+        return View("~/Views/Admin/Classes/Edit.cshtml", result.Data.Model);
+    }
 
-        [HttpGet]
-        public async Task<IActionResult> Edit(int? id)
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, ClassViewModel model)
+    {
+        if (id != model.Id) return NotFound();
+        var result = await _service.EditAsync(id, model, ModelState.IsValid);
+        if (result.Status == AdminResultStatus.NotFound) return NotFound();
+        if (result.Status == AdminResultStatus.Conflict) return Conflict(result.Message);
+        if (result.Status == AdminResultStatus.BadRequest) return BadRequest(result.Message);
+        SetFormData(result.Data?.Form);
+        if (!result.Success)
         {
-            if (!id.HasValue)
-                return NotFound();
-
-            var classItem = await _context.Classes.AsNoTracking().Include(c => c.ClassSchedules)
-                .FirstOrDefaultAsync(c => c.Id == id.Value);
-
-            if (classItem == null)
-                return NotFound();
-
-            var model = new ClassViewModel
-            {
-                Id = classItem.Id,
-                SubjectId = classItem.SubjectId,
-                TeacherId = classItem.TeacherId,
-                Name = classItem.Name,
-                StartDate = classItem.StartDate,
-                EndDate = classItem.EndDate,
-                MaxStudents = classItem.MaxStudents,
-                Fee = classItem.Fee,
-                Status = classItem.Status,
-                Schedules = classItem.ClassSchedules.OrderBy(s => s.DayOfWeek)
-                    .Select(s => new ClassScheduleInputViewModel
-                    {
-                        DayOfWeek = s.DayOfWeek,
-                        TimeSlotId = s.TimeSlotId
-                    }).ToList()
-            };
-
-            if (classItem.Status != ClassStatus.Draft)
-            {
-                TempData["ErrorMessage"] = "Thông tin lớp đã khóa. Chỉ được sửa lớp ở trạng thái Bản nháp.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            await LoadFormDataAsync(model.SubjectId, model.TeacherId);
-
+            AddErrors(result);
             return View("~/Views/Admin/Classes/Edit.cshtml", model);
         }
+        TempData["SuccessMessage"] = result.Message;
+        return RedirectToAction(nameof(Index));
+    }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, ClassViewModel model)
+    [HttpGet]
+    public async Task<IActionResult> Delete(int? id)
+    {
+        if (!id.HasValue) return NotFound();
+        var result = await _service.GetDeleteAsync(id.Value);
+        if (result.Status == AdminResultStatus.NotFound) return NotFound();
+        if (!result.Success)
         {
-            if (id != model.Id)
-                return NotFound();
-
-            await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-            if (!await LockDraftAsync(id))
-                return Conflict("Thông tin lớp đã khóa. Chỉ được sửa lớp ở trạng thái Bản nháp.");
-            if (model.Status != ClassStatus.Draft)
-                return BadRequest("Hãy dùng thao tác chuyển trạng thái riêng trong Chi tiết lớp học.");
-            var classItem = await _context.Classes.Include(c => c.ClassSchedules)
-                .FirstOrDefaultAsync(c => c.Id == id);
-
-            if (classItem == null)
-                return NotFound();
-
-            if (model.Schedules == null)
-                model.Schedules = new List<ClassScheduleInputViewModel>();
-
-            model.Name = (model.Name ?? string.Empty).Trim();
-
-            await LoadFormDataAsync(model.SubjectId, model.TeacherId);
-
-            IActionResult Back()
-            {
-                return View("~/Views/Admin/Classes/Edit.cshtml", model);
-            }
-
-            if (!ModelState.IsValid)
-                return Back();
-
-            await ValidateClassAsync(model, classItem);
-            if (!ModelState.IsValid)
-                return Back();
-
-            var slotIds = model.Schedules.Select(s => s.TimeSlotId).Distinct().ToList();
-            var now = DateTime.UtcNow;
-
-            try
-            {
-                classItem.Name = model.Name;
-                classItem.SubjectId = model.SubjectId;
-                classItem.TeacherId = model.TeacherId;
-                classItem.StartDate = model.StartDate;
-                classItem.EndDate = model.EndDate;
-                classItem.MaxStudents = model.MaxStudents;
-                classItem.Fee = model.Fee;
-                classItem.Status = ClassStatus.Draft;
-                classItem.UpdatedAt = now;
-
-                var oldSchedules = classItem.ClassSchedules.ToList();
-                var slots = await _context.TimeSlots.Where(t => slotIds.Contains(t.Id))
-                    .ToDictionaryAsync(t => t.Id);
-                var newSchedules = model.Schedules.Select(s =>
-                    oldSchedules.FirstOrDefault(old => old.DayOfWeek == s.DayOfWeek
-                        && old.TimeSlotId == s.TimeSlotId) ?? new ClassSchedule
-                    {
-                        ClassId = classItem.Id,
-                        DayOfWeek = s.DayOfWeek,
-                        TimeSlotId = s.TimeSlotId,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }).ToList();
-
-                foreach (var schedule in newSchedules)
-                {
-                    schedule.TimeSlot = slots[schedule.TimeSlotId];
-                    if (schedule.Id == 0)
-                        _context.ClassSchedules.Add(schedule);
-                }
-                await _context.SaveChangesAsync();
-                await _sessions.SynchronizeAsync(classItem, newSchedules);
-                _context.ClassSchedules.RemoveRange(oldSchedules.Except(newSchedules));
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                TempData["SuccessMessage"] = "Đã cập nhật thành công.";
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException)
-            {
-                await transaction.RollbackAsync();
-
-                ModelState.AddModelError(string.Empty, "Không thể cập nhật lớp và lịch học.");
-
-                return Back();
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (!id.HasValue)
-                return NotFound();
-
-            var classItem = await _context.Classes.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher)
-                .FirstOrDefaultAsync(c => c.Id == id.Value);
-
-            if (classItem == null)
-                return NotFound();
-
-            if (classItem.Status != ClassStatus.Draft && classItem.Status != ClassStatus.Open)
-            {
-                TempData["ErrorMessage"] = "Chỉ được hủy lớp Bản nháp hoặc Mở đăng ký.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-            if (await _context.Enrollments.AnyAsync(e => e.ClassId == id.Value && e.Status == EnrollmentStatus.Confirm)
-                || await _context.Payments.AnyAsync(p => p.Enrollment.ClassId == id.Value && p.Status == PaymentStatus.Paid))
-            {
-                TempData["ErrorMessage"] = "Không thể hủy lớp có đăng ký đã thanh toán.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-            return View("~/Views/Admin/Classes/Delete.cshtml", classItem);
-        }
-
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public Task<IActionResult> DeleteConfirmed(int id)
-            => ChangeStatus(id, ClassStatus.Cancelled);
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangeStatus(int id, ClassStatus targetStatus)
-        {
-            if (!ModelState.IsValid) return BadRequest("Trạng thái không hợp lệ.");
-            try
-            {
-                var result = await _lifecycle.ChangeAsync(id, targetStatus);
-                TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
-            }
-            catch (Exception ex) when (ex is DbUpdateException or System.Data.Common.DbException)
-            {
-                TempData["ErrorMessage"] = "Không thể chuyển trạng thái. Vui lòng tải lại trang và thử lại.";
-            }
+            TempData["ErrorMessage"] = result.Message;
             return RedirectToAction(nameof(Details), new { id });
         }
+        return View("~/Views/Admin/Classes/Delete.cshtml", result.Data);
+    }
 
-        private async Task<bool> LockDraftAsync(int id)
-            => await _context.Classes.Where(c => c.Id == id && c.Status == ClassStatus.Draft)
-                .ExecuteUpdateAsync(s => s.SetProperty(c => c.UpdatedAt, c => c.UpdatedAt)) == 1;
+    [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    public Task<IActionResult> DeleteConfirmed(int id) => ChangeStatus(id, ClassStatus.Cancelled);
 
-        [HttpGet]
-        public async Task<IActionResult> GetTeachersBySubject(int subjectId)
-        {
-            if (subjectId <= 0)
-                return Json(Array.Empty<object>());
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangeStatus(int id, ClassStatus targetStatus)
+    {
+        if (!ModelState.IsValid) return BadRequest("Trạng thái không hợp lệ.");
+        var result = await _service.ChangeStatusAsync(id, targetStatus);
+        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return RedirectToAction(nameof(Details), new { id });
+    }
 
-            var teachers = await _context.TeacherProfiles.AsNoTracking().Where(t =>
-                    t.TeacherSubjects.Any(ts => ts.SubjectId == subjectId) &&
-                    t.User.Status == UserStatus.Active &&
-                    t.User.Role == UserRole.Teacher).OrderBy(t => t.FullName).Select(t => new
-                {
-                    id = t.Id,
-                    fullName = t.FullName
-                }).ToListAsync();
+    [HttpGet]
+    public async Task<IActionResult> GetTeachersBySubject(int subjectId) => Json(await _service.GetTeachersBySubjectAsync(subjectId));
 
-            return Json(teachers);
-        }
-
-        private async Task<List<Class>> BuildIndexAsync(int? subjectId = null, int? teacherId = null, string? status = null, int page = 1)
-        {
-            await LoadFormDataAsync();
-
-            ViewBag.FilterSubjects = new SelectList(await _context.Subjects.AsNoTracking()
-                .OrderBy(s => s.Name).ToListAsync(), nameof(Subject.Id), nameof(Subject.Name), subjectId);
-            var filterTeachers = _context.TeacherProfiles.AsNoTracking();
-            if (subjectId.HasValue)
-                filterTeachers = filterTeachers.Where(t => t.TeacherSubjects.Any(s => s.SubjectId == subjectId.Value));
-            ViewBag.FilterTeachers = new SelectList(await filterTeachers
-                .OrderBy(t => t.FullName).ToListAsync(), nameof(TeacherProfile.Id), nameof(TeacherProfile.FullName), teacherId);
-            ViewBag.FilterStatuses = new List<SelectListItem>
-            {
-                new("Bản nháp", "Draft", status == "Draft"),
-                new("Mở đăng ký", "Open", status == "Open"),
-                new("Đang học", "InProgress", status == "InProgress"),
-                new("Hoàn thành", "Completed", status == "Completed"),
-                new("Đã hủy", "Cancelled", status == "Cancelled"),
-                new("Mở đăng ký và đang học", "Open,InProgress", status == "Open,InProgress")
-            };
-            ViewBag.HasClassFilters = subjectId.HasValue || teacherId.HasValue || !string.IsNullOrEmpty(status);
-
-            var query = _context.Classes.AsNoTracking().AsQueryable();
-            if (subjectId.HasValue)
-                query = query.Where(c => c.SubjectId == subjectId.Value);
-            if (teacherId.HasValue)
-                query = query.Where(c => c.TeacherId == teacherId.Value);
-            if (status == "Open,InProgress")
-                query = query.Where(c => c.Status == ClassStatus.Open || c.Status == ClassStatus.InProgress);
-            else if (System.Enum.TryParse<ClassStatus>(status, out var selectedStatus))
-                query = query.Where(c => c.Status == selectedStatus);
-
-            var pagination = new PaginationViewModel(await query.CountAsync(), page);
-            ViewBag.Pagination = pagination;
-
-            return await query.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher)
-                .Include(c => c.ClassSchedules).ThenInclude(s => s.TimeSlot).OrderByDescending(c => c.CreatedAt)
-                .ThenByDescending(c => c.Id)
-                .Skip(pagination.Offset)
-                .Take(PaginationViewModel.PageSize).ToListAsync();
-        }
-
-        private async Task LoadFormDataAsync(int? selectedSubjectId = null, int? selectedTeacherId = null)
-        {
-            var subjects = await _context.Subjects.AsNoTracking()
-                .Where(s => s.Status == SubjectStatus.Active).OrderBy(s => s.Name).ToListAsync();
-            ViewBag.Subjects = new SelectList(subjects, "Id", "Name", selectedSubjectId);
-
-            var teachersQuery = _context.TeacherProfiles.AsNoTracking()
-                .Where(t => t.User.Status == UserStatus.Active && t.User.Role == UserRole.Teacher);
-            if (selectedSubjectId.HasValue)
-                teachersQuery = teachersQuery.Where(t => t.TeacherSubjects.Any(s => s.SubjectId == selectedSubjectId));
-            var teachers = await teachersQuery.OrderBy(t => t.FullName).ToListAsync();
-            ViewBag.Teachers = new SelectList(teachers, "Id", "FullName", selectedTeacherId);
-
-            var slots = await _context.TimeSlots.AsNoTracking()
-                .Where(t => t.Status == TimeSlotStatus.Active).OrderBy(t => t.StartTime).ToListAsync();
-            ViewBag.TimeSlots = slots.Select(t => new SelectListItem
-            {
-                Value = t.Id.ToString(),
-                Text = $"{t.Name} ({t.StartTime:HH\\:mm} - {t.EndTime:HH\\:mm})"
-            }).ToList();
-        }
-
-        // Dùng chung khi tạo và sửa lớp để không lặp các kiểm tra database.
-        private async Task ValidateClassAsync(ClassViewModel model, Class? currentClass = null)
-        {
-            int classId = currentClass == null ? 0 : currentClass.Id;
-            if (await _context.Classes.AnyAsync(c => c.Name == model.Name && c.Id != classId))
-            {
-                ModelState.AddModelError(nameof(model.Name), "Tên lớp đã tồn tại.");
-                return;
-            }
-
-            bool subjectActive = await _context.Subjects.AnyAsync(s =>
-                s.Id == model.SubjectId && s.Status == SubjectStatus.Active);
-            bool sameSubject = currentClass != null && currentClass.SubjectId == model.SubjectId;
-            if (!subjectActive && !sameSubject)
-            {
-                ModelState.AddModelError(nameof(model.SubjectId), "Môn học không tồn tại hoặc đã ngừng hoạt động.");
-                return;
-            }
-
-            var slotIds = model.Schedules.Select(s => s.TimeSlotId).Distinct().ToList();
-            int activeSlots = await _context.TimeSlots.CountAsync(t =>
-                slotIds.Contains(t.Id) && t.Status == TimeSlotStatus.Active);
-            if (activeSlots != slotIds.Count)
-            {
-                ModelState.AddModelError(nameof(model.Schedules), "Có ca học không tồn tại hoặc đã ngừng hoạt động.");
-                return;
-            }
-
-            if (!model.TeacherId.HasValue)
-                return;
-            if (!await IsActiveTeacherForSubjectAsync(model.TeacherId.Value, model.SubjectId))
-            {
-                ModelState.AddModelError(nameof(model.TeacherId), "Giáo viên không hoạt động hoặc không thuộc môn học.");
-                return;
-            }
-
-            var schedules = model.Schedules.Select(s => (s.DayOfWeek, s.TimeSlotId)).ToList();
-            var conflicts = await FindConflictsAsync(model.TeacherId.Value, classId,
-                model.StartDate, model.EndDate, schedules);
-            if (conflicts.Count > 0)
-                ModelState.AddModelError(nameof(model.TeacherId), "Giáo viên bị trùng lịch: " + DescribeConflicts(conflicts));
-        }
-
-        private IActionResult ReturnCreateError()
-        {
-            var message = string.Join(" ", ModelState.Values
-                    .SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-                    .Where(e => !string.IsNullOrWhiteSpace(e)));
-
-            TempData["ErrorMessage"] = string.IsNullOrWhiteSpace(message)
-                ? "Dữ liệu lớp học không hợp lệ."
-                : message;
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        private async Task<bool> IsActiveTeacherForSubjectAsync(int teacherId, int subjectId)
-        {
-            return await _context.TeacherProfiles.AnyAsync(t =>
-                t.Id == teacherId &&
-                t.TeacherSubjects.Any(ts => ts.SubjectId == subjectId) &&
-                t.User.Status == UserStatus.Active &&
-                t.User.Role == UserRole.Teacher);
-        }
-
-        private static string DayLabel(int day)
-        {
-            return day == 8 ? "CN" : $"Thứ {day}";
-        }
-
-        private static string DescribeConflicts(IEnumerable<ClassConflictViewModel> conflicts)
-        {
-            return string.Join("; ", conflicts.Select(c =>
-                    $"lớp {c.ClassName} ({c.DayLabel}, {c.SlotName})"));
-        }
-
-        private async Task<List<ClassConflictViewModel>> FindConflictsAsync(int teacherId, int? currentClassId,
-            DateOnly start, DateOnly end, List<(int Day, int SlotId)> proposed)
-        {
-            var result = new List<ClassConflictViewModel>();
-
-            if (proposed.Count == 0)
-                return result;
-
-            var slotIds = proposed.Select(p => p.SlotId).Distinct().ToList();
-
-            var slots = await _context.TimeSlots.AsNoTracking().Where(t => slotIds.Contains(t.Id))
-                .ToDictionaryAsync(t => t.Id);
-
-            foreach (var group in proposed.GroupBy(p => p.SlotId))
-            {
-                if (!slots.TryGetValue(group.Key, out var proposedSlot))
-                    continue;
-
-                var days = group.Select(g => g.Day).Distinct().ToList();
-
-                var found = await _context.ClassSchedules.AsNoTracking().Where(s =>
-                        s.Class.TeacherId == teacherId &&
-                        (!currentClassId.HasValue ||
-                         s.ClassId != currentClassId.Value) &&
-                        s.Class.Status != ClassStatus.Cancelled &&
-                        s.Class.Status != ClassStatus.Completed &&
-                        s.Class.StartDate <= end &&
-                        s.Class.EndDate >= start &&
-                        days.Contains(s.DayOfWeek) &&
-                        s.TimeSlot.StartTime < proposedSlot.EndTime &&
-                        s.TimeSlot.EndTime > proposedSlot.StartTime).Select(s => new
-                    {
-                        ClassName = s.Class.Name, s.DayOfWeek,
-                        SlotName = s.TimeSlot.Name
-                    }).ToListAsync();
-
-                result.AddRange(found.Select(f => new ClassConflictViewModel
-                {
-                    ClassName = f.ClassName,
-                    DayOfWeek = f.DayOfWeek,
-                    DayLabel = DayLabel(f.DayOfWeek),
-                    SlotName = f.SlotName
-                }));
-            }
-
-            return result
-                .GroupBy(c => (c.ClassName, c.DayOfWeek, c.SlotName)).Select(g => g.First())
-                .OrderBy(c => c.DayOfWeek).ToList();
-        }
-
+    private IActionResult DisplayJson(AdminResult<object> result, bool useOk = false)
+    {
+        if (result.Status == AdminResultStatus.NotFound) return NotFound();
+        if (result.Status == AdminResultStatus.BadRequest) return BadRequest(result.Data);
+        if (result.Status == AdminResultStatus.Conflict) return Conflict(result.Data);
+        return useOk ? Ok(result.Data) : Json(result.Data);
+    }
+    private void SetFormData(AdminClassFormData? form)
+    {
+        if (form == null) return;
+        ViewBag.Subjects = form.Subjects;
+        ViewBag.Teachers = form.Teachers;
+        ViewBag.TimeSlots = form.TimeSlots;
+    }
+    private void AddErrors(AdminResult result)
+    {
+        foreach (var error in result.Errors) ModelState.AddModelError(error.Field, error.Message);
+    }
+    private IActionResult ReturnCreateError()
+    {
+        var message = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
+            .Where(e => !string.IsNullOrWhiteSpace(e)));
+        TempData["ErrorMessage"] = string.IsNullOrWhiteSpace(message) ? "Dữ liệu lớp học không hợp lệ." : message;
+        return RedirectToAction(nameof(Index));
     }
 }
