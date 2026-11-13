@@ -1,32 +1,23 @@
-using EduCenterManagement.Data;
+using EduCenterManagement.Repositories.Admin;
 using EduCenterManagement.Enums;
 using EduCenterManagement.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace EduCenterManagement.Services.Admin;
 
 public sealed record ClassSessionSyncResult(int Added, int Removed, int Total);
 
 // Called only from Admin write actions, within the same transaction as the class/schedules.
-public class ClassSessionService(ApplicationDbContext context)
+public class ClassSessionService(IAdminClassRepository repository, IAdminUnitOfWork unitOfWork) : IClassSessionService
 {
     public async Task<ClassSessionSyncResult> SynchronizeAsync(
         Class classItem, IReadOnlyCollection<ClassSchedule> schedules, bool onlyIfEmpty = false)
     {
-        var existing = await context.ClassSessions
-            .Where(s => s.ClassId == classItem.Id).ToListAsync();
+        var existing = await repository.GetSessionsAsync(classItem.Id);
 
         if (onlyIfEmpty && existing.Count > 0)
             return new(0, 0, existing.Count);
 
-        var referencedIds = await context.AttendanceRecords
-            .Where(a => a.Session.ClassId == classItem.Id).Select(a => a.SessionId)
-            .Union(context.Slides.Where(s => s.Session.ClassId == classItem.Id).Select(s => s.SessionId))
-            .Union(context.Quizzes.Where(q => q.SessionId != null && q.Session!.ClassId == classItem.Id)
-                .Select(q => q.SessionId!.Value))
-            .Union(context.TeacherComments.Where(c => c.SessionId != null && c.Session!.ClassId == classItem.Id)
-                .Select(c => c.SessionId!.Value))
-            .ToListAsync();
+        var referencedIds = await repository.GetReferencedSessionIdsAsync(classItem.Id);
 
         var now = DateTime.Now;
         var utcNow = DateTime.UtcNow;
@@ -96,7 +87,7 @@ public class ClassSessionService(ApplicationDbContext context)
             }
             else
             {
-                context.ClassSessions.Remove(session);
+                repository.RemoveSession(session);
                 removed++;
             }
         }
@@ -117,8 +108,8 @@ public class ClassSessionService(ApplicationDbContext context)
             number++;
         }
 
-        context.ClassSessions.AddRange(added);
-        await context.SaveChangesAsync();
+        repository.AddSessions(added);
+        await unitOfWork.SaveChangesAsync();
         return new(added.Count, removed, remaining.Count);
     }
 }
