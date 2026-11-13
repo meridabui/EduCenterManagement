@@ -36,7 +36,7 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
-                    <form asp-controller="TeacherQuiz" asp-action="Clone" method="post">
+                    <form asp-controller="TeacherQuiz" asp-action="Clone" asp-route-id="@Model.SourceQuizId" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="SourceQuizId" />
                         <input type="hidden" asp-for="SourceQuizTitle" />
@@ -61,7 +61,7 @@
                                     Gắn vào buổi học <span class="text-muted small fw-normal">(Không bắt buộc)</span>
                                 </label>
                                 <select asp-for="TargetSessionId" asp-items="Model.TargetSessions" class="form-select" id="targetSessionSelect">
-                                    <option value="">-- Không gắn vào buổi học (Quiz chung của cả lớp) --</option>
+                                    
                                 </select>
                                 <span asp-validation-for="TargetSessionId" class="text-danger small"></span>
                             </div>

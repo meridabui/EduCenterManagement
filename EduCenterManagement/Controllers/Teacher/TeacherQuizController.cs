@@ -190,12 +190,17 @@ namespace EduCenterManagement.Controllers.Teacher
             return View("~/Views/Teacher/TeacherQuiz/Clone.cshtml", model);
         }
 
-        // POST: /Teacher/TeacherQuiz/Clone
+        // POST: /Teacher/TeacherQuiz/Clone hoặc /Teacher/TeacherQuiz/Clone/{id}
         [HttpPost("Clone")]
+        [HttpPost("Clone/{id:int}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Clone(CloneQuizViewModel model)
+        public async Task<IActionResult> Clone(CloneQuizViewModel model, [FromRoute] int? id = null)
         {
             int userId = GetCurrentUserId();
+            if (model.SourceQuizId <= 0 && id.HasValue)
+            {
+                model.SourceQuizId = id.Value;
+            }
 
             if (!ModelState.IsValid)
             {
