@@ -44,7 +44,7 @@
                     <label class="form-label fw-semibold mb-1">
                         <i class="bi bi-funnel me-1 text-primary"></i>Chọn Lớp học phụ trách:
                     </label>
-                    <select asp-for="SelectedClassId" asp-items="Model.Classes" class="form-select" id="selectClassDropdown"
+                    <select name="classId" asp-for="SelectedClassId" asp-items="Model.Classes" class="form-select" id="selectClassDropdown"
                             onchange="document.getElementById('classFilterForm').submit();">
                         <option value="">-- Chọn lớp học --</option>
                     </select>

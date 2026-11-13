@@ -25,7 +25,7 @@ namespace EduCenterManagement.Repositories.Teacher
         {
             return await _context.Classes
                 .AsNoTracking()
-                .Where(c => c.TeacherId == teacherId && c.Status != ClassStatus.Cancelled)
+                .Where(c => c.TeacherId == teacherId && c.Status != ClassStatus.Cancelled && c.Status != ClassStatus.Draft)
                 .Include(c => c.Subject)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -86,6 +86,7 @@ namespace EduCenterManagement.Repositories.Teacher
                 .AsNoTracking()
                 .Where(c => c.TeacherId == teacherId &&
                             c.Status != ClassStatus.Cancelled &&
+                            c.Status != ClassStatus.Draft &&
                             c.StartDate <= weekEnd &&
                             c.EndDate >= weekStart)
                 .Include(c => c.Subject)

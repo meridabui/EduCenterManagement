@@ -267,6 +267,20 @@ namespace EduCenterManagement.Services.Teacher
                     var bestAttempt = myAttempts.OrderByDescending(a => a.Score ?? -1).FirstOrDefault();
                     var latestAttempt = myAttempts.OrderByDescending(a => a.StartedAt).FirstOrDefault();
 
+                    var myAttemptVMs = myAttempts.Select(a => new QuizAttemptDetailViewModel
+                    {
+                        AttemptId = a.Id,
+                        StudentId = a.StudentId,
+                        StudentCode = $"HS{a.Student.Id:D3}",
+                        StudentFullName = a.Student.FullName,
+                        AttemptNumber = a.AttemptNumber,
+                        StartedAt = a.StartedAt,
+                        SubmittedAt = a.SubmittedAt,
+                        Status = a.Status,
+                        Score = a.Score,
+                        MaxScore = totalPoints
+                    }).OrderBy(a => a.AttemptNumber).ToList();
+
                     studentResultVMs.Add(new QuizStudentResultViewModel
                     {
                         StudentId = student.Id,
@@ -278,7 +292,8 @@ namespace EduCenterManagement.Services.Teacher
                         MaxScore = totalPoints,
                         LatestSubmittedAt = latestAttempt?.SubmittedAt,
                         LatestStatus = latestAttempt?.Status,
-                        BestAttemptId = bestAttempt?.Id
+                        BestAttemptId = bestAttempt?.Id,
+                        Attempts = myAttemptVMs
                     });
                 }
 
