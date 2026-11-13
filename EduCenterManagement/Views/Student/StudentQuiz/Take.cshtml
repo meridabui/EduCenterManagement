@@ -5,6 +5,9 @@
     ViewData["Title"] = $"Làm bài - {Model.Title}";
 }
 
+<link rel="stylesheet" href="~/lib/katex/katex.min.css" asp-append-version="true" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+
 <div class="container mt-4 mb-5" style="max-width: 860px;">
     <div class="card border-0 shadow-sm mb-3 sticky-top" style="top: 0.5rem; z-index: 10;">
         <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -31,7 +34,7 @@
             <div class="card border-0 shadow-sm mb-3 question-card" data-question="@q.QuestionId">
                 <div class="card-body">
                     <div class="d-flex justify-content-between gap-2 mb-2">
-                        <div class="fw-semibold">Câu @q.Number. <span style="white-space: pre-line;">@q.QuestionText</span></div>
+                        <div class="fw-semibold">Câu @q.Number. <span class="math-render" style="white-space: pre-line;">@q.QuestionText</span></div>
                         <span class="badge bg-light text-dark border align-self-start">@q.Points.ToString("0.##") điểm</span>
                     </div>
 
@@ -41,7 +44,7 @@
                         <div class="form-check border rounded px-3 py-2 mb-2 ms-0">
                             <input class="form-check-input ms-0 me-2" type="radio"
                                    name="answers[@q.QuestionId]" id="@inputId" value="@o.OptionId" />
-                            <label class="form-check-label w-100" for="@inputId">@o.OptionText</label>
+                            <label class="form-check-label w-100 math-render" for="@inputId">@o.OptionText</label>
                         </div>
                     }
                 </div>
@@ -58,8 +61,17 @@
 </div>
 
 @section Scripts {
+    <script src="~/lib/katex/katex.min.js"></script>
+    <script src="~/lib/katex/contrib/auto-render.min.js"></script>
+    <script src="~/lib/katex/contrib/mhchem.min.js"></script>
+    <script src="~/js/quiz-math-render.js" asp-append-version="true"></script>
     <script>
         (function () {
+            // Render toàn bộ công thức và ảnh trong đề bài & đáp án
+            if (window.QuizMath) {
+                window.QuizMath.render(document.body);
+            }
+
             const form = document.getElementById("quizForm");
             const timerEl = document.getElementById("timer");
             const totalQuestions = @Model.Questions.Count;

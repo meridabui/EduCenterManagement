@@ -5,6 +5,9 @@
     ViewData["Title"] = $"Chi tiết Quiz - {Model.Title}";
 }
 
+<link rel="stylesheet" href="~/lib/katex/katex.min.css" asp-append-version="true" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+
 <div class="container-fluid">
     <!-- Nút quay lại & Tiêu đề -->
     <div class="mb-4">
@@ -244,7 +247,7 @@
                                         }
                                     </div>
                                     <div class="card-body">
-                                        <p class="fs-6 fw-semibold mb-3">@q.QuestionText</p>
+                                        <p class="fs-6 fw-semibold mb-3 math-render">@q.QuestionText</p>
 
                                         <div class="row g-2">
                                             @foreach (var opt in q.Options)
@@ -255,7 +258,7 @@
                                                             <span class="badge @(opt.IsCorrect ? "bg-success" : "bg-secondary") me-2">
                                                                 @(opt.SortOrder switch { 1 => "A", 2 => "B", 3 => "C", 4 => "D", _ => opt.SortOrder.ToString() })
                                                             </span>
-                                                            <span>@opt.OptionText</span>
+                                                            <span class="math-render">@opt.OptionText</span>
                                                         </div>
                                                         @if (opt.IsCorrect)
                                                         {
@@ -572,9 +575,12 @@
                         </div>
 
                         <div class="modal-body p-4">
+                            <!-- Toolbar chèn nhanh ký hiệu Toán - Lý - Hóa -->
+                            <div id="addQuestionToolbar"></div>
+
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Nội dung câu hỏi <span class="text-danger">*</span></label>
-                                <textarea name="QuestionText" rows="3" class="form-control" placeholder="Nhập đề bài câu hỏi trắc nghiệm..." required></textarea>
+                                <textarea name="QuestionText" id="addQuestionText" rows="3" class="form-control" placeholder="Nhập đề bài câu hỏi trắc nghiệm (hỗ trợ công thức KaTeX $...$ và ảnh ![mô tả](url))..." required></textarea>
                             </div>
 
                             <div class="mb-4">
@@ -595,7 +601,7 @@
                                         <label class="form-check-label fw-bold text-primary mb-0" for="radioA">A</label>
                                     </div>
                                     <input type="hidden" name="Options[0].SortOrder" value="1" />
-                                    <input type="text" name="Options[0].OptionText" class="form-control" placeholder="Nội dung phương án A" required />
+                                    <input type="text" name="Options[0].OptionText" id="addOptionText0" class="form-control" placeholder="Nội dung phương án A" required />
                                 </div>
 
                                 <div class="input-group">
@@ -604,7 +610,7 @@
                                         <label class="form-check-label fw-bold text-primary mb-0" for="radioB">B</label>
                                     </div>
                                     <input type="hidden" name="Options[1].SortOrder" value="2" />
-                                    <input type="text" name="Options[1].OptionText" class="form-control" placeholder="Nội dung phương án B" required />
+                                    <input type="text" name="Options[1].OptionText" id="addOptionText1" class="form-control" placeholder="Nội dung phương án B" required />
                                 </div>
 
                                 <div class="input-group">
@@ -613,7 +619,7 @@
                                         <label class="form-check-label fw-bold text-primary mb-0" for="radioC">C</label>
                                     </div>
                                     <input type="hidden" name="Options[2].SortOrder" value="3" />
-                                    <input type="text" name="Options[2].OptionText" class="form-control" placeholder="Nội dung phương án C" required />
+                                    <input type="text" name="Options[2].OptionText" id="addOptionText2" class="form-control" placeholder="Nội dung phương án C" required />
                                 </div>
 
                                 <div class="input-group">
@@ -622,7 +628,30 @@
                                         <label class="form-check-label fw-bold text-primary mb-0" for="radioD">D</label>
                                     </div>
                                     <input type="hidden" name="Options[3].SortOrder" value="4" />
-                                    <input type="text" name="Options[3].OptionText" class="form-control" placeholder="Nội dung phương án D" required />
+                                    <input type="text" name="Options[3].OptionText" id="addOptionText3" class="form-control" placeholder="Nội dung phương án D" required />
+                                </div>
+                            </div>
+
+                            <!-- Live Preview cho Thêm câu hỏi -->
+                            <div class="mt-4 p-3 bg-light rounded border">
+                                <div class="small fw-bold text-secondary mb-2 d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-eye me-1"></i>Xem trước câu hỏi (Live Preview):</span>
+                                    <span class="badge bg-white text-secondary border">Tự động vẽ công thức</span>
+                                </div>
+                                <div id="addPreviewQuestion" class="fw-semibold mb-2 math-render text-break text-muted fst-italic">Chưa nhập đề bài...</div>
+                                <div class="row g-2 small">
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-primary me-1">A</span> <span id="addPreviewOpt0" class="math-render text-break">-</span>
+                                    </div>
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-secondary me-1">B</span> <span id="addPreviewOpt1" class="math-render text-break">-</span>
+                                    </div>
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-secondary me-1">C</span> <span id="addPreviewOpt2" class="math-render text-break">-</span>
+                                    </div>
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-secondary me-1">D</span> <span id="addPreviewOpt3" class="math-render text-break">-</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -655,9 +684,12 @@
                         </div>
 
                         <div class="modal-body p-4">
+                            <!-- Toolbar chèn nhanh ký hiệu Toán - Lý - Hóa -->
+                            <div id="editQuestionToolbar"></div>
+
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Nội dung câu hỏi <span class="text-danger">*</span></label>
-                                <textarea name="QuestionText" id="editQuestionText" rows="3" class="form-control" placeholder="Nhập đề bài câu hỏi trắc nghiệm..." required></textarea>
+                                <textarea name="QuestionText" id="editQuestionText" rows="3" class="form-control" placeholder="Nhập đề bài câu hỏi trắc nghiệm (hỗ trợ công thức KaTeX $...$ và ảnh ![mô tả](url))..." required></textarea>
                             </div>
 
                             <div class="mb-4">
@@ -708,6 +740,29 @@
                                     <input type="text" name="Options[3].OptionText" id="editOptionText3" class="form-control" placeholder="Nội dung phương án D" required />
                                 </div>
                             </div>
+
+                            <!-- Live Preview cho Chỉnh sửa câu hỏi -->
+                            <div class="mt-4 p-3 bg-light rounded border">
+                                <div class="small fw-bold text-secondary mb-2 d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-eye me-1"></i>Xem trước câu hỏi (Live Preview):</span>
+                                    <span class="badge bg-white text-secondary border">Tự động vẽ công thức</span>
+                                </div>
+                                <div id="editPreviewQuestion" class="fw-semibold mb-2 math-render text-break text-muted fst-italic">Chưa có nội dung đề bài...</div>
+                                <div class="row g-2 small">
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-primary me-1">A</span> <span id="editPreviewOpt0" class="math-render text-break">-</span>
+                                    </div>
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-secondary me-1">B</span> <span id="editPreviewOpt1" class="math-render text-break">-</span>
+                                    </div>
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-secondary me-1">C</span> <span id="editPreviewOpt2" class="math-render text-break">-</span>
+                                    </div>
+                                    <div class="col-md-6 p-2 rounded bg-white border">
+                                        <span class="badge bg-secondary me-1">D</span> <span id="editPreviewOpt3" class="math-render text-break">-</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="modal-footer">
@@ -724,8 +779,74 @@
 }
 
 @section Scripts {
+    <script src="~/lib/katex/katex.min.js"></script>
+    <script src="~/lib/katex/contrib/auto-render.min.js"></script>
+    <script src="~/lib/katex/contrib/mhchem.min.js"></script>
+    <script src="~/js/quiz-math-render.js" asp-append-version="true"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // 1. Render công thức cho toàn bộ danh sách câu hỏi hiện tại
+            QuizMath.render(document.body);
+
+            // 2. Khởi tạo Toolbar & Live Preview cho modal "Thêm câu hỏi"
+            var addActiveInput = document.getElementById('addQuestionText');
+            ['addQuestionText', 'addOptionText0', 'addOptionText1', 'addOptionText2', 'addOptionText3'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('focus', function() { addActiveInput = this; });
+                    el.addEventListener('input', updateAddPreview);
+                }
+            });
+
+            QuizMath.createToolbar('addQuestionToolbar', function() {
+                return addActiveInput || document.getElementById('addQuestionText');
+            });
+
+            function updateAddPreview() {
+                var qText = (document.getElementById('addQuestionText').value || '').trim();
+                var pQ = document.getElementById('addPreviewQuestion');
+                pQ.textContent = qText || 'Chưa nhập đề bài...';
+                if (!qText) pQ.classList.add('text-muted', 'fst-italic');
+                else pQ.classList.remove('text-muted', 'fst-italic');
+
+                for (var i = 0; i < 4; i++) {
+                    var val = (document.getElementById('addOptionText' + i).value || '').trim();
+                    var pOpt = document.getElementById('addPreviewOpt' + i);
+                    pOpt.textContent = val || '-';
+                }
+                QuizMath.render('#addQuestionModal .modal-body');
+            }
+
+            // 3. Khởi tạo Toolbar & Live Preview cho modal "Sửa câu hỏi"
+            var editActiveInput = document.getElementById('editQuestionText');
+            ['editQuestionText', 'editOptionText0', 'editOptionText1', 'editOptionText2', 'editOptionText3'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('focus', function() { editActiveInput = this; });
+                    el.addEventListener('input', updateEditPreview);
+                }
+            });
+
+            QuizMath.createToolbar('editQuestionToolbar', function() {
+                return editActiveInput || document.getElementById('editQuestionText');
+            });
+
+            function updateEditPreview() {
+                var qText = (document.getElementById('editQuestionText').value || '').trim();
+                var pQ = document.getElementById('editPreviewQuestion');
+                pQ.textContent = qText || 'Chưa nhập đề bài...';
+                if (!qText) pQ.classList.add('text-muted', 'fst-italic');
+                else pQ.classList.remove('text-muted', 'fst-italic');
+
+                for (var i = 0; i < 4; i++) {
+                    var val = (document.getElementById('editOptionText' + i).value || '').trim();
+                    var pOpt = document.getElementById('editPreviewOpt' + i);
+                    pOpt.textContent = val || '-';
+                }
+                QuizMath.render('#editQuestionModal .modal-body');
+            }
+
+            // Sửa câu hỏi
             document.querySelectorAll('.btn-edit-question').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     var qId = this.getAttribute('data-id');
@@ -752,6 +873,8 @@
                             }
                         }
                     }
+
+                    updateEditPreview();
 
                     var modal = new bootstrap.Modal(document.getElementById('editQuestionModal'));
                     modal.show();
