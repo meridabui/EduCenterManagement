@@ -158,6 +158,7 @@ namespace EduCenterManagement.Controllers.Admin
                 EndTime = timeSlot.EndTime
             };
 
+            await LoadUsageAsync(model);
             return View("~/Views/Admin/TimeSlots/Edit.cshtml", model);
         }
 
@@ -170,6 +171,30 @@ namespace EduCenterManagement.Controllers.Admin
         {
             if (id != model.Id)
                 return NotFound();
+
+            await using var transaction = await _context.Database.BeginTransactionAsync(
+                System.Data.IsolationLevel.Serializable);
+            // Serialize edits before reading the current times and checking schedule references.
+            var claimed = await _context.TimeSlots.Where(t => t.Id == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.UpdatedAt, t => t.UpdatedAt));
+            if (claimed == 0)
+                return NotFound();
+
+            var timeSlot = await _context.TimeSlots.SingleAsync(t => t.Id == id);
+            await LoadUsageAsync(model);
+            var timeChanged = model.StartTime != timeSlot.StartTime || model.EndTime != timeSlot.EndTime;
+            if (model.IsTimeLocked)
+            {
+                if (timeChanged)
+                    ModelState.AddModelError(string.Empty,
+                        "Không thể thay đổi giờ vì khung giờ đã được lớp sử dụng. Bạn vẫn có thể sửa tên hoặc tạo khung giờ mới.");
+
+                // Redisplay the actual locked times, even when the submitted values were tampered with.
+                model.StartTime = timeSlot.StartTime;
+                model.EndTime = timeSlot.EndTime;
+                ModelState.Remove(nameof(model.StartTime));
+                ModelState.Remove(nameof(model.EndTime));
+            }
 
             if (model.StartTime >= model.EndTime)
             {
@@ -197,7 +222,7 @@ namespace EduCenterManagement.Controllers.Admin
                 return View("~/Views/Admin/TimeSlots/Edit.cshtml", model);
             }
 
-            bool overlaps = await _context.TimeSlots.AnyAsync(t =>
+            bool overlaps = timeChanged && !model.IsTimeLocked && await _context.TimeSlots.AnyAsync(t =>
                 t.Id != id &&
                 model.StartTime < t.EndTime &&
                 model.EndTime > t.StartTime);
@@ -211,12 +236,6 @@ namespace EduCenterManagement.Controllers.Admin
                 return View("~/Views/Admin/TimeSlots/Edit.cshtml", model);
             }
 
-            var timeSlot = await _context.TimeSlots
-                .FirstOrDefaultAsync(t => t.Id == id);
-
-            if (timeSlot == null)
-                return NotFound();
-
             timeSlot.Name = name;
             timeSlot.StartTime = model.StartTime;
             timeSlot.EndTime = model.EndTime;
@@ -225,6 +244,7 @@ namespace EduCenterManagement.Controllers.Admin
             try
             {
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
             catch (DbUpdateException)
             {
@@ -238,6 +258,18 @@ namespace EduCenterManagement.Controllers.Admin
             TempData["SuccessMessage"] = "Cập nhật khung giờ thành công.";
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task LoadUsageAsync(TimeSlotViewModel model)
+        {
+            // Include every class status so historical schedules retain their original times.
+            model.UsedByClasses = await _context.ClassSchedules.AsNoTracking()
+                .Where(s => s.TimeSlotId == model.Id)
+                .Select(s => new { s.ClassId, s.Class.Name })
+                .Distinct()
+                .OrderBy(c => c.Name)
+                .Select(c => new TimeSlotClassUsageViewModel { Id = c.ClassId, Name = c.Name })
+                .ToListAsync();
         }
 
         // GET: /TimeSlots/Delete/1
