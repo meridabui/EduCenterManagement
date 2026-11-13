@@ -23,9 +23,13 @@ namespace EduCenterManagement.ViewModels.Teacher.Quiz
         [Display(Name = "Tiêu đề bài Quiz mới")]
         public string NewTitle { get; set; } = string.Empty;
 
-        [Range(1, 1440)]
+        [Range(1, 1440, ErrorMessage = "Thời lượng làm bài phải từ 1 đến 1440 phút.")]
         [Display(Name = "Thời lượng (phút)")]
         public int DurationMinutes { get; set; } = 15;
+
+        [Range(1, int.MaxValue, ErrorMessage = "Số lần làm bài tối đa phải lớn hơn 0.")]
+        [Display(Name = "Số lần làm tối đa")]
+        public int MaxAttempts { get; set; } = 1;
 
         [Display(Name = "Thời gian mở")]
         public DateTime AvailableFrom { get; set; } = DateTime.Now;

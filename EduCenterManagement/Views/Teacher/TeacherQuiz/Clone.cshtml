@@ -74,14 +74,22 @@
                             <span asp-validation-for="NewTitle" class="text-danger small"></span>
                         </div>
 
-                        <!-- Thời lượng -->
-                        <div class="mb-3">
-                            <label asp-for="DurationMinutes" class="form-label fw-semibold">Thời lượng làm bài (Phút) <span class="text-danger">*</span></label>
-                            <div class="input-group" style="max-width: 250px;">
-                                <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="1440" />
-                                <span class="input-group-text">phút</span>
+                        <!-- Thời lượng & Số lần làm bài -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="DurationMinutes" class="form-label fw-semibold">Thời lượng làm bài (Phút) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="1440" />
+                                    <span class="input-group-text">phút</span>
+                                </div>
+                                <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
                             </div>
-                            <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
+
+                            <div class="col-md-6">
+                                <label asp-for="MaxAttempts" class="form-label fw-semibold">Số lần làm tối đa <span class="text-danger">*</span></label>
+                                <input asp-for="MaxAttempts" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="MaxAttempts" class="text-danger small"></span>
+                            </div>
                         </div>
 
                         <!-- Thời gian mở & đóng -->

@@ -460,6 +460,7 @@ namespace EduCenterManagement.Services.Teacher
                 QuestionCount = questions.Count,
                 NewTitle = $"Bản sao - {sourceQuiz.Title}",
                 DurationMinutes = sourceQuiz.DurationMinutes,
+                MaxAttempts = sourceQuiz.MaxAttempts,
                 AvailableFrom = DateTime.Now,
                 AvailableUntil = DateTime.Now.AddDays(7),
                 TargetClasses = myClasses.Select(c => new SelectListItem
@@ -554,7 +555,7 @@ namespace EduCenterManagement.Services.Teacher
                 DurationMinutes = model.DurationMinutes,
                 AvailableFrom = model.AvailableFrom,
                 AvailableUntil = model.AvailableUntil,
-                MaxAttempts = sourceQuiz.MaxAttempts,
+                MaxAttempts = model.MaxAttempts > 0 ? model.MaxAttempts : sourceQuiz.MaxAttempts,
                 Status = QuizStatus.Draft,
                 CreatedAt = now,
                 UpdatedAt = now
