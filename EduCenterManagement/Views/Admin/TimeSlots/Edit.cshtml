@@ -23,6 +23,21 @@
                 <div asp-validation-summary="ModelOnly"
                      class="text-danger mb-3"></div>
 
+                @if (Model.IsTimeLocked)
+                {
+                    <div class="alert alert-info" id="time-lock-help">
+                        <p class="mb-2"><strong>Giờ học đã khóa.</strong> Khung giờ này đã được lớp sử dụng.
+                            Bạn vẫn có thể sửa tên; giờ bắt đầu và kết thúc được giữ nguyên.</p>
+                        <ul class="mb-2">
+                            @foreach (var classItem in Model.UsedByClasses)
+                            {
+                                <li><a asp-controller="Classes" asp-action="Details" asp-route-id="@classItem.Id">@classItem.Name</a></li>
+                            }
+                        </ul>
+                        <a asp-controller="TimeSlots" asp-action="Create">Thêm khung giờ mới</a> nếu cần giờ học khác.
+                    </div>
+                }
+
                 <div class="mb-3">
                     <label asp-for="Name" class="form-label fw-semibold"></label>
                     <input asp-for="Name" class="form-control form-control-lg fs-6" />
@@ -34,6 +49,8 @@
                     <label asp-for="StartTime" class="form-label fw-semibold"></label>
                     <input asp-for="StartTime"
                            type="time"
+                           readonly="@Model.IsTimeLocked"
+                           aria-describedby="@(Model.IsTimeLocked ? "time-lock-help" : null)"
                            class="form-control form-control-lg fs-6"
                            step="60" />
                     <span asp-validation-for="StartTime"
@@ -44,6 +61,8 @@
                     <label asp-for="EndTime" class="form-label fw-semibold"></label>
                     <input asp-for="EndTime"
                            type="time"
+                           readonly="@Model.IsTimeLocked"
+                           aria-describedby="@(Model.IsTimeLocked ? "time-lock-help" : null)"
                            class="form-control form-control-lg fs-6"
                            step="60" />
                     <span asp-validation-for="EndTime"

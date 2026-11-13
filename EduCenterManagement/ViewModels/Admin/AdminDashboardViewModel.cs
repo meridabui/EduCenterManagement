@@ -33,11 +33,13 @@ namespace EduCenterManagement.ViewModels.Admin
                 : 0;
 
         public List<DashboardClassRow> Classes { get; set; } = new();
+        public List<DashboardClassRow> UpcomingClasses { get; set; } = new();
     }
 
     public class DashboardClassRow
     {
         public int ClassId { get; set; }
+        public DateOnly StartDate { get; set; }
         public string Name { get; set; } = string.Empty;
         public string SubjectName { get; set; } = string.Empty;
         public decimal Fee { get; set; }
