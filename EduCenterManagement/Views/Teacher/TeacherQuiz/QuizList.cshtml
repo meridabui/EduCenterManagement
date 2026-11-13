@@ -115,7 +115,7 @@
     <!-- Bảng danh sách Quiz -->
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="min-height: 220px;">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -223,68 +223,87 @@
                                         }
                                     </td>
                                     <td class="pe-3 text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <a asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@item.Id"
-                                               class="btn btn-outline-primary" title="Xem đề thi & đáp án">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-light border py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thao tác">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-2">
+                                                <li>
+                                                    <a class="dropdown-item py-1" asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@item.Id">
+                                                        <i class="bi bi-eye text-primary me-2"></i>Xem đề thi & đáp án
+                                                    </a>
+                                                </li>
 
-                                            @if (item.IsMine)
-                                            {
-                                                <a asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@item.Id" asp-route-tab="results"
-                                                   class="btn btn-outline-success" title="Xem điểm học sinh">
-                                                    <i class="bi bi-trophy"></i>
-                                                </a>
+                                                @if (item.IsMine)
+                                                {
+                                                    <li>
+                                                        <a class="dropdown-item py-1" asp-controller="TeacherQuiz" asp-action="Details" asp-route-id="@item.Id" asp-route-tab="results">
+                                                            <i class="bi bi-trophy text-success me-2"></i>Kết quả nộp bài
+                                                        </a>
+                                                    </li>
 
-                                                @if (item.Status == QuizStatus.Published)
-                                                {
-                                                    <form asp-controller="TeacherQuiz" asp-action="UpdateStatus" method="post" class="d-inline"
-                                                          onsubmit="return confirm('Bạn có chắc muốn đóng bài Quiz này? Học sinh sẽ không thể làm bài thêm.');">
-                                                        @Html.AntiForgeryToken()
-                                                        <input type="hidden" name="quizId" value="@item.Id" />
-                                                        <input type="hidden" name="status" value="@QuizStatus.Closed" />
-                                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                                                        <button type="submit" class="btn btn-outline-dark" title="Đóng bài Quiz (Chốt điểm)">
-                                                            <i class="bi bi-lock"></i>
-                                                        </button>
-                                                    </form>
-                                                }
-                                                else if (item.Status == QuizStatus.Closed)
-                                                {
-                                                    <form asp-controller="TeacherQuiz" asp-action="UpdateStatus" method="post" class="d-inline"
-                                                          onsubmit="return confirm('Bạn có muốn mở lại bài Quiz này cho học sinh?');">
-                                                        @Html.AntiForgeryToken()
-                                                        <input type="hidden" name="quizId" value="@item.Id" />
-                                                        <input type="hidden" name="status" value="@QuizStatus.Published" />
-                                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                                                        <button type="submit" class="btn btn-outline-success" title="Mở lại bài Quiz">
-                                                            <i class="bi bi-unlock"></i>
-                                                        </button>
-                                                    </form>
+                                                    <li><hr class="dropdown-divider my-1"></li>
+
+                                                    @if (item.Status == QuizStatus.Published)
+                                                    {
+                                                        <li>
+                                                            <form asp-controller="TeacherQuiz" asp-action="UpdateStatus" method="post" class="m-0 p-0"
+                                                                  onsubmit="return confirm('Bạn có chắc muốn đóng bài Quiz này? Học sinh sẽ không thể làm bài thêm.');">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="quizId" value="@item.Id" />
+                                                                <input type="hidden" name="status" value="@QuizStatus.Closed" />
+                                                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                                <button type="submit" class="dropdown-item py-1 text-dark">
+                                                                    <i class="bi bi-lock text-dark me-2"></i>Đóng bài Quiz (Chốt điểm)
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                    else if (item.Status == QuizStatus.Closed)
+                                                    {
+                                                        <li>
+                                                            <form asp-controller="TeacherQuiz" asp-action="UpdateStatus" method="post" class="m-0 p-0"
+                                                                  onsubmit="return confirm('Bạn có muốn mở lại bài Quiz này cho học sinh?');">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="quizId" value="@item.Id" />
+                                                                <input type="hidden" name="status" value="@QuizStatus.Published" />
+                                                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                                                <button type="submit" class="dropdown-item py-1 text-success">
+                                                                    <i class="bi bi-unlock text-success me-2"></i>Mở lại bài Quiz
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    }
+
+                                                    @if (item.SubmittedAttemptsCount == 0)
+                                                    {
+                                                        <li>
+                                                            <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@item.Id" method="post" class="m-0 p-0"
+                                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi sẽ bị xóa.');">
+                                                                @Html.AntiForgeryToken()
+                                                                <button type="submit" class="dropdown-item py-1 text-danger">
+                                                                    <i class="bi bi-trash text-danger me-2"></i>Xóa Quiz
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                    else
+                                                    {
+                                                        <li>
+                                                            <button type="button" class="dropdown-item py-1 text-muted disabled" disabled title="Đã có @item.SubmittedAttemptsCount lượt làm bài, không thể xóa">
+                                                                <i class="bi bi-trash text-secondary me-2"></i>Xóa Quiz (@item.SubmittedAttemptsCount lượt nộp)
+                                                            </button>
+                                                        </li>
+                                                    }
                                                 }
 
-                                                @if (item.SubmittedAttemptsCount == 0)
-                                                {
-                                                    <form asp-controller="TeacherQuiz" asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
-                                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài Quiz này? Toàn bộ câu hỏi sẽ bị xóa.');">
-                                                        @Html.AntiForgeryToken()
-                                                        <button type="submit" class="btn btn-outline-danger" title="Xóa Quiz">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                }
-                                                else
-                                                {
-                                                    <button type="button" class="btn btn-outline-secondary disabled" title="Đã có @item.SubmittedAttemptsCount lượt làm bài, không thể xóa">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                }
-                                            }
-
-                                            <a asp-controller="TeacherQuiz" asp-action="Clone" asp-route-id="@item.Id"
-                                               class="btn btn-outline-secondary" title="Nhân bản bài Quiz này">
-                                                <i class="bi bi-copy"></i>
-                                            </a>
+                                                <li><hr class="dropdown-divider my-1"></li>
+                                                <li>
+                                                    <a class="dropdown-item py-1 text-secondary" asp-controller="TeacherQuiz" asp-action="Clone" asp-route-id="@item.Id">
+                                                        <i class="bi bi-copy text-secondary me-2"></i>Nhân bản bài Quiz
+                                                    </a>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </td>
                                 </tr>
