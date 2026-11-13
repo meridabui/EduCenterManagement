@@ -19,7 +19,7 @@ namespace EduCenterManagement.ViewModels.Teacher.Quiz
         [Required(ErrorMessage = "Vui lòng chọn thời gian kết thúc.")]
         public DateTime AvailableUntil { get; set; }
 
-        [Range(1, 10, ErrorMessage = "Số lần làm bài tối đa từ 1 đến 10.")]
+        [Range(1, 100, ErrorMessage = "Số lần làm bài tối đa từ 1 đến 100.")]
         public int MaxAttempts { get; set; } = 1;
     }
 }
