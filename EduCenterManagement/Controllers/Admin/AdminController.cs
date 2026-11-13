@@ -22,6 +22,7 @@ namespace EduCenterManagement.Controllers.Admin
         public async Task<IActionResult> Index()
         {
             var now = DateTime.UtcNow;
+            var today = DateOnly.FromDateTime(DateTime.Now);
 
             var classes = await _context.Classes
                 .AsNoTracking()
@@ -74,6 +75,7 @@ namespace EduCenterManagement.Controllers.Admin
                 return new DashboardClassRow
                 {
                     ClassId = c.Id,
+                    StartDate = c.StartDate,
                     Name = c.Name,
                     SubjectName = c.Subject?.Name ?? "Chưa có môn học",
                     Fee = c.Fee,
@@ -97,6 +99,16 @@ namespace EduCenterManagement.Controllers.Admin
                     MaxStudents = c.MaxStudents
                 };
             }).ToList();
+
+            var rowsById = rows.ToDictionary(r => r.ClassId);
+            var upcomingClasses = classes
+                .Where(c => c.Status == ClassStatus.Open && c.StartDate >= today)
+                .OrderBy(c => c.StartDate)
+                .ThenBy(c => c.Name)
+                .ThenBy(c => c.Id)
+                .Take(6)
+                .Select(c => rowsById[c.Id])
+                .ToList();
 
             var model = new AdminDashboardViewModel
             {
@@ -138,7 +150,8 @@ namespace EduCenterManagement.Controllers.Admin
                 TotalSeats = rows.Sum(r => r.MaxStudents),
                 OccupiedSeats = rows.Sum(r => r.Occupied),
 
-                Classes = rows
+                Classes = rows,
+                UpcomingClasses = upcomingClasses
             };
 
             return View("~/Views/Admin/Index.cshtml", model);

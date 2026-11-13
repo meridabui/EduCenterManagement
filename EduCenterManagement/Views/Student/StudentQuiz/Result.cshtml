@@ -19,9 +19,12 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
 
 <div class="container mt-4 mb-5" style="max-width: 860px;">
-    <div class="mb-3">
+    <div class="mb-3 d-flex flex-wrap gap-2">
         <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Danh sách bài quiz
+        </a>
+        <a asp-action="History" asp-route-id="@Model.QuizId" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-list-ol"></i> Tất cả lượt làm
         </a>
     </div>
 
@@ -91,7 +94,7 @@
                     bool selected = q.SelectedOptionId == o.OptionId;
                     bool highlightCorrect = Model.ShowCorrectAnswers && o.IsCorrect;
                     var css = selected
-                        ? (q.IsCorrect ? "border-success bg-success-subtle" : "border-danger bg-danger-subtle")
+                        ? (q.IsCorrect ? "border-success bg-success bg-opacity-10" : "border-danger bg-danger bg-opacity-10")
                         : highlightCorrect ? "border-success" : "";
 
                     <div class="border rounded px-3 py-2 mb-2 d-flex justify-content-between align-items-center @css">

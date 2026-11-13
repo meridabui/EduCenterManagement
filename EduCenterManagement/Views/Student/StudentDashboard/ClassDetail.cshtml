@@ -85,7 +85,7 @@
                         var headingId = $"heading{session.SessionId}";
                         var collapseId = $"collapse{session.SessionId}";
 
-                        <div class="accordion-item mb-3 border rounded-3 overflow-hidden shadow-none">
+                        <div class="accordion-item mb-3 border rounded-3 overflow-hidden shadow-none" id="session-@session.SessionId">
                             <h2 class="accordion-header" id="@headingId">
                                 <button class="accordion-button @(string.IsNullOrEmpty(isCollapseOpen) ? "collapsed" : "") bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="@(string.IsNullOrEmpty(isCollapseOpen) ? "false" : "true")" aria-controls="@collapseId">
                                     <div class="d-flex flex-wrap align-items-center gap-3 w-100 me-3">
@@ -162,3 +162,23 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Khi đi từ thời khoá biểu (#session-{id}): mở đúng buổi học và cuộn tới đó
+        document.addEventListener("DOMContentLoaded", function () {
+            if (!location.hash.startsWith("#session-")) return;
+
+            const item = document.querySelector(location.hash);
+            if (!item) return;
+
+            const collapse = item.querySelector(".accordion-collapse");
+            if (collapse) {
+                bootstrap.Collapse.getOrCreateInstance(collapse, { toggle: false }).show();
+            }
+
+            item.classList.add("border-success");
+            item.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    </script>
+}

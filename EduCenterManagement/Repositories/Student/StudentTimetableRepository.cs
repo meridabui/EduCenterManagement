@@ -79,6 +79,16 @@ namespace EduCenterManagement.Repositories.Student
             return raw.ToDictionary(x => x.SessionId, x => (x.Count, x.FirstSlideId));
         }
 
+        public async Task<List<Slide>> GetSlidesBySessionIdsAsync(List<int> sessionIds)
+        {
+            return await _context.Slides
+                .AsNoTracking()
+                .Where(sl => sessionIds.Contains(sl.SessionId))
+                .OrderBy(sl => sl.UploadedAt)
+                .ThenBy(sl => sl.Id)
+                .ToListAsync();
+        }
+
         public async Task<Dictionary<int, (int Count, int FirstQuizId)>> GetQuizzesInfoAsync(List<int> sessionIds)
         {
             var raw = await _context.Quizzes

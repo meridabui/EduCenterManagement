@@ -226,7 +226,14 @@
 
                                                     <!-- Nút hành động: [Tải Slide] [Quiz] -->
                                                     <div class="d-flex flex-wrap gap-1 pt-1 border-top">
-                                                        @if (s.SlideCount > 0)
+                                                        @if (s.SlideCount > 1)
+                                                        {
+                                                            <!-- Nhiều file: sang trang chi tiết lớp để xem đủ danh sách -->
+                                                            <a asp-action="ClassDetail" asp-route-id="@s.ClassId" asp-fragment="session-@s.SessionId" class="btn btn-xs btn-outline-success py-0 px-2" style="font-size: 0.75rem;" title="Xem tất cả @s.SlideCount tài liệu của buổi học">
+                                                                <i class="bi bi-files"></i> @s.SlideCount Slide
+                                                            </a>
+                                                        }
+                                                        else if (s.SlideCount == 1)
                                                         {
                                                             if (s.FirstSlideId.HasValue)
                                                             {
