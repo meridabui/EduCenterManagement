@@ -46,7 +46,7 @@ namespace EduCenterManagement.ViewModels.Teacher.Quiz
         public int SubmittedAttemptsCount { get; set; }
 
         public bool IsActiveNow => Status == QuizStatus.Published &&
-                                  DateTime.UtcNow >= AvailableFrom &&
-                                  DateTime.UtcNow <= AvailableUntil;
+                                  DateTime.Now >= AvailableFrom &&
+                                  DateTime.Now <= AvailableUntil;
     }
 }

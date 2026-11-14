@@ -96,9 +96,12 @@ namespace EduCenterManagement.Repositories.Teacher
 
         public async Task<List<Class>> GetTeacherClassesAsync(int teacherId)
         {
+            var today = DateOnly.FromDateTime(DateTime.Now);
             return await _context.Classes
                 .AsNoTracking()
-                .Where(c => c.TeacherId == teacherId && c.Status != ClassStatus.Cancelled && c.Status != ClassStatus.Draft)
+                .Where(c => c.TeacherId == teacherId 
+                    && (c.Status == ClassStatus.Open || c.Status == ClassStatus.InProgress)
+                    && c.EndDate >= today)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }

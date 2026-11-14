@@ -11,8 +11,8 @@
                 <a asp-controller="TeacherQuiz" asp-action="QuizList" class="btn btn-outline-secondary btn-sm mb-3">
                     ⬅ Quay lại danh sách Quiz
                 </a>
-                <h2 class="mb-1"><i class="bi bi-copy text-primary me-2"></i>Nhân bản bài Quiz của đồng nghiệp</h2>
-                <p class="text-muted">Sao chép toàn bộ nội dung câu hỏi và các đáp án trắc nghiệm sang lớp học do bạn phụ trách.</p>
+                <h2 class="mb-1"><i class="bi bi-copy text-primary me-2"></i>Nhân bản bài Quiz</h2>
+                <p class="text-muted">Tạo bản sao toàn bộ câu hỏi và đáp án để mở đợt làm bài mới cho lớp hiện tại hoặc chuyển sang lớp khác.</p>
             </div>
 
             <!-- Box tóm tắt bài thi nguồn -->
@@ -36,7 +36,7 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
-                    <form asp-controller="TeacherQuiz" asp-action="Clone" method="post">
+                    <form asp-controller="TeacherQuiz" asp-action="Clone" asp-route-id="@Model.SourceQuizId" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="SourceQuizId" />
                         <input type="hidden" asp-for="SourceQuizTitle" />
@@ -49,9 +49,9 @@
                         <!-- Chọn lớp & buổi học mục tiêu -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label asp-for="TargetClassId" class="form-label fw-semibold">Gán vào Lớp của bạn <span class="text-danger">*</span></label>
+                                <label asp-for="TargetClassId" class="form-label fw-semibold">Gán vào Lớp học <span class="text-danger">*</span></label>
                                 <select asp-for="TargetClassId" asp-items="Model.TargetClasses" class="form-select" id="targetClassSelect">
-                                    <option value="">-- Chọn lớp học của bạn --</option>
+                                    <option value="">-- Chọn lớp học --</option>
                                 </select>
                                 <span asp-validation-for="TargetClassId" class="text-danger small"></span>
                             </div>
@@ -61,7 +61,7 @@
                                     Gắn vào buổi học <span class="text-muted small fw-normal">(Không bắt buộc)</span>
                                 </label>
                                 <select asp-for="TargetSessionId" asp-items="Model.TargetSessions" class="form-select" id="targetSessionSelect">
-                                    <option value="">-- Không gắn vào buổi học (Quiz chung của cả lớp) --</option>
+                                    
                                 </select>
                                 <span asp-validation-for="TargetSessionId" class="text-danger small"></span>
                             </div>
@@ -74,14 +74,22 @@
                             <span asp-validation-for="NewTitle" class="text-danger small"></span>
                         </div>
 
-                        <!-- Thời lượng -->
-                        <div class="mb-3">
-                            <label asp-for="DurationMinutes" class="form-label fw-semibold">Thời lượng làm bài (Phút) <span class="text-danger">*</span></label>
-                            <div class="input-group" style="max-width: 250px;">
-                                <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="1440" />
-                                <span class="input-group-text">phút</span>
+                        <!-- Thời lượng & Số lần làm bài -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="DurationMinutes" class="form-label fw-semibold">Thời lượng làm bài (Phút) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="1440" />
+                                    <span class="input-group-text">phút</span>
+                                </div>
+                                <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
                             </div>
-                            <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
+
+                            <div class="col-md-6">
+                                <label asp-for="MaxAttempts" class="form-label fw-semibold">Số lần làm tối đa <span class="text-danger">*</span></label>
+                                <input asp-for="MaxAttempts" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="MaxAttempts" class="text-danger small"></span>
+                            </div>
                         </div>
 
                         <!-- Thời gian mở & đóng -->
@@ -96,6 +104,7 @@
                             <div class="col-md-6">
                                 <label asp-for="AvailableUntil" class="form-label fw-semibold">Thời gian đóng</label>
                                 <input asp-for="AvailableUntil" class="form-control" type="datetime-local"
+                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                                        value="@Model.AvailableUntil.ToString("yyyy-MM-ddTHH:mm")" />
                                 <span asp-validation-for="AvailableUntil" class="text-danger small"></span>
                             </div>

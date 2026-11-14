@@ -77,13 +77,14 @@
                                        value="@Model.AvailableFrom.ToString("yyyy-MM-ddTHH:mm")" />
                                 <span asp-validation-for="AvailableFrom" class="text-danger small"></span>
                                 <div class="form-text text-muted small">
-                                    <i class="bi bi-info-circle me-1"></i>Lưu ý: Nếu Xuất bản, thời gian mở phải từ ngày lớp bắt đầu học trở đi.
+                                    <i class="bi bi-info-circle me-1"></i>Lưu ý: Thời gian mở phải từ ngày lớp bắt đầu học trở đi.
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label asp-for="AvailableUntil" class="form-label fw-semibold">Hết hạn đóng lúc <span class="text-danger">*</span></label>
                                 <input asp-for="AvailableUntil" class="form-control" type="datetime-local"
+                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
                                        value="@Model.AvailableUntil.ToString("yyyy-MM-ddTHH:mm")" />
                                 <span asp-validation-for="AvailableUntil" class="text-danger small"></span>
                             </div>
@@ -94,7 +95,7 @@
                             <label asp-for="Status" class="form-label fw-semibold">Trạng thái phát hành</label>
                             <select asp-for="Status" class="form-select">
                                 <option value="@QuizStatus.Draft">Bản nháp (Chưa cho học sinh thấy)</option>
-                                <option value="@QuizStatus.Published">Xuất bản (Học sinh được phép làm trong khung giờ)</option>
+                                
                             </select>
                             <div class="form-text">Bạn có thể để dạng Bản nháp và sau khi thêm câu hỏi xong mới Xuất bản.</div>
                         </div>

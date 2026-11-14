@@ -153,8 +153,7 @@ namespace EduCenterManagement.Data
 
             // EMAIL VERIFICATION
             modelBuilder.Entity<EmailVerificationToken>()
-                .HasIndex(x => x.TokenHash)
-                .IsUnique();
+                .HasIndex(x => new { x.UserId, x.CreatedAt });
 
             // ATTENDANCE: mỗi Student chỉ có một record mỗi Session
             modelBuilder.Entity<AttendanceRecord>()

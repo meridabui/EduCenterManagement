@@ -25,5 +25,6 @@ namespace EduCenterManagement.Models
 
         [ForeignKey(nameof(UserId))]
         public AppUser User { get; set; } = null!;
+        public int FailedAttempts { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿
+
 @model List<EduCenterManagement.ViewModels.Home.OpenClassViewModel>
 
 @{
@@ -768,9 +768,6 @@
 
                     <div id="loginError" class="alert alert-danger ed-hidden" role="alert"></div>
 
-                    <div id="resendVerificationWrap" class="text-center mb-3 ed-hidden">
-                        <a href="#" id="resendVerification" class="ed-link small">Gửi lại email xác thực</a>
-                    </div>
 
                     <div class="mb-3">
                         <label for="loginEmail" class="ed-soft-label">Email</label>
@@ -880,38 +877,15 @@
     </div>
 </div>
 
-<!-- REGISTRATION RESULT MODAL -->
-<div class="modal fade ed-auth-modal" id="registerResultModal" tabindex="-1" aria-labelledby="registerResultTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="ed-modal-body text-center p-4 p-md-5">
-                <div class="ed-feature-icon mx-auto"
-                     style="background:#d1fae5;color:#047857;font-size:1.8rem">✓</div>
-
-                <h2 id="registerResultTitle" class="h4 fw-bold">Đăng ký thành công</h2>
-                <p id="registerResultMessage" class="text-secondary">
-                    Vui lòng kiểm tra email để xác thực tài khoản.
-                </p>
-
-                <button type="button" class="btn ed-btn-primary w-100 mt-4"
-                        data-bs-dismiss="modal">
-                    Đóng
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
+<partial name="_VerifyCodeModal" />
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const loginModalElement = document.getElementById("loginModal");
             const registerModalElement = document.getElementById("registerModal");
-            const resultModalElement = document.getElementById("registerResultModal");
 
             const loginModal = bootstrap.Modal.getOrCreateInstance(loginModalElement);
             const registerModal = bootstrap.Modal.getOrCreateInstance(registerModalElement);
-            const resultModal = bootstrap.Modal.getOrCreateInstance(resultModalElement);
 
             const loginForm = document.getElementById("loginForm");
             const loginError = document.getElementById("loginError");
@@ -920,7 +894,6 @@
             const registerForm = document.getElementById("registerForm");
             const registerError = document.getElementById("registerError");
             const registerRole = document.getElementById("registerRole");
-            const resendWrap = document.getElementById("resendVerificationWrap");
 
             // Chuyển đổi giữa các modal.
             document.querySelectorAll("[data-open-register]").forEach(function (link) {
@@ -945,134 +918,59 @@
                     document.querySelectorAll("[data-register-role]").forEach(function (tab) {
                         tab.classList.remove("active");
                     });
-
                     button.classList.add("active");
                     registerRole.value = button.dataset.registerRole;
-
                     registerError.classList.add("ed-hidden");
                 });
             });
 
-            // Đăng nhập qua endpoint hiện có, dùng Cookie Authentication thật.
-            
-loginForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
+            // Đăng nhập: gọi POST Account/Login (trả JSON khi gửi bằng AJAX).
+            loginForm.addEventListener("submit", async function (event) {
+                event.preventDefault();
 
-    loginError.classList.add("ed-hidden");
-    resendWrap.classList.add("ed-hidden");
-    loginSubmit.disabled = true;
-    loginSubmit.textContent = "Đang đăng nhập...";
+                loginError.classList.add("ed-hidden");
+                loginSubmit.disabled = true;
+                loginSubmit.textContent = "Đang đăng nhập...";
 
-    try {
-        const response = await fetch(loginForm.action, {
-            method: "POST",
-            body: new URLSearchParams(new FormData(loginForm)),
-            credentials: "same-origin",
-            headers: {
-                "Accept": "application/json",
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        });
+                try {
+                    const response = await fetch(loginForm.action, {
+                        method: "POST",
+                        body: new URLSearchParams(new FormData(loginForm)),
+                        credentials: "same-origin",
+                        headers: {
+                            "Accept": "application/json",
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    });
 
-        const result = await response.json();
+                    const result = await response.json();
 
-        if (!response.ok || !result.success) {
-            loginError.textContent =
-                result.message || "Đăng nhập không thành công.";
+                    if (!response.ok || !result.success) {
+                        if (result.needsVerification) {
+                            const emailValue = document.getElementById("loginEmail").value.trim();
+                            loginModal.hide();
+                            setTimeout(() => window.openVerifyCodeModal(emailValue), 180);
+                            return;
+                        }
+                        loginError.textContent = result.message || "Đăng nhập không thành công.";
+                        loginError.classList.remove("ed-hidden");
+                        return;
+                    }
 
-            resendWrap.classList.toggle("ed-hidden", !result.needsVerification);
-
-            loginError.classList.remove("ed-hidden");
-            return;
-        }
-
-        // Cập nhật Header từ dữ liệu server vừa trả về.
-        document.getElementById("guestActions")
-            .classList.add("ed-hidden");
-
-        document.getElementById("userActions")
-            .classList.remove("ed-hidden");
-
-        document.getElementById("headerName").textContent = result.name;
-        document.getElementById("headerRole").textContent = result.roleName;
-        document.getElementById("headerAvatar").textContent =
-            result.name.trim().charAt(0).toUpperCase();
-
-        document.getElementById("portalLink").href = result.portalUrl;
-
-        loginModal.hide();
-        loginForm.reset();
-
-    } catch (error) {
-        console.error("Login request failed:", error);
-
-        loginError.textContent =
-            "Không gửi được yêu cầu đến máy chủ. " +
-            "Vui lòng kiểm tra ứng dụng và thử lại.";
-
-        loginError.classList.remove("ed-hidden");
-    } finally {
-        loginSubmit.disabled = false;
-        loginSubmit.textContent = "Đăng nhập";
-    }
-});
-
-
-            // Tìm kiếm lớp mẫu.
-            const classSearch = document.getElementById("classSearch");
-            const classSubjectFilter = document.getElementById("classSubjectFilter");
-            const classItems = Array.from(document.querySelectorAll(".ed-class-item"));
-            const noClassResults = document.getElementById("noClassResults");
-
-            function filterClasses() {
-                const query = classSearch.value.trim().toLowerCase();
-                let visibleCount = 0;
-
-                classItems.forEach(function (item) {
-                    const matches = item.dataset.search.includes(query)
-                        && (!classSubjectFilter.value || item.dataset.subjectId === classSubjectFilter.value);
-                    item.classList.toggle("ed-hidden", !matches);
-                    if (matches) visibleCount++;
-                });
-
-                noClassResults.classList.toggle("ed-hidden", visibleCount !== 0);
-            }
-            classSearch.addEventListener("input", filterClasses);
-            classSubjectFilter.addEventListener("change", filterClasses);
-
-            // Kiểm tra quyền khi nhấn đăng ký lớp.
-        document.querySelectorAll(".register-class-btn").forEach(function (button) {
-            button.addEventListener("click", function () {
-                const classId = button.dataset.classId;
-                const classCode = button.dataset.classCode;
-
-                const isAuthenticated =
-                    @User.Identity!.IsAuthenticated.ToString().ToLowerInvariant();
-
-                const role = @Html.Raw(
-                                    System.Text.Json.JsonSerializer.Serialize(
-                                            User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? ""
-                                    )
-                            );
-
-                if (!isAuthenticated) {
-                    alert("Vui lòng đăng nhập bằng tài khoản Phụ huynh.");
-                    bootstrap.Modal.getOrCreateInstance(
-                        document.getElementById("loginModal")
-                    ).show();
-                    return;
+                    // Đăng nhập thành công: chuyển tới trang làm việc theo vai trò.
+                    window.location.href = result.portalUrl || window.location.href;
+                } catch (error) {
+                    console.error("Login request failed:", error);
+                    loginError.textContent =
+                        "Không gửi được yêu cầu đến máy chủ. Vui lòng kiểm tra ứng dụng và thử lại.";
+                    loginError.classList.remove("ed-hidden");
+                } finally {
+                    loginSubmit.disabled = false;
+                    loginSubmit.textContent = "Đăng nhập";
                 }
-
-                if (role !== "Parent") {
-                    alert("Chỉ tài khoản Phụ huynh mới được đăng ký lớp cho học sinh.");
-                    return;
-                }
-
-                 window.location.href = "@Url.Action("Index", "Enrollment")";
-                });
             });
 
-            // Đăng ký Parent / Student: tạo tài khoản thật và gửi email xác thực.
+            // Đăng ký Parent / Student: tạo tài khoản thật và gửi mã xác thực.
             registerForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
                 registerError.classList.add("ed-hidden");
@@ -1083,8 +981,7 @@ loginForm.addEventListener("submit", async function (event) {
                 const role = registerRole.value;
 
                 if (!fullName || !email || password.length < 8) {
-                    registerError.textContent =
-                        "Vui lòng nhập họ tên, email và mật khẩu tối thiểu 8 ký tự.";
+                    registerError.textContent = "Vui lòng nhập họ tên, email và mật khẩu tối thiểu 8 ký tự.";
                     registerError.classList.remove("ed-hidden");
                     return;
                 }
@@ -1104,7 +1001,7 @@ loginForm.addEventListener("submit", async function (event) {
                         "__RequestVerificationToken",
                         registerForm.querySelector('input[name="__RequestVerificationToken"]').value);
 
-                    const response = await fetch("@Url.Action("Register", "Account")", {
+                    const response = await fetch("@Url.Action("Register", "Account", new { area = "" })", {
                         method: "POST",
                         body: body,
                         credentials: "same-origin",
@@ -1117,8 +1014,7 @@ loginForm.addEventListener("submit", async function (event) {
                     const result = await response.json();
 
                     if (!response.ok || !result.success) {
-                        registerError.textContent =
-                            result.message || "Đăng ký không thành công.";
+                        registerError.textContent = result.message || "Đăng ký không thành công.";
                         registerError.classList.remove("ed-hidden");
                         return;
                     }
@@ -1127,12 +1023,7 @@ loginForm.addEventListener("submit", async function (event) {
                     registerForm.reset();
                     registerRole.value = document.querySelector("[data-register-role].active").dataset.registerRole;
 
-                    document.getElementById("registerResultTitle").textContent =
-                        "Đăng ký thành công";
-                    document.getElementById("registerResultMessage").textContent =
-                        result.message;
-
-                    resultModal.show();
+                    setTimeout(() => window.openVerifyCodeModal(result.email, result.message), 180);
                 } catch (error) {
                     console.error("Register request failed:", error);
                     registerError.textContent =
@@ -1142,37 +1033,6 @@ loginForm.addEventListener("submit", async function (event) {
                     submitButton.disabled = false;
                     submitButton.textContent = submitText;
                 }
-            });
-
-            // Gửi lại email xác thực cho tài khoản chưa xác thực.
-            document.getElementById("resendVerification").addEventListener("click", async function (event) {
-                event.preventDefault();
-
-                const body = new URLSearchParams();
-                body.append("email", document.getElementById("loginEmail").value.trim());
-                body.append(
-                    "__RequestVerificationToken",
-                    loginForm.querySelector('input[name="__RequestVerificationToken"]').value);
-
-                try {
-                    const response = await fetch("@Url.Action("ResendVerification", "Account")", {
-                        method: "POST",
-                        body: body,
-                        credentials: "same-origin",
-                        headers: {
-                            "Accept": "application/json",
-                            "X-Requested-With": "XMLHttpRequest"
-                        }
-                    });
-
-                    const result = await response.json();
-                    loginError.textContent = result.message || "Đã xử lý yêu cầu.";
-                } catch (error) {
-                    console.error("Resend verification failed:", error);
-                    loginError.textContent = "Không gửi được yêu cầu. Vui lòng thử lại.";
-                }
-
-                loginError.classList.remove("ed-hidden");
             });
 
             // Đăng xuất qua endpoint thật.

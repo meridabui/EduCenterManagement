@@ -8,6 +8,9 @@ using EduCenterManagement.Repositories.Admin;
 using EduCenterManagement.Services.Email;
 using EduCenterManagement.Services.Reminders;
 using Microsoft.EntityFrameworkCore;
+using EduCenterManagement.Services.Account;
+using EduCenterManagement.Repositories.Account;
+using EduCenterManagement.Repositories.Enrollments;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +73,9 @@ builder.Services.AddScoped<EduCenterManagement.Services.Teacher.ITeacherCommentS
 // Dữ liệu học tập chỉ đọc dành cho phụ huynh.
 builder.Services.AddScoped<EduCenterManagement.Repositories.Parent.IParentAcademicRepository, EduCenterManagement.Repositories.Parent.ParentAcademicRepository>();
 builder.Services.AddScoped<EduCenterManagement.Services.Parent.IParentAcademicService, EduCenterManagement.Services.Parent.ParentAcademicService>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
